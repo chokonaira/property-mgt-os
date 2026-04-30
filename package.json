@@ -8,9 +8,9 @@
     "pnpm": ">=9.0.0"
   },
   "scripts": {
-    "dev": "pnpm db:up && pnpm db:wait && pnpm db:generate && pnpm db:migrate:deploy && pnpm dev:apps",
+    "dev": "pnpm db:up && pnpm db:wait && pnpm db:generate && pnpm db:migrate:deploy && pnpm --filter @buena/shared build && pnpm dev:apps",
     "dev:apps": "pnpm -r --parallel --stream --if-present dev",
-    "build": "pnpm -r --if-present build",
+    "build": "pnpm --filter @buena/shared build && pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

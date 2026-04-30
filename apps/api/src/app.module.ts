@@ -1,6 +1,7 @@
 import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthController } from './health/health.controller';
+import { PropertiesModule } from './modules/properties/properties.module';
 import { PrismaService } from './shared/prisma.service';
 import { RATE_LIMIT_BUCKET, rateLimitBucket } from './shared/rate-limit';
 import { RateLimitGuard } from './shared/rate-limit.guard';
@@ -36,6 +37,7 @@ import { requestIdMiddleware } from './shared/request-id.middleware';
               },
       },
     }),
+    PropertiesModule,
   ],
   controllers: [HealthController],
   providers: [
