@@ -18,7 +18,7 @@ export type ErrorCode = z.infer<typeof ErrorCodeSchema>;
 
 export const ApiErrorEnvelopeSchema = z.object({
   error: z.object({
-    code: z.string(),
+    code: ErrorCodeSchema,
     message: z.string(),
     details: z.unknown().optional(),
     requestId: z.string().optional(),

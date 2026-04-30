@@ -1,9 +1,9 @@
 import type { ZodSchema } from 'zod';
 import { ZodError } from 'zod';
-import { ApiErrorEnvelopeSchema } from '@buena/shared';
+import { ApiErrorEnvelopeSchema, type ErrorCode } from '@buena/shared';
 
 export interface ApiErrorBody {
-  code: string;
+  code: ErrorCode;
   message: string;
   details?: unknown;
   requestId?: string;
