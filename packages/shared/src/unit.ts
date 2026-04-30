@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { FloorSchema } from './floor';
 
 const BaseUnit = z.object({
-  id: z.string().cuid(),
-  buildingId: z.string().cuid(),
+  id: z.string().min(1),
+  buildingId: z.string().min(1),
   number: z.string().min(1),
   meaShare: z.number().nonnegative().max(10000),
   floor: FloorSchema.optional(),

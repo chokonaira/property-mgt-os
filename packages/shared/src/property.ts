@@ -2,23 +2,23 @@ import { z } from 'zod';
 import { ManagementTypeSchema } from './enums';
 
 export const PropertySchema = z.object({
-  id: z.string().cuid(),
-  tenantId: z.string().cuid(),
+  id: z.string().min(1),
+  tenantId: z.string().min(1),
   name: z.string().min(1).max(200),
   uniqueNumber: z.string().min(1).max(64),
   managementType: ManagementTypeSchema,
   totalMea: z.number().nonnegative().optional(),
   notarialRollNo: z.string().optional(),
   notarizedAt: z.coerce.date().optional(),
-  declarationFileId: z.string().cuid().optional(),
+  declarationFileId: z.string().min(1).optional(),
   grundbuchOffice: z.string().optional(),
   grundbuchSheet: z.string().optional(),
   gemarkung: z.string().optional(),
   flur: z.string().optional(),
   flurstueck: z.string().optional(),
   totalAreaSqm: z.number().nonnegative().optional(),
-  propertyManagerId: z.string().cuid().optional(),
-  accountantId: z.string().cuid().optional(),
+  propertyManagerId: z.string().min(1).optional(),
+  accountantId: z.string().min(1).optional(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 });

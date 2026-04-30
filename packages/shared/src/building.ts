@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const BuildingSchema = z.object({
-  id: z.string().cuid(),
-  propertyId: z.string().cuid(),
+  id: z.string().min(1),
+  propertyId: z.string().min(1),
   street: z.string().min(1),
   houseNumber: z.string().min(1),
   postalCode: z

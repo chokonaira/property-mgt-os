@@ -6,5 +6,6 @@ export * from './document';
 export * from './building';
 export * from './unit';
 export * from './property';
+export * from './property-detail';
 export * from './property-list';
 export * from './extraction';

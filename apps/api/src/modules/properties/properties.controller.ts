@@ -1,6 +1,7 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import {
   PropertyListQuerySchema,
+  type PropertyDetail,
   type PropertyListQuery,
   type PropertyListResponse,
 } from '@buena/shared';
@@ -19,5 +20,10 @@ export class PropertiesController {
     @Query(new ZodValidationPipe(PropertyListQuerySchema)) query: PropertyListQuery,
   ): Promise<PropertyListResponse> {
     return this.properties.list(TENANT_ID, query);
+  }
+
+  @Get(':id')
+  detail(@Param('id') id: string): Promise<PropertyDetail> {
+    return this.properties.getById(TENANT_ID, id);
   }
 }

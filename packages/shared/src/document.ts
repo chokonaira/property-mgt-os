@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const DocumentSchema = z.object({
-  id: z.string().cuid(),
-  tenantId: z.string().cuid(),
+  id: z.string().min(1),
+  tenantId: z.string().min(1),
   filename: z.string().min(1),
   mimeType: z.string().min(1),
   bytes: z.number().int().nonnegative(),
