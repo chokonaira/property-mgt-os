@@ -11,7 +11,18 @@ import { requestIdMiddleware } from './shared/request-id.middleware';
         level: process.env.LOG_LEVEL ?? 'info',
         customProps: (req) => ({ requestId: req.headers['x-request-id'] }),
         redact: {
-          paths: ['req.headers.authorization', 'req.headers.cookie', 'req.body.password'],
+          paths: [
+            'req.headers.authorization',
+            'req.headers.cookie',
+            'req.headers["set-cookie"]',
+            'req.headers["x-api-key"]',
+            'req.body.password',
+            'req.body',
+            '*.OPENAI_API_KEY',
+            'OPENAI_API_KEY',
+            'env.OPENAI_API_KEY',
+            'apiKey',
+          ],
           censor: '[redacted]',
         },
         transport:
