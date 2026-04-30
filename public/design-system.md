@@ -20,41 +20,41 @@ CSS custom properties for both light and dark mode, consumed by Tailwind via `ta
 
 ```css
 :root {
-  --background:        0 0% 100%;
-  --foreground:        222 13% 11%;
-  --muted:             210 14% 95%;
-  --muted-foreground:  220 9% 46%;
-  --border:            220 13% 91%;
-  --input:             220 13% 91%;
-  --ring:              222 47% 51%;
+  --background: 0 0% 100%;
+  --foreground: 222 13% 11%;
+  --muted: 210 14% 95%;
+  --muted-foreground: 220 9% 46%;
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 222 47% 51%;
 
-  --primary:           222 47% 11%;
+  --primary: 222 47% 11%;
   --primary-foreground: 210 20% 98%;
 
-  --accent:            36 100% 50%;
+  --accent: 36 100% 50%;
   --accent-foreground: 222 13% 11%;
 
-  --success:           142 71% 45%;
-  --warning:           38 92% 50%;
-  --destructive:       0 72% 51%;
-  --info:              210 90% 56%;
+  --success: 142 71% 45%;
+  --warning: 38 92% 50%;
+  --destructive: 0 72% 51%;
+  --info: 210 90% 56%;
 
-  --radius:            0.5rem;
+  --radius: 0.5rem;
 }
 
 .dark {
-  --background:        222 14% 6%;
-  --foreground:        210 20% 98%;
-  --muted:             222 14% 12%;
-  --muted-foreground:  220 9% 65%;
-  --border:            222 14% 16%;
-  --input:             222 14% 14%;
-  --ring:              36 100% 60%;
+  --background: 222 14% 6%;
+  --foreground: 210 20% 98%;
+  --muted: 222 14% 12%;
+  --muted-foreground: 220 9% 65%;
+  --border: 222 14% 16%;
+  --input: 222 14% 14%;
+  --ring: 36 100% 60%;
 
-  --primary:           210 20% 98%;
+  --primary: 210 20% 98%;
   --primary-foreground: 222 13% 11%;
 
-  --accent:            36 100% 60%;
+  --accent: 36 100% 60%;
   --accent-foreground: 222 14% 6%;
 }
 ```
@@ -117,7 +117,7 @@ Three levels:
 
 ### Buttons
 
-Three variants: `default` (primary action), `outline` (secondary), `ghost` (tertiary, in toolbars). Sizes `sm`, `default`, `lg`. Icon-only buttons have `aria-label` and an `<span class="sr-only">`. Loading state shows an inline spinner *and* keeps the label visible — no width jumps.
+Three variants: `default` (primary action), `outline` (secondary), `ghost` (tertiary, in toolbars). Sizes `sm`, `default`, `lg`. Icon-only buttons have `aria-label` and an `<span class="sr-only">`. Loading state shows an inline spinner _and_ keeps the label visible — no width jumps.
 
 ### Forms
 

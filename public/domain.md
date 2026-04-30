@@ -8,13 +8,13 @@ A short reference for the domain concepts the application touches. Captured from
 
 ### WEG — Wohnungseigentumsgesetz
 
-A condominium owners' association. Owners individually hold *Sondereigentum* (their apartment / unit) and jointly hold *Gemeinschaftseigentum* (common areas — roof, stairs, façade, lobby). Decisions about common areas are made by votes weighted by co-ownership share.
+A condominium owners' association. Owners individually hold _Sondereigentum_ (their apartment / unit) and jointly hold _Gemeinschaftseigentum_ (common areas — roof, stairs, façade, lobby). Decisions about common areas are made by votes weighted by co-ownership share.
 
 Implications for the data model:
 
 - The founding legal document is a **Teilungserklärung** (declaration of division per § 8 WEG).
 - **Miteigentumsanteile (MEA)** — co-ownership shares — sum to a fixed total, almost always 1000 (occasionally 10,000 for very large properties). Each unit's MEA determines voting weight and cost share.
-- A WEG has a **WEG-Verwalter** (property manager, regulated role) and a **Buchhaltung** (accountant) producing the annual *Jahresabrechnung*.
+- A WEG has a **WEG-Verwalter** (property manager, regulated role) and a **Buchhaltung** (accountant) producing the annual _Jahresabrechnung_.
 - May contain **Sondernutzungsrechte** — exclusive rights to use specific common areas (e.g., a particular terrace or garden patch).
 
 ### MV — Mietverwaltung
@@ -94,18 +94,18 @@ Closing legal boilerplate. Not extracted.
 
 The sample property is "Parkview Residences Berlin," 14 units across 2 buildings:
 
-| # | Type | MEA / 1000 | Building | Floor | Size | Rooms |
-|---|---|---|---|---|---|---|
-| 01 | Apartment | 110.0 | Haus A | EG | 95 m² | 3 |
-| 02 | Apartment | 108.0 | Haus A | EG | 92.5 m² | 3 |
-| 03 | Apartment | 120.0 | Haus A | 1.OG | 105 m² | 4 |
-| 04 | Apartment | 90.0 | Haus A | 2.OG | 78 m² | 2 |
-| 05 | Apartment (Penthouse) | 160.0 | Haus A | 4.OG (Staffel) | 145 m² | 4 |
-| 06 | Office | 125.0 | Haus B | EG | 110 m² | — |
-| 07 | Apartment | 75.0 | Haus B | 1.OG | 65 m² | 2 |
-| 08 | Apartment | 102.0 | Haus B | 2.OG | 88 m² | 3 |
-| 09–13 | Parking (TG-01..05) | 1.0 each | Tiefgarage | UG | 12.5 m² each | — |
-| 14 | Garden | 5.0 | Außen Haus A | EG | 40 m² | — |
+| #     | Type                  | MEA / 1000 | Building     | Floor          | Size         | Rooms |
+| ----- | --------------------- | ---------- | ------------ | -------------- | ------------ | ----- |
+| 01    | Apartment             | 110.0      | Haus A       | EG             | 95 m²        | 3     |
+| 02    | Apartment             | 108.0      | Haus A       | EG             | 92.5 m²      | 3     |
+| 03    | Apartment             | 120.0      | Haus A       | 1.OG           | 105 m²       | 4     |
+| 04    | Apartment             | 90.0       | Haus A       | 2.OG           | 78 m²        | 2     |
+| 05    | Apartment (Penthouse) | 160.0      | Haus A       | 4.OG (Staffel) | 145 m²       | 4     |
+| 06    | Office                | 125.0      | Haus B       | EG             | 110 m²       | —     |
+| 07    | Apartment             | 75.0       | Haus B       | 1.OG           | 65 m²        | 2     |
+| 08    | Apartment             | 102.0      | Haus B       | 2.OG           | 88 m²        | 3     |
+| 09–13 | Parking (TG-01..05)   | 1.0 each   | Tiefgarage   | UG             | 12.5 m² each | —     |
+| 14    | Garden                | 5.0        | Außen Haus A | EG             | 40 m²        | —     |
 
 **Sum of unit MEA shares: 900.0 / 1000.** The document declares 1000 total, but the unit shares sum to 900 — 100 unaccounted for. The application surfaces this as a non-blocking warning so the user is alerted but not prevented from proceeding. In production, this is exactly the kind of drafting omission that should be flagged for human review rather than silently accepted.
 
@@ -113,33 +113,33 @@ The sample property is "Parkview Residences Berlin," 14 units across 2 buildings
 
 ## Vocabulary cheat sheet
 
-| German | English | Notes |
-|---|---|---|
-| Teilungserklärung | Declaration of division | Founding legal document for a WEG |
-| Wohnungseigentumsgesetz (WEG) | Condominium Property Act | The German law |
-| Sondereigentum | Exclusive property | What is exclusively owned |
-| Gemeinschaftseigentum | Common property | What is shared |
-| Sondernutzungsrecht | Special use right | Exclusive use of part of common property |
-| Miteigentumsanteil (MEA) | Co-ownership share | Per-unit fraction of a fixed total |
-| Aufteilungsplan | Division plan | Architectural drawing of units |
-| Verwalter | Property manager | Regulated under WEG |
-| Buchhaltung | Accountant | Annual statement preparer |
-| Wohnfläche | Living area | Apartments |
-| Nutzfläche | Utility / commercial area | Offices, parking |
-| Erdgeschoss (EG) | Ground floor | Floor 0 |
-| 1. Obergeschoss (1.OG) | First floor (above ground) | |
-| Staffelgeschoss | Recessed top floor | Often the penthouse |
-| Untergeschoss (UG) | Basement | Floor -1 |
-| Tiefgarage | Underground garage | Where parking units live |
-| Eingang | Entrance | Building entrance |
-| Treppenhaus | Stairwell | Used as entrance qualifier |
-| Baujahr | Construction year | |
-| KfW 40 / KfW 55 | Energy efficiency standard | German federal codes |
-| Fernwärme | District heating | |
-| Grundbuch | Land registry | The official land book |
-| Gemarkung / Flur / Flurstück | Cadastral district / sub-area / parcel | Hierarchical land identifiers |
-| Urkundenrolle | Notarial roll | Sequential notarial act number |
-| Mietverwaltung (MV) | Rental management | The non-WEG flow |
+| German                        | English                                | Notes                                    |
+| ----------------------------- | -------------------------------------- | ---------------------------------------- |
+| Teilungserklärung             | Declaration of division                | Founding legal document for a WEG        |
+| Wohnungseigentumsgesetz (WEG) | Condominium Property Act               | The German law                           |
+| Sondereigentum                | Exclusive property                     | What is exclusively owned                |
+| Gemeinschaftseigentum         | Common property                        | What is shared                           |
+| Sondernutzungsrecht           | Special use right                      | Exclusive use of part of common property |
+| Miteigentumsanteil (MEA)      | Co-ownership share                     | Per-unit fraction of a fixed total       |
+| Aufteilungsplan               | Division plan                          | Architectural drawing of units           |
+| Verwalter                     | Property manager                       | Regulated under WEG                      |
+| Buchhaltung                   | Accountant                             | Annual statement preparer                |
+| Wohnfläche                    | Living area                            | Apartments                               |
+| Nutzfläche                    | Utility / commercial area              | Offices, parking                         |
+| Erdgeschoss (EG)              | Ground floor                           | Floor 0                                  |
+| 1. Obergeschoss (1.OG)        | First floor (above ground)             |                                          |
+| Staffelgeschoss               | Recessed top floor                     | Often the penthouse                      |
+| Untergeschoss (UG)            | Basement                               | Floor -1                                 |
+| Tiefgarage                    | Underground garage                     | Where parking units live                 |
+| Eingang                       | Entrance                               | Building entrance                        |
+| Treppenhaus                   | Stairwell                              | Used as entrance qualifier               |
+| Baujahr                       | Construction year                      |                                          |
+| KfW 40 / KfW 55               | Energy efficiency standard             | German federal codes                     |
+| Fernwärme                     | District heating                       |                                          |
+| Grundbuch                     | Land registry                          | The official land book                   |
+| Gemarkung / Flur / Flurstück  | Cadastral district / sub-area / parcel | Hierarchical land identifiers            |
+| Urkundenrolle                 | Notarial roll                          | Sequential notarial act number           |
+| Mietverwaltung (MV)           | Rental management                      | The non-WEG flow                         |
 
 ---
 

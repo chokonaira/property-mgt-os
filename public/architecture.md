@@ -71,26 +71,26 @@ buena-case-study/
 
 ## Stack
 
-| Layer | Choice |
-|---|---|
-| Frontend | Next.js 15 (App Router), TypeScript |
-| UI | Tailwind + shadcn/ui |
-| Forms | React Hook Form + Zod resolver |
-| Tables | TanStack Table (headless) + TanStack Virtual |
-| API client | TanStack Query |
-| Backend | NestJS, TypeScript |
-| ORM | Prisma |
-| Database | PostgreSQL 16 |
-| Validation | Zod (shared package) |
-| AI | OpenAI gpt-4o-mini, structured outputs (json_schema mode) |
-| PDF | pdf-parse, pdfjs-dist as fallback |
-| i18n | next-intl, en + de catalogs, locale-aware route segment |
-| Security | helmet, CORS allowlist, structured error envelope, pino redaction |
+| Layer                    | Choice                                                              |
+| ------------------------ | ------------------------------------------------------------------- |
+| Frontend                 | Next.js 15 (App Router), TypeScript                                 |
+| UI                       | Tailwind + shadcn/ui                                                |
+| Forms                    | React Hook Form + Zod resolver                                      |
+| Tables                   | TanStack Table (headless) + TanStack Virtual                        |
+| API client               | TanStack Query                                                      |
+| Backend                  | NestJS, TypeScript                                                  |
+| ORM                      | Prisma                                                              |
+| Database                 | PostgreSQL 16                                                       |
+| Validation               | Zod (shared package)                                                |
+| AI                       | OpenAI gpt-4o-mini, structured outputs (json_schema mode)           |
+| PDF                      | pdf-parse, pdfjs-dist as fallback                                   |
+| i18n                     | next-intl, en + de catalogs, locale-aware route segment             |
+| Security                 | helmet, CORS allowlist, structured error envelope, pino redaction   |
 | Rate limit / idempotency | `@nestjs/throttler` on AI endpoints; per-document idempotency cache |
-| Tests | Vitest, Playwright |
-| Bundle | Docker Compose |
-| CI | GitHub Actions (lint + typecheck + test + build on every push) |
-| Lint / format | ESLint, Prettier, Husky pre-commit |
+| Tests                    | Vitest, Playwright                                                  |
+| Bundle                   | Docker Compose                                                      |
+| CI                       | GitHub Actions (lint + typecheck + test + build on every push)      |
+| Lint / format            | ESLint, Prettier, Husky pre-commit                                  |
 
 Rationale per choice in the ADRs.
 
@@ -276,7 +276,11 @@ Every entity is defined once in `packages/shared`. Discriminated unions are used
 
 const FloorSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('EG') }),
-  z.object({ kind: z.literal('OG'), level: z.number().int().min(1).max(99), qualifier: z.string().optional() }),
+  z.object({
+    kind: z.literal('OG'),
+    level: z.number().int().min(1).max(99),
+    qualifier: z.string().optional(),
+  }),
   z.object({ kind: z.literal('UG'), level: z.number().int().min(1).max(9) }),
   z.object({ kind: z.literal('DG') }),
   z.object({ kind: z.literal('STAFFEL') }),
@@ -286,7 +290,12 @@ const BaseUnit = z.object({
   number: z.string().min(1),
   buildingId: z.string().cuid(),
   meaShare: z.number().nonnegative().max(10000),
-  yearBuilt: z.number().int().min(1800).max(new Date().getFullYear() + 1).optional(),
+  yearBuilt: z
+    .number()
+    .int()
+    .min(1800)
+    .max(new Date().getFullYear() + 1)
+    .optional(),
   floor: FloorSchema.optional(),
   entranceLabel: z.string().optional(),
   entranceNote: z.string().optional(),
@@ -379,6 +388,7 @@ User accepts (form pre-fills) or discards (manual entry continues)
 ```
 
 Three guarantees the design buys:
+
 1. **Schema-first** — output is structurally valid by construction (`json_schema` strict mode + Zod re-parse).
 2. **Grounded** — source spans are verified server-side; the model cannot fabricate citations.
 3. **Idempotent** — re-uploading the same document doesn't re-spend; `?force=true` bypasses the cache when iterating prompts.
