@@ -5,7 +5,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Buena — Property OS',
-  description: 'Property dashboard with guided creation flow + AI-powered Teilungserklärung extraction.',
+  description:
+    'Property dashboard with guided creation flow + AI-powered Teilungserklärung extraction.',
 };
 
 export const viewport: Viewport = {

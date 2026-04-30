@@ -68,14 +68,34 @@ export async function apiFetch<T>(
   });
 
   const text = await res.text();
-  const parsed: unknown = text ? JSON.parse(text) : null;
+  let parsed: unknown = null;
+  let parseFailed = false;
+  if (text) {
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parseFailed = true;
+    }
+  }
 
   if (!res.ok) {
-    const envelope = ErrorEnvelopeSchema.parse(parsed) ?? {
-      code: 'UNKNOWN',
-      message: res.statusText || 'Request failed',
-    };
-    throw new ApiError(res.status, envelope);
+    const envelope = parseFailed ? null : ErrorEnvelopeSchema.parse(parsed);
+    throw new ApiError(
+      res.status,
+      envelope ?? {
+        code: 'UNKNOWN',
+        message: text || res.statusText || 'Request failed',
+      },
+    );
+  }
+
+  if (parseFailed) {
+    throw new ApiSchemaError(
+      [
+        { code: 'custom', path: [], message: 'Response body is not valid JSON.' },
+      ] as ZodError['issues'],
+      text,
+    );
   }
 
   try {
