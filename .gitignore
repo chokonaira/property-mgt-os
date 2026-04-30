@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Test
+coverage/
+playwright-report/
+test-results/
+
+# Uploads (local file storage stub)
+uploads/
+!uploads/.gitkeep
+
+# Prisma
+prisma/migrations/dev.db*
+
+# Turbo / cache
+.turbo/
+.cache/

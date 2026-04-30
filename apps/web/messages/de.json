@@ -1,0 +1,51 @@
+{
+  "common": {
+    "appName": "Buena",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "discard": "Verwerfen"
+  },
+  "dashboard": {
+    "title": "Immobilien",
+    "createCta": "Neue Immobilie anlegen",
+    "empty": "Noch keine Immobilien. Legen Sie Ihre erste an.",
+    "columns": {
+      "name": "Name",
+      "type": "Typ",
+      "number": "Nummer"
+    }
+  },
+  "wizard": {
+    "step1": "Allgemeine Angaben",
+    "step2": "Gebäude",
+    "step3": "Einheiten"
+  },
+  "units": {
+    "addRow": "Einheit hinzufügen",
+    "generate": "Einheiten generieren",
+    "deleteSelected": "Ausgewählte löschen",
+    "meaTotal": "MEA-Summe"
+  },
+  "extraction": {
+    "loading": "Dokument wird gelesen… (kann 10–15 Sekunden dauern).",
+    "review": "Wir haben Ihr Dokument gelesen. Bitte prüfen Sie die Ergebnisse, bevor Sie fortfahren.",
+    "acceptAll": "Alles übernehmen & fortfahren",
+    "discard": "Verwerfen & manuell eingeben",
+    "cached": "Aus Cache geladen",
+    "tooLarge": "Dieses Dokument überschreitet das v1-Größenlimit. Bitte füllen Sie das Formular manuell aus."
+  },
+  "errors": {
+    "generic": "Auf unserer Seite ist etwas schiefgelaufen",
+    "tryAgain": "Erneut versuchen",
+    "goHome": "Zur Startseite",
+    "notFound": "Seite nicht gefunden",
+    "backToDashboard": "Zurück zum Dashboard"
+  },
+  "chat": {
+    "ask": "Buena fragen",
+    "placeholder": "Fragen Sie zu Ihren Immobilien…",
+    "clear": "Verlauf löschen"
+  }
+}

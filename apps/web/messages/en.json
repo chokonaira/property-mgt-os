@@ -1,0 +1,51 @@
+{
+  "common": {
+    "appName": "Buena",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "next": "Next",
+    "discard": "Discard"
+  },
+  "dashboard": {
+    "title": "Properties",
+    "createCta": "Create new property",
+    "empty": "No properties yet. Create your first.",
+    "columns": {
+      "name": "Name",
+      "type": "Type",
+      "number": "Number"
+    }
+  },
+  "wizard": {
+    "step1": "General info",
+    "step2": "Buildings",
+    "step3": "Units"
+  },
+  "units": {
+    "addRow": "Add unit",
+    "generate": "Generate units",
+    "deleteSelected": "Delete selected",
+    "meaTotal": "MEA total"
+  },
+  "extraction": {
+    "loading": "Reading the document… (this can take 10–15 seconds).",
+    "review": "We read your document. Review what we found before continuing.",
+    "acceptAll": "Accept all & continue",
+    "discard": "Discard & enter manually",
+    "cached": "Served from cache",
+    "tooLarge": "This document exceeds the v1 size limit. Please fill the form manually."
+  },
+  "errors": {
+    "generic": "Something went wrong on our side",
+    "tryAgain": "Try again",
+    "goHome": "Go home",
+    "notFound": "Page not found",
+    "backToDashboard": "Back to dashboard"
+  },
+  "chat": {
+    "ask": "Ask Buena",
+    "placeholder": "Ask about your properties…",
+    "clear": "Clear conversation"
+  }
+}
