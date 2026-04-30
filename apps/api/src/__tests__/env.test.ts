@@ -55,4 +55,36 @@ describe('loadEnv', () => {
       /LOG_LEVEL/,
     );
   });
+
+  it('rejects CORS_ORIGINS that is whitespace-only after CSV parsing', () => {
+    expect(() => loadEnv({ ...validEnv, CORS_ORIGINS: ' , ' } as NodeJS.ProcessEnv)).toThrowError(
+      /CORS_ORIGINS/,
+    );
+    expect(() => loadEnv({ ...validEnv, CORS_ORIGINS: '   ' } as NodeJS.ProcessEnv)).toThrowError(
+      /CORS_ORIGINS/,
+    );
+    expect(() => loadEnv({ ...validEnv, CORS_ORIGINS: '' } as NodeJS.ProcessEnv)).toThrowError(
+      /CORS_ORIGINS/,
+    );
+  });
+
+  it('rejects CORS_ORIGINS entries that are not absolute URLs', () => {
+    expect(() =>
+      loadEnv({ ...validEnv, CORS_ORIGINS: 'not-a-url' } as NodeJS.ProcessEnv),
+    ).toThrowError(/CORS_ORIGINS/);
+    expect(() =>
+      loadEnv({
+        ...validEnv,
+        CORS_ORIGINS: 'http://localhost:3000, not-a-url',
+      } as NodeJS.ProcessEnv),
+    ).toThrowError(/CORS_ORIGINS/);
+  });
+
+  it('accepts a single valid CORS origin', () => {
+    const env = loadEnv({
+      ...validEnv,
+      CORS_ORIGINS: 'http://localhost:3000',
+    } as NodeJS.ProcessEnv);
+    expect(env.CORS_ORIGINS).toEqual(['http://localhost:3000']);
+  });
 });
