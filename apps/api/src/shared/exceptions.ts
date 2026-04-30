@@ -2,6 +2,9 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import type { ZodIssue } from 'zod';
 
 export type ErrorCode =
+  | 'BAD_REQUEST'
+  | 'UNAUTHORIZED'
+  | 'FORBIDDEN'
   | 'VALIDATION_FAILED'
   | 'NOT_FOUND'
   | 'CONFLICT'

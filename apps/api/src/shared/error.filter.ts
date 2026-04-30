@@ -5,8 +5,7 @@ import {
   type ArgumentsHost,
   type ExceptionFilter,
 } from '@nestjs/common';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- runtime value: Nest DI reads constructor param metadata
-import { Logger } from 'nestjs-pino';
+import type { Logger } from 'nestjs-pino';
 import type { Request, Response } from 'express';
 import { AppException, type ErrorBody, type ErrorCode } from './exceptions';
 
@@ -51,17 +50,12 @@ export class GlobalErrorFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
-      const response = exception.getResponse();
-      const message =
-        typeof response === 'string'
-          ? response
-          : ((response as { message?: string }).message ?? exception.message);
       return {
         status,
         body: {
           error: {
             code: this.mapStatusToCode(status),
-            message,
+            message: this.extractMessage(exception),
             requestId,
           },
         },
@@ -82,6 +76,12 @@ export class GlobalErrorFilter implements ExceptionFilter {
 
   private mapStatusToCode(status: number): ErrorCode {
     switch (status) {
+      case HttpStatus.BAD_REQUEST:
+        return 'BAD_REQUEST';
+      case HttpStatus.UNAUTHORIZED:
+        return 'UNAUTHORIZED';
+      case HttpStatus.FORBIDDEN:
+        return 'FORBIDDEN';
       case HttpStatus.NOT_FOUND:
         return 'NOT_FOUND';
       case HttpStatus.CONFLICT:
@@ -93,5 +93,14 @@ export class GlobalErrorFilter implements ExceptionFilter {
       default:
         return 'INTERNAL';
     }
+  }
+
+  private extractMessage(exception: HttpException): string {
+    const response = exception.getResponse();
+    if (typeof response === 'string') return response;
+    const raw = (response as { message?: unknown }).message;
+    if (typeof raw === 'string') return raw;
+    if (Array.isArray(raw)) return raw.map(String).join('; ');
+    return exception.message;
   }
 }
