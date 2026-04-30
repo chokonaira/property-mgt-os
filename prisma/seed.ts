@@ -13,6 +13,13 @@ async function main(): Promise<void> {
     where: { tenantId: tenant.id, uniqueNumber: '10-557-PRB' },
   });
 
+  await prisma.contact.deleteMany({
+    where: {
+      tenantId: tenant.id,
+      name: { in: ['immoGuard Berlin GmbH', 'FinanzExpertise Müller & Co KG'] },
+    },
+  });
+
   const propertyManager = await prisma.contact.create({
     data: {
       tenantId: tenant.id,

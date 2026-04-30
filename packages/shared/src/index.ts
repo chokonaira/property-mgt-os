@@ -1,3 +1,4 @@
+export * from './api-error';
 export * from './enums';
 export * from './floor';
 export * from './contact';

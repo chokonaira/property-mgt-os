@@ -1,27 +1,9 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import type { ZodIssue } from 'zod';
+import type { ApiErrorEnvelope, ErrorCode } from '@buena/shared';
 
-export type ErrorCode =
-  | 'BAD_REQUEST'
-  | 'UNAUTHORIZED'
-  | 'FORBIDDEN'
-  | 'VALIDATION_FAILED'
-  | 'NOT_FOUND'
-  | 'CONFLICT'
-  | 'RATE_LIMITED'
-  | 'EXTRACTION_TIMEOUT'
-  | 'EXTRACTION_PARSE_FAILED'
-  | 'EXTRACTION_TOO_LARGE'
-  | 'INTERNAL';
-
-export interface ErrorBody {
-  error: {
-    code: ErrorCode;
-    message: string;
-    details?: unknown;
-    requestId?: string;
-  };
-}
+export type { ErrorCode };
+export type ErrorBody = ApiErrorEnvelope;
 
 export class AppException extends HttpException {
   constructor(

@@ -1,27 +1,18 @@
 import type { ZodSchema } from 'zod';
 import { ZodError } from 'zod';
-
-const ErrorEnvelopeSchema = {
-  parse: (raw: unknown): ApiErrorBody | null => {
-    if (typeof raw !== 'object' || raw === null) return null;
-    const error = (raw as { error?: unknown }).error;
-    if (typeof error !== 'object' || error === null) return null;
-    const e = error as Record<string, unknown>;
-    if (typeof e.code !== 'string' || typeof e.message !== 'string') return null;
-    return {
-      code: e.code,
-      message: e.message,
-      details: e.details,
-      requestId: typeof e.requestId === 'string' ? e.requestId : undefined,
-    };
-  },
-};
+import { ApiErrorEnvelopeSchema } from '@buena/shared';
 
 export interface ApiErrorBody {
   code: string;
   message: string;
   details?: unknown;
   requestId?: string;
+}
+
+function parseEnvelope(raw: unknown): ApiErrorBody | null {
+  const result = ApiErrorEnvelopeSchema.safeParse(raw);
+  if (!result.success) return null;
+  return result.data.error;
 }
 
 export class ApiError extends Error {
@@ -79,7 +70,7 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
-    const envelope = parseFailed ? null : ErrorEnvelopeSchema.parse(parsed);
+    const envelope = parseFailed ? null : parseEnvelope(parsed);
     throw new ApiError(
       res.status,
       envelope ?? {
