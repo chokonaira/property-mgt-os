@@ -57,6 +57,21 @@ pnpm db:seed
 | `pnpm db:reset`               | Drop + reapply migrations + reseed (destructive)                                 |
 | `pnpm db:studio`              | Open Prisma Studio for ad-hoc inspection                                         |
 
+### Locale (de / en)
+
+The web app defaults to **German**. Switch from the top-right control on the home page, or directly:
+
+- `http://localhost:3000/` — German (`de`, default; the URL stays unprefixed)
+- `http://localhost:3000/en` — English
+
+The choice is persisted in a `BUENA_LOCALE` cookie (1-year max-age) so subsequent visits stick. To force a locale via cookie from a script:
+
+```bash
+curl -i -b 'BUENA_LOCALE=en' http://localhost:3000/
+```
+
+Domain terms — `WEG`, `MV`, `MEA`, `Teilungserklärung`, `Wohnfläche`, `Nutzfläche`, `Miteigentumsanteile`, `Tiefgaragenstellplatz` — stay in German in both catalogs by design.
+
 ### Common gotchas
 
 - **Port 5432 already in use**: a host Postgres is binding it. The dev Postgres container maps to **55432** on the host (`DATABASE_URL=postgres://buena:buena@localhost:55432/buena`) to avoid the clash. If you change the port, update `.env`.
@@ -95,5 +110,7 @@ This README will be expanded by T-601 from the case-study planning template. Cur
 - T-003 — Next.js 15 skeleton, shadcn/ui (slate), TanStack Query, typed API client
 - T-004 — Postgres (Docker) + Prisma schema + initial migration + seeded Parkview Residences
 - T-005 — Shared Zod schemas in `packages/shared` (Property, Building, Unit discriminated, Contact, Document, Floor, ExtractionResult)
-- T-008 i18n message catalogs (placeholders)
+- T-006 — Helmet, CORS allowlist, Zod-validated env loader, PrismaExceptionFilter, pino redaction
+- T-007 — Rate-limit primitive (token bucket + guard + decorator) ready to attach to T-504 / T-802
+- T-008 — `next-intl` wired on the App Router (`[locale]` segment, middleware, switcher), de + en catalogs, Zod error localization
 - `.env.example` — all required env vars

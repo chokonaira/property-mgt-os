@@ -7,6 +7,10 @@
     "next": "Weiter",
     "discard": "Verwerfen"
   },
+  "home": {
+    "tagline": "Immobilien-Dashboard mit geführtem Anlegevorgang und KI-gestützter Extraktion aus der Teilungserklärung.",
+    "cta": "Jetzt starten"
+  },
   "dashboard": {
     "title": "Immobilien",
     "createCta": "Neue Immobilie anlegen",
@@ -41,7 +45,20 @@
     "tryAgain": "Erneut versuchen",
     "goHome": "Zur Startseite",
     "notFound": "Seite nicht gefunden",
-    "backToDashboard": "Zurück zum Dashboard"
+    "backToDashboard": "Zurück zum Dashboard",
+    "zod": {
+      "required": "Dieses Feld ist erforderlich.",
+      "invalid_type": "Erwartet {expected}, erhalten {received}.",
+      "invalid_string": "Ungültiger Wert.",
+      "invalid_email": "Ungültige E-Mail-Adresse.",
+      "invalid_url": "Ungültige URL.",
+      "too_small_string": "Muss mindestens {minimum} Zeichen lang sein.",
+      "too_big_string": "Darf höchstens {maximum} Zeichen lang sein.",
+      "too_small_number": "Muss mindestens {minimum} betragen.",
+      "too_big_number": "Darf höchstens {maximum} betragen.",
+      "invalid_enum_value": "Bitte einen gültigen Wert auswählen.",
+      "invalid_union_discriminator": "Bitte einen gültigen Typ auswählen."
+    }
   },
   "chat": {
     "ask": "Buena fragen",

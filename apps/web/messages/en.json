@@ -7,6 +7,10 @@
     "next": "Next",
     "discard": "Discard"
   },
+  "home": {
+    "tagline": "Property dashboard with guided creation flow + AI-powered Teilungserklärung extraction.",
+    "cta": "Get started"
+  },
   "dashboard": {
     "title": "Properties",
     "createCta": "Create new property",
@@ -41,7 +45,20 @@
     "tryAgain": "Try again",
     "goHome": "Go home",
     "notFound": "Page not found",
-    "backToDashboard": "Back to dashboard"
+    "backToDashboard": "Back to dashboard",
+    "zod": {
+      "required": "This field is required.",
+      "invalid_type": "Expected {expected}, received {received}.",
+      "invalid_string": "Invalid value.",
+      "invalid_email": "Invalid email address.",
+      "invalid_url": "Invalid URL.",
+      "too_small_string": "Must be at least {minimum} characters.",
+      "too_big_string": "Must be at most {maximum} characters.",
+      "too_small_number": "Must be at least {minimum}.",
+      "too_big_number": "Must be at most {maximum}.",
+      "invalid_enum_value": "Pick one of the allowed values.",
+      "invalid_union_discriminator": "Pick a valid type."
+    }
   },
   "chat": {
     "ask": "Ask Buena",
