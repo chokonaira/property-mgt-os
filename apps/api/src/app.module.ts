@@ -2,6 +2,8 @@ import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common
 import { LoggerModule } from 'nestjs-pino';
 import { HealthController } from './health/health.controller';
 import { PrismaService } from './shared/prisma.service';
+import { RATE_LIMIT_BUCKET, rateLimitBucket } from './shared/rate-limit';
+import { RateLimitGuard } from './shared/rate-limit.guard';
 import { requestIdMiddleware } from './shared/request-id.middleware';
 
 @Module({
@@ -36,8 +38,12 @@ import { requestIdMiddleware } from './shared/request-id.middleware';
     }),
   ],
   controllers: [HealthController],
-  providers: [PrismaService],
-  exports: [PrismaService],
+  providers: [
+    PrismaService,
+    { provide: RATE_LIMIT_BUCKET, useValue: rateLimitBucket },
+    RateLimitGuard,
+  ],
+  exports: [PrismaService, RateLimitGuard, RATE_LIMIT_BUCKET],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

@@ -1,6 +1,10 @@
 // In-memory token-bucket rate limiter.
 // v1 only — swap for a Redis-backed implementation before horizontal scaling
-// or the per-key state will diverge between API instances.
+// or the per-key state will diverge between API instances. The internal Map
+// is also intentionally unbounded; acceptable for the case-study scope, but
+// the production swap should ship with eviction (LRU or a Redis TTL).
+
+export const RATE_LIMIT_BUCKET = Symbol('RATE_LIMIT_BUCKET');
 
 interface BucketState {
   tokens: number;

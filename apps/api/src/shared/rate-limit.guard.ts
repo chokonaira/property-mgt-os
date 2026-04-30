@@ -1,16 +1,22 @@
-import { HttpStatus, Injectable, type CanActivate, type ExecutionContext } from '@nestjs/common';
+import {
+  HttpStatus,
+  Inject,
+  Injectable,
+  type CanActivate,
+  type ExecutionContext,
+} from '@nestjs/common';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- runtime value: Nest DI reads constructor param metadata
 import { Reflector } from '@nestjs/core';
 import type { Request, Response } from 'express';
 import { AppException } from './exceptions';
 import { RATE_LIMIT_METADATA, type RateLimitOptions } from './rate-limit.decorator';
-import { rateLimitBucket, type TokenBucket } from './rate-limit';
+import { RATE_LIMIT_BUCKET, type TokenBucket } from './rate-limit';
 
 @Injectable()
 export class RateLimitGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly bucket: TokenBucket = rateLimitBucket,
+    @Inject(RATE_LIMIT_BUCKET) private readonly bucket: TokenBucket,
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
