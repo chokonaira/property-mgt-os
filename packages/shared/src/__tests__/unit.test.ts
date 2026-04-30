@@ -17,19 +17,17 @@ describe('UnitSchema (full entity)', () => {
     expect(result.success).toBe(true);
   });
 
-  it('rejects APARTMENT missing required `rooms`', () => {
+  it('rejects APARTMENT with NaN sizeSqm', () => {
     const result = UnitSchema.safeParse({
       ...baseIds,
       type: 'APARTMENT',
       number: '01',
-      sizeSqm: 95,
+      sizeSqm: Number.NaN,
       areaMetric: 'WOHN',
       meaShare: 110,
+      rooms: 3,
     });
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues.some((i) => i.path.includes('rooms'))).toBe(true);
-    }
   });
 
   it('rejects APARTMENT with NUTZ areaMetric (literal mismatch on discriminated branch)', () => {
@@ -103,6 +101,55 @@ describe('CreateUnitSchema (without ids)', () => {
       areaMetric: 'WOHN',
       meaShare: 110,
       rooms: 3,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects APARTMENT without sizeSqm at create time (wire-strict)', () => {
+    const result = CreateUnitSchema.safeParse({
+      type: 'APARTMENT',
+      number: '01',
+      areaMetric: 'WOHN',
+      meaShare: 110,
+      rooms: 3,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects APARTMENT without rooms at create time', () => {
+    const result = CreateUnitSchema.safeParse({
+      type: 'APARTMENT',
+      number: '01',
+      sizeSqm: 95,
+      areaMetric: 'WOHN',
+      meaShare: 110,
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('UnitSchema vs CreateUnitSchema (read-permissive, write-strict)', () => {
+  const baseIds = { id: 'cm0apartment000000000000', buildingId: 'cm0building00000000000000' };
+
+  it('UnitSchema accepts APARTMENT without sizeSqm (legacy / partial extraction)', () => {
+    const result = UnitSchema.safeParse({
+      ...baseIds,
+      type: 'APARTMENT',
+      number: '01',
+      areaMetric: 'WOHN',
+      meaShare: 110,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('UnitSchema accepts APARTMENT without rooms (legacy)', () => {
+    const result = UnitSchema.safeParse({
+      ...baseIds,
+      type: 'APARTMENT',
+      number: '01',
+      sizeSqm: 95,
+      areaMetric: 'WOHN',
+      meaShare: 110,
     });
     expect(result.success).toBe(true);
   });

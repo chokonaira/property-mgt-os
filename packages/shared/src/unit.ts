@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { FloorSchema } from './floor';
 
+// Wire shape (read responses).
+//
+// `sizeSqm` and APARTMENT `rooms` are optional here on purpose: the
+// underlying Prisma columns are nullable for flexibility around legacy
+// imports / partial AI extractions. The wizard treats them as required
+// at create time — see `CreateUnitSchema` below for the strict variant.
 const BaseUnit = z.object({
   id: z.string().min(1),
   buildingId: z.string().min(1),
@@ -21,31 +27,34 @@ const BaseUnit = z.object({
 export const UnitSchema = z.discriminatedUnion('type', [
   BaseUnit.extend({
     type: z.literal('APARTMENT'),
-    sizeSqm: z.number().positive(),
+    sizeSqm: z.number().positive().optional(),
     areaMetric: z.literal('WOHN'),
-    rooms: z.number().int().min(0).max(50),
+    rooms: z.number().int().min(0).max(50).optional(),
     subCategory: z.string().optional(),
   }),
   BaseUnit.extend({
     type: z.literal('OFFICE'),
-    sizeSqm: z.number().positive(),
+    sizeSqm: z.number().positive().optional(),
     areaMetric: z.literal('NUTZ'),
     layoutNote: z.string().optional(),
   }),
   BaseUnit.extend({
     type: z.literal('PARKING'),
-    sizeSqm: z.number().positive(),
+    sizeSqm: z.number().positive().optional(),
     areaMetric: z.literal('NUTZ'),
     parkingCode: z.string().optional(),
   }),
   BaseUnit.extend({
     type: z.literal('GARDEN'),
-    sizeSqm: z.number().positive(),
+    sizeSqm: z.number().positive().optional(),
     areaMetric: z.literal('GROUND'),
   }),
 ]);
 export type Unit = z.infer<typeof UnitSchema>;
 
+// Strict wizard / create-time contract: sizeSqm + (APARTMENT) rooms
+// MUST be supplied. The form blocks submission otherwise; the API
+// rejects with the standard 422 envelope.
 const stripIds = { id: true, buildingId: true } as const;
 
 export const CreateUnitSchema = z.discriminatedUnion('type', [

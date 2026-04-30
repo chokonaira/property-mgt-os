@@ -156,7 +156,11 @@ function mapUnit(row: UnitRow): Unit {
     description: row.description ?? undefined,
   } as const;
 
-  const sizeSqm = decimal(row.sizeSqm) ?? 0;
+  // Pass DB nulls through as undefined — fabricating defaults (sizeSqm=0
+  // or rooms=0) would launder bad data into a Zod-valid response and
+  // hide it from the dashboard. The wire UnitSchema explicitly allows
+  // undefined here; CreateUnitSchema still requires both at write time.
+  const sizeSqm = decimal(row.sizeSqm);
 
   switch (row.type) {
     case 'APARTMENT':
@@ -165,7 +169,7 @@ function mapUnit(row: UnitRow): Unit {
         type: 'APARTMENT',
         sizeSqm,
         areaMetric: 'WOHN',
-        rooms: row.rooms ?? 0,
+        rooms: row.rooms ?? undefined,
         subCategory: row.subCategory ?? undefined,
       };
     case 'OFFICE':
