@@ -1,6 +1,7 @@
 import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthController } from './health/health.controller';
+import { PrismaService } from './shared/prisma.service';
 import { requestIdMiddleware } from './shared/request-id.middleware';
 
 @Module({
@@ -24,6 +25,8 @@ import { requestIdMiddleware } from './shared/request-id.middleware';
     }),
   ],
   controllers: [HealthController],
+  providers: [PrismaService],
+  exports: [PrismaService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

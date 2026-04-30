@@ -6,3 +6,181 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum ManagementType {
+  WEG
+  MV
+}
+
+enum UnitType {
+  APARTMENT
+  OFFICE
+  GARDEN
+  PARKING
+}
+
+enum FloorKind {
+  EG
+  OG
+  UG
+  DG
+  STAFFEL
+}
+
+enum AreaMetric {
+  WOHN
+  NUTZ
+  ROH
+  GROUND
+}
+
+model Tenant {
+  id         String     @id @default(cuid())
+  name       String
+  createdAt  DateTime   @default(now())
+  properties Property[]
+  contacts   Contact[]
+}
+
+model Property {
+  id             String         @id @default(cuid())
+  tenantId       String
+  tenant         Tenant         @relation(fields: [tenantId], references: [id])
+
+  name           String
+  uniqueNumber   String
+  managementType ManagementType
+
+  totalMea          Decimal?  @db.Decimal(10, 2)
+  notarialRollNo    String?
+  notarizedAt       DateTime?
+  declarationFileId String?
+
+  grundbuchOffice String?
+  grundbuchSheet  String?
+  gemarkung       String?
+  flur            String?
+  flurstueck      String?
+  totalAreaSqm    Decimal? @db.Decimal(10, 2)
+
+  propertyManagerId String?
+  propertyManager   Contact? @relation("propertyManager", fields: [propertyManagerId], references: [id])
+  accountantId      String?
+  accountant        Contact? @relation("accountant", fields: [accountantId], references: [id])
+
+  buildings       Building[]
+  declarationFile Document?  @relation("declarationFile", fields: [declarationFileId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, uniqueNumber])
+  @@unique([declarationFileId])
+  @@index([tenantId])
+}
+
+model Building {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  street      String
+  houseNumber String
+
+  postalCode     String?
+  city           String?
+  country        String?  @default("DE")
+  label          String?
+  nickname       String?
+  yearBuilt      Int?
+  floorsCount    Int?
+  hasElevator    Boolean? @default(false)
+  energyStandard String?
+  heating        String?
+  buildingType   String?
+
+  units Unit[]
+
+  @@index([propertyId])
+}
+
+model Unit {
+  id         String   @id @default(cuid())
+  buildingId String
+  building   Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+
+  number String
+  type   UnitType
+
+  floorKind      FloorKind?
+  floorLevel     Int?
+  floorQualifier String?
+
+  entranceLabel String?
+  entranceNote  String?
+
+  sizeSqm    Decimal?    @db.Decimal(10, 2)
+  areaMetric AreaMetric?
+
+  meaShare Decimal @db.Decimal(10, 2)
+
+  rooms Int?
+
+  yearBuilt   Int?
+  subCategory String?
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([buildingId, number])
+  @@index([buildingId])
+}
+
+model Contact {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  name        String
+  role        String
+  street      String?
+  houseNumber String?
+  postalCode  String?
+  city        String?
+  email       String?
+  phone       String?
+
+  managedProperties   Property[] @relation("propertyManager")
+  accountedProperties Property[] @relation("accountant")
+
+  @@index([tenantId])
+}
+
+model Document {
+  id         String   @id @default(cuid())
+  tenantId   String
+  filename   String
+  mimeType   String
+  bytes      Int
+  storageKey String
+  createdAt  DateTime @default(now())
+
+  declarationFor Property?       @relation("declarationFile")
+  extractions    ExtractionRun[]
+}
+
+model ExtractionRun {
+  id            String   @id @default(cuid())
+  documentId    String
+  document      Document @relation(fields: [documentId], references: [id])
+  model         String
+  promptVersion String
+  rawResponse   Json
+  parsedResult  Json
+  confidence    Decimal  @db.Decimal(5, 4)
+  durationMs    Int
+  status        String
+  error         String?
+  createdAt     DateTime @default(now())
+}

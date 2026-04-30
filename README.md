@@ -11,6 +11,14 @@
 
 ## Quick start
 
+### Prerequisites
+
+- **Node 20+** and **pnpm 9+** (`packageManager` pin in root `package.json`).
+- **Docker Desktop** running. Postgres 16 is launched via `docker-compose.dev.yml` — required for `pnpm dev` and for migrations / seeding.
+- **OpenAI API key** with ~$5 of credit (only for the AI extraction + chatbot tickets; the rest of the app boots without it).
+
+### Reviewer path (one command)
+
 ```bash
 cp .env.example .env       # paste OPENAI_API_KEY
 docker compose up
@@ -18,15 +26,42 @@ docker compose up
 
 Open `http://localhost:3000`. The dashboard is pre-seeded with one demo property so you see a working product, not an empty state.
 
-For local development with hot reload:
+### Local development (hot reload)
 
 ```bash
 pnpm install
-pnpm db:up
-pnpm db:migrate
-pnpm db:seed
-pnpm dev
+cp .env.example .env       # edit if a port conflicts; default Postgres host port is 55432 to avoid clashing with a host-installed Postgres on 5432
+pnpm dev                   # boots Postgres in Docker, waits, generates Prisma client, applies migrations, then runs api + web in parallel
 ```
+
+`pnpm dev` is end-to-end: it brings the database up, syncs the schema, and starts both apps. If Docker isn't running it will fail fast — start Docker Desktop and re-run.
+
+To seed the demo data once the DB is up:
+
+```bash
+pnpm db:seed
+```
+
+### Useful scripts
+
+| Script                        | What it does                                                                     |
+| ----------------------------- | -------------------------------------------------------------------------------- |
+| `pnpm dev`                    | Postgres up → wait → generate → migrate:deploy → web + api in parallel           |
+| `pnpm dev:apps`               | Skip the DB orchestration; just run web + api (use when DB is already healthy)   |
+| `pnpm db:up` / `pnpm db:down` | Start / stop the dev Postgres container                                          |
+| `pnpm db:wait`                | Block until Postgres is accepting connections                                    |
+| `pnpm db:generate`            | Regenerate Prisma Client after schema changes                                    |
+| `pnpm db:migrate`             | Create and apply a new migration (interactive, picks the name)                   |
+| `pnpm db:migrate:deploy`      | Apply pending migrations non-interactively (CI / reviewer flow)                  |
+| `pnpm db:seed`                | Seed the Parkview Residences demo property (1 property · 2 buildings · 14 units) |
+| `pnpm db:reset`               | Drop + reapply migrations + reseed (destructive)                                 |
+| `pnpm db:studio`              | Open Prisma Studio for ad-hoc inspection                                         |
+
+### Common gotchas
+
+- **Port 5432 already in use**: a host Postgres is binding it. The dev Postgres container maps to **55432** on the host (`DATABASE_URL=postgres://buena:buena@localhost:55432/buena`) to avoid the clash. If you change the port, update `.env`.
+- **`P1010: User 'buena' was denied access`**: usually means `DATABASE_URL` is pointing at a different Postgres (e.g. host-installed) that doesn't have the `buena` user. Confirm with `lsof -nP -iTCP:55432`.
+- **Prisma Client out of date**: re-run `pnpm db:generate` after pulling schema changes.
 
 ---
 
@@ -52,4 +87,13 @@ Full architecture in `public/architecture.md`. Domain primer in `public/domain.m
 
 ## Status
 
-This README will be expanded by T-601 from the case-study planning template. The current scaffold corresponds to T-001 (workspace), T-000 (CI), T-008 i18n message catalogs (placeholders), and `.env.example` (all required vars).
+This README will be expanded by T-601 from the case-study planning template. Current scaffold:
+
+- T-000 — CI (lint / typecheck / test / build on push + PR)
+- T-001 — pnpm workspace, ESLint, Prettier, Husky
+- T-002 — NestJS skeleton, `/healthz`, global Zod pipe, error envelope, pino + request-id
+- T-003 — Next.js 15 skeleton, shadcn/ui (slate), TanStack Query, typed API client
+- T-004 — Postgres (Docker) + Prisma schema + initial migration + seeded Parkview Residences
+- T-005 — Shared Zod schemas in `packages/shared` (Property, Building, Unit discriminated, Contact, Document, Floor, ExtractionResult)
+- T-008 i18n message catalogs (placeholders)
+- `.env.example` — all required env vars
