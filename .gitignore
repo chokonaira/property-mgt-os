@@ -44,3 +44,7 @@ prisma/migrations/dev.db*
 # Turbo / cache
 .turbo/
 .cache/
+
+# Claude Code (local agent context, not source)
+CLAUDE.md
+.claude/
