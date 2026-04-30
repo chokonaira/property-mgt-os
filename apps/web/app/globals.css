@@ -27,13 +27,13 @@
     --accent-foreground: 222 13% 11%;
 
     --success: 142 71% 45%;
-    --success-foreground: 210 20% 98%;
+    --success-foreground: 222 13% 11%;
     --warning: 38 92% 50%;
     --warning-foreground: 222 13% 11%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 20% 98%;
     --info: 210 90% 56%;
-    --info-foreground: 210 20% 98%;
+    --info-foreground: 222 13% 11%;
 
     --radius: 0.5rem;
   }
@@ -62,13 +62,13 @@
     --accent-foreground: 222 14% 6%;
 
     --success: 142 71% 45%;
-    --success-foreground: 210 20% 98%;
+    --success-foreground: 222 13% 11%;
     --warning: 38 92% 50%;
     --warning-foreground: 222 13% 11%;
     --destructive: 0 62% 45%;
     --destructive-foreground: 210 20% 98%;
     --info: 210 90% 56%;
-    --info-foreground: 210 20% 98%;
+    --info-foreground: 222 13% 11%;
   }
 
   * {
