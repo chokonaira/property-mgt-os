@@ -1,5 +1,5 @@
-import { StepPlaceholder } from '@/components/wizard/step-placeholder';
+import { BuildingsStep } from '@/components/wizard/buildings-step';
 
 export default function BuildingsStepPage() {
-  return <StepPlaceholder step="buildings" ticketRef="T-301" />;
+  return <BuildingsStep />;
 }

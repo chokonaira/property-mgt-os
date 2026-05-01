@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  EMPTY_BUILDING,
   STEP_FIELDS,
   WIZARD_DRAFT_DEFAULTS,
+  WizardBuildingDraftSchema,
+  WizardBuildingsDraftSchema,
   WizardDraftSchema,
   WizardGeneralDraftSchema,
 } from '@/lib/schemas/wizard-draft';
@@ -76,9 +79,79 @@ describe('WIZARD_DRAFT_DEFAULTS', () => {
     expect(WIZARD_DRAFT_DEFAULTS.general.managementType).toBe('WEG');
   });
 
-  it('starts with empty buildings and units arrays', () => {
-    expect(WIZARD_DRAFT_DEFAULTS.buildings).toEqual([]);
+  it('seeds one empty building card so step 2 starts with the canonical card', () => {
+    expect(WIZARD_DRAFT_DEFAULTS.buildings).toEqual([EMPTY_BUILDING]);
+  });
+
+  it('starts with an empty units array', () => {
     expect(WIZARD_DRAFT_DEFAULTS.units).toEqual([]);
+  });
+});
+
+describe('WizardBuildingDraftSchema', () => {
+  const valid = { street: 'Musterstr.', houseNumber: '1' };
+
+  it('accepts the minimum required pair', () => {
+    expect(WizardBuildingDraftSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it('rejects a missing street', () => {
+    expect(WizardBuildingDraftSchema.safeParse({ houseNumber: '1' }).success).toBe(false);
+  });
+
+  it('rejects a missing house number', () => {
+    expect(WizardBuildingDraftSchema.safeParse({ street: 'Musterstr.' }).success).toBe(false);
+  });
+
+  it('rejects whitespace-only required fields', () => {
+    expect(WizardBuildingDraftSchema.safeParse({ street: '   ', houseNumber: '1' }).success).toBe(
+      false,
+    );
+    expect(WizardBuildingDraftSchema.safeParse({ street: 'A', houseNumber: '   ' }).success).toBe(
+      false,
+    );
+  });
+
+  it('admits a fully populated optional payload', () => {
+    expect(
+      WizardBuildingDraftSchema.safeParse({
+        ...valid,
+        postalCode: '10115',
+        city: 'Berlin',
+        label: 'Haus A',
+        nickname: 'Parkside',
+        yearBuilt: 1992,
+        floorsCount: 5,
+        hasElevator: true,
+        energyStandard: 'B',
+        heating: 'Fernwärme',
+        buildingType: 'Mehrfamilienhaus',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects a non-5-digit postcode', () => {
+    expect(WizardBuildingDraftSchema.safeParse({ ...valid, postalCode: '1234' }).success).toBe(
+      false,
+    );
+  });
+
+  it('clamps yearBuilt to a reasonable range', () => {
+    expect(WizardBuildingDraftSchema.safeParse({ ...valid, yearBuilt: 1700 }).success).toBe(false);
+    const next = new Date().getFullYear() + 5;
+    expect(WizardBuildingDraftSchema.safeParse({ ...valid, yearBuilt: next }).success).toBe(false);
+  });
+});
+
+describe('WizardBuildingsDraftSchema', () => {
+  it('rejects an empty array — at least one building is required', () => {
+    expect(WizardBuildingsDraftSchema.safeParse([]).success).toBe(false);
+  });
+
+  it('accepts a single valid building', () => {
+    expect(WizardBuildingsDraftSchema.safeParse([{ street: 'A', houseNumber: '1' }]).success).toBe(
+      true,
+    );
   });
 });
 

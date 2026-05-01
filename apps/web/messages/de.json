@@ -87,6 +87,30 @@
         "uniqueProbeFailed": "Verfügbarkeit konnte nicht geprüft werden. Bitte erneut versuchen."
       }
     },
+    "buildings": {
+      "title": "Gebäude",
+      "subtitle": "Ein oder mehrere Gebäude zu dieser Immobilie hinzufügen. Pflichtfelder sind mit einem Stern markiert.",
+      "addBuilding": "Gebäude hinzufügen",
+      "newBuilding": "Neues Gebäude",
+      "cardTitle": "Gebäude {index}",
+      "remove": "Gebäude {index} entfernen",
+      "showMore": "Mehr Details anzeigen",
+      "showLess": "Weniger Details anzeigen",
+      "street": "Straße",
+      "houseNumber": "Hausnr.",
+      "postalCode": "PLZ",
+      "city": "Stadt",
+      "label": "Bezeichnung",
+      "labelHelp": "Interne Kurzbezeichnung (z. B. Haus A).",
+      "nickname": "Spitzname",
+      "nicknameHelp": "Freundlicher Name für Bewohner (z. B. Parkseite).",
+      "yearBuilt": "Baujahr",
+      "floorsCount": "Etagen",
+      "hasElevator": "Aufzug vorhanden",
+      "energyStandard": "Energieklasse",
+      "heating": "Heizung",
+      "buildingType": "Gebäudetyp"
+    },
     "placeholders": {
       "general": {
         "title": "Formular Allgemeine Angaben",

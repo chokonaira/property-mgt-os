@@ -23,7 +23,36 @@ export const WizardGeneralDraftSchema = z.object({
 });
 export type WizardGeneralDraft = z.infer<typeof WizardGeneralDraftSchema>;
 
-export const WizardBuildingsDraftSchema = z.array(z.unknown());
+// Per-building draft. `street` + `houseNumber` are required (the AC
+// gates these); everything else is optional and lives behind a "Show
+// more" toggle in the UI. `country` defaults to 'DE' — same as the
+// strict CreateBuildingSchema in @buena/shared, intentional.
+export const WizardBuildingDraftSchema = z.object({
+  street: z.string().trim().min(1).max(200),
+  houseNumber: z.string().trim().min(1).max(20),
+  postalCode: z
+    .string()
+    .trim()
+    .regex(/^\d{5}$/)
+    .optional(),
+  city: z.string().trim().min(1).max(120).optional(),
+  label: z.string().trim().min(1).max(64).optional(),
+  nickname: z.string().trim().min(1).max(64).optional(),
+  yearBuilt: z
+    .number()
+    .int()
+    .min(1800)
+    .max(new Date().getFullYear() + 1)
+    .optional(),
+  floorsCount: z.number().int().min(0).max(50).optional(),
+  hasElevator: z.boolean().optional(),
+  energyStandard: z.string().trim().min(1).max(40).optional(),
+  heating: z.string().trim().min(1).max(60).optional(),
+  buildingType: z.string().trim().min(1).max(60).optional(),
+});
+export type WizardBuildingDraft = z.infer<typeof WizardBuildingDraftSchema>;
+
+export const WizardBuildingsDraftSchema = z.array(WizardBuildingDraftSchema).min(1);
 export const WizardUnitsDraftSchema = z.array(z.unknown());
 
 export const WizardDraftSchema = z.object({
@@ -35,13 +64,18 @@ export type WizardDraft = z.infer<typeof WizardDraftSchema>;
 
 export type WizardDraftInput = z.input<typeof WizardDraftSchema>;
 
+export const EMPTY_BUILDING: WizardBuildingDraft = {
+  street: '',
+  houseNumber: '',
+};
+
 export const WIZARD_DRAFT_DEFAULTS: WizardDraftInput = {
   general: {
     managementType: 'WEG',
     name: '',
     uniqueNumber: '',
   },
-  buildings: [],
+  buildings: [EMPTY_BUILDING],
   units: [],
 };
 

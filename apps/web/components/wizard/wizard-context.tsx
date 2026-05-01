@@ -15,6 +15,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { zodI18nResolver } from '@/lib/zod-i18n';
 import {
+  clearPersistedWizardDraft,
+  useWizardPersistence,
+} from '@/lib/hooks/use-wizard-persistence';
+import {
   STEP_FIELDS,
   WIZARD_DRAFT_DEFAULTS,
   WizardDraftSchema,
@@ -60,6 +64,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     resolver: zodResolver(WizardDraftSchema, { errorMap: zodI18nResolver(tErr) }),
     mode: 'onTouched',
   });
+  // Restore from + persist into localStorage so a hard refresh on any step
+  // brings the user back to where they left off (T-303 / T-410).
+  useWizardPersistence(methods);
 
   const [validity, setValidity] = useState<StepValidityMap>(initialValidity);
   const [declarationFile, setDeclarationFile] = useState<File | undefined>(undefined);
@@ -92,6 +99,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setDeclarationFile(undefined);
     validators.current = {};
     methods.reset(WIZARD_DRAFT_DEFAULTS);
+    clearPersistedWizardDraft();
   }, [methods]);
 
   const value = useMemo<WizardContextValue>(

@@ -87,6 +87,30 @@
         "uniqueProbeFailed": "Couldn't verify availability. Try again in a moment."
       }
     },
+    "buildings": {
+      "title": "Buildings",
+      "subtitle": "Add one or more buildings to this property. Required fields are marked with an asterisk.",
+      "addBuilding": "Add building",
+      "newBuilding": "New building",
+      "cardTitle": "Building {index}",
+      "remove": "Remove building {index}",
+      "showMore": "Show more details",
+      "showLess": "Show fewer details",
+      "street": "Street",
+      "houseNumber": "House no.",
+      "postalCode": "Postal code",
+      "city": "City",
+      "label": "Label",
+      "labelHelp": "Internal short identifier (e.g. Haus A).",
+      "nickname": "Nickname",
+      "nicknameHelp": "Friendly name shown to residents (e.g. Parkside).",
+      "yearBuilt": "Year built",
+      "floorsCount": "Floors",
+      "hasElevator": "Has elevator",
+      "energyStandard": "Energy class",
+      "heating": "Heating",
+      "buildingType": "Building type"
+    },
     "placeholders": {
       "general": {
         "title": "General info form",
