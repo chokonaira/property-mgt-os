@@ -31,6 +31,12 @@
     "discard": "Discard draft",
     "discardConfirm": "Discard this draft? Any entered data will be lost.",
     "save": "Save property",
+    "autoSave": {
+      "justSaved": "Just saved",
+      "secondsAgo": "{count, plural, one {Saved # second ago} other {Saved # seconds ago}}",
+      "minutesAgo": "{count, plural, one {Saved # minute ago} other {Saved # minutes ago}}",
+      "hoursAgo": "{count, plural, one {Saved # hour ago} other {Saved # hours ago}}"
+    },
     "toasts": {
       "success": "Property saved.",
       "failureValidation": "Some fields need attention. Check the highlighted inputs.",

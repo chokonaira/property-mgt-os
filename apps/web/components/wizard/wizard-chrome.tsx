@@ -9,6 +9,7 @@ import { useRouter, usePathname } from '@/i18n/navigation';
 import { ApiError } from '@/lib/api-client';
 import { useCreateProperty } from '@/lib/hooks/use-create-property';
 import { Button } from '@/components/ui/button';
+import { LastSavedIndicator } from './last-saved-indicator';
 import { StepIndicator } from './step-indicator';
 import { WIZARD_STEPS, nextStep, pathForStep, previousStep, stepFromPath } from './steps';
 import { isPriorStepValid, useWizard } from './wizard-context';
@@ -38,7 +39,7 @@ export function WizardChrome({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const currentStep = stepFromPath(pathname);
-  const { validity, validateStep, reset, hydrated } = useWizard();
+  const { validity, validateStep, reset, hydrated, lastSavedAt } = useWizard();
   const { setError, getValues, trigger } = useFormContext<WizardDraftInput, unknown, WizardDraft>();
   const [isPending, startTransition] = useTransition();
   const createProperty = useCreateProperty();
@@ -184,6 +185,9 @@ export function WizardChrome({ children }: { children: ReactNode }) {
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           {t('back')}
         </Button>
+        <div className="flex flex-1 items-center justify-center sm:flex-1">
+          <LastSavedIndicator lastSavedAt={lastSavedAt} />
+        </div>
         <Button
           onClick={isLastStep ? handleSave : handleNext}
           disabled={advanceDisabled}

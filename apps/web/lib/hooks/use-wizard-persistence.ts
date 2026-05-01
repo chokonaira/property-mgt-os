@@ -24,6 +24,12 @@ const PERSIST_THROTTLE_MS = 500;
 export interface WizardPersistenceState {
   /** True after the first restore pass has run (or no-op'd). */
   hydrated: boolean;
+  /**
+   * Epoch ms of the last successful localStorage write, or null when
+   * nothing has been persisted in this session. Surfaces the
+   * "Last saved …" indicator in the wizard footer (T-410 AC).
+   */
+  lastSavedAt: number | null;
 }
 
 export function useWizardPersistence(
@@ -32,6 +38,7 @@ export function useWizardPersistence(
   const restoredOnce = useRef(false);
   const writeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
   // Restore once. Mark hydrated even if there's nothing to restore so the
   // gate doesn't sit closed forever on a brand-new visit.
@@ -56,6 +63,7 @@ export function useWizardPersistence(
             WIZARD_DRAFT_STORAGE_KEY,
             serializeDraft(value as WizardDraftInput),
           );
+          setLastSavedAt(Date.now());
         } catch {
           // Storage quota / privacy mode — ignore; in-memory state still works.
         }
@@ -67,7 +75,7 @@ export function useWizardPersistence(
     };
   }, [methods]);
 
-  return { hydrated };
+  return { hydrated, lastSavedAt };
 }
 
 export function clearPersistedWizardDraft() {

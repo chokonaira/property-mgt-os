@@ -73,6 +73,8 @@ interface WizardContextValue {
    * before the persisted draft has had a chance to seed validity.
    */
   hydrated: boolean;
+  /** Epoch ms of the last localStorage write; null until the first save. */
+  lastSavedAt: number | null;
 }
 
 const initialValidity: StepValidityMap = {
@@ -99,7 +101,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   });
   // Restore from + persist into localStorage so a hard refresh on any step
   // brings the user back to where they left off (T-303 / T-410).
-  const { hydrated: persistenceHydrated } = useWizardPersistence(methods);
+  const { hydrated: persistenceHydrated, lastSavedAt } = useWizardPersistence(methods);
 
   const [validity, setValidity] = useState<StepValidityMap>(initialValidity);
   const [validityHydrated, setValidityHydrated] = useState(false);
@@ -221,6 +223,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       setExtractionMeta,
       markFieldEdited,
       hydrated,
+      lastSavedAt,
     }),
     [
       validity,
@@ -233,6 +236,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       setExtractionMeta,
       markFieldEdited,
       hydrated,
+      lastSavedAt,
     ],
   );
 

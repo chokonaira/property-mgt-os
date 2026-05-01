@@ -31,6 +31,12 @@
     "discard": "Entwurf verwerfen",
     "discardConfirm": "Entwurf wirklich verwerfen? Alle Eingaben gehen verloren.",
     "save": "Immobilie speichern",
+    "autoSave": {
+      "justSaved": "Gerade gespeichert",
+      "secondsAgo": "{count, plural, one {vor # Sekunde gespeichert} other {vor # Sekunden gespeichert}}",
+      "minutesAgo": "{count, plural, one {vor # Minute gespeichert} other {vor # Minuten gespeichert}}",
+      "hoursAgo": "{count, plural, one {vor # Stunde gespeichert} other {vor # Stunden gespeichert}}"
+    },
     "toasts": {
       "success": "Immobilie gespeichert.",
       "failureValidation": "Einige Felder benötigen noch Aufmerksamkeit. Bitte markierte Eingaben prüfen.",
