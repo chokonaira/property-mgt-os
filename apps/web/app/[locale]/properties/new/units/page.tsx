@@ -1,5 +1,5 @@
-import { StepPlaceholder } from '@/components/wizard/step-placeholder';
+import { UnitsStep } from '@/components/wizard/units-step';
 
 export default function UnitsStepPage() {
-  return <StepPlaceholder step="units" ticketRef="T-401" />;
+  return <UnitsStep />;
 }

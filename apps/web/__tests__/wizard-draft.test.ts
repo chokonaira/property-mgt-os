@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   EMPTY_BUILDING,
+  EMPTY_UNIT,
   STEP_FIELDS,
   WIZARD_DRAFT_DEFAULTS,
   WizardBuildingDraftSchema,
   WizardBuildingsDraftSchema,
   WizardDraftSchema,
   WizardGeneralDraftSchema,
+  WizardUnitDraftSchema,
+  WizardUnitsDraftSchema,
 } from '@/lib/schemas/wizard-draft';
 
 describe('WizardGeneralDraftSchema', () => {
@@ -83,8 +86,8 @@ describe('WIZARD_DRAFT_DEFAULTS', () => {
     expect(WIZARD_DRAFT_DEFAULTS.buildings).toEqual([EMPTY_BUILDING]);
   });
 
-  it('starts with an empty units array', () => {
-    expect(WIZARD_DRAFT_DEFAULTS.units).toEqual([]);
+  it('seeds one empty unit row so step 3 starts with the canonical row', () => {
+    expect(WIZARD_DRAFT_DEFAULTS.units).toEqual([EMPTY_UNIT]);
   });
 });
 
@@ -152,6 +155,81 @@ describe('WizardBuildingsDraftSchema', () => {
     expect(WizardBuildingsDraftSchema.safeParse([{ street: 'A', houseNumber: '1' }]).success).toBe(
       true,
     );
+  });
+});
+
+describe('WizardUnitDraftSchema', () => {
+  const apt = {
+    type: 'APARTMENT' as const,
+    buildingIndex: 0,
+    number: '1',
+    meaShare: 100,
+  };
+
+  it('accepts the minimum APARTMENT row', () => {
+    expect(WizardUnitDraftSchema.safeParse(apt).success).toBe(true);
+  });
+
+  it('accepts each of the four discriminated types', () => {
+    expect(WizardUnitDraftSchema.safeParse({ ...apt, type: 'OFFICE' }).success).toBe(true);
+    expect(WizardUnitDraftSchema.safeParse({ ...apt, type: 'PARKING' }).success).toBe(true);
+    expect(WizardUnitDraftSchema.safeParse({ ...apt, type: 'GARDEN' }).success).toBe(true);
+  });
+
+  it('rejects rows missing buildingIndex / number / meaShare', () => {
+    expect(WizardUnitDraftSchema.safeParse({ type: 'APARTMENT' }).success).toBe(false);
+    expect(WizardUnitDraftSchema.safeParse({ ...apt, number: '' }).success).toBe(false);
+    expect(WizardUnitDraftSchema.safeParse({ ...apt, meaShare: -1 }).success).toBe(false);
+  });
+
+  it('admits an APARTMENT-only `rooms` field', () => {
+    expect(WizardUnitDraftSchema.safeParse({ ...apt, rooms: 3 }).success).toBe(true);
+  });
+
+  it('admits the OFFICE / PARKING-specific fields', () => {
+    expect(
+      WizardUnitDraftSchema.safeParse({
+        ...apt,
+        type: 'OFFICE',
+        layoutNote: 'open plan',
+      }).success,
+    ).toBe(true);
+    expect(
+      WizardUnitDraftSchema.safeParse({
+        ...apt,
+        type: 'PARKING',
+        parkingCode: 'P-12',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('admits each floor discriminant', () => {
+    for (const floor of [
+      { kind: 'EG' },
+      { kind: 'DG' },
+      { kind: 'OG', level: 3 },
+      { kind: 'UG', level: 1 },
+      { kind: 'STAFFEL', qualifier: 'A' },
+    ] as const) {
+      expect(WizardUnitDraftSchema.safeParse({ ...apt, floor }).success).toBe(true);
+    }
+  });
+
+  it('rejects an OG floor with an out-of-range level', () => {
+    expect(
+      WizardUnitDraftSchema.safeParse({ ...apt, floor: { kind: 'OG', level: 100 } }).success,
+    ).toBe(false);
+  });
+});
+
+describe('WizardUnitsDraftSchema', () => {
+  it('rejects an empty array — at least one unit is required', () => {
+    expect(WizardUnitsDraftSchema.safeParse([]).success).toBe(false);
+  });
+
+  it('rejects the seeded EMPTY_UNIT until number is filled', () => {
+    expect(WizardUnitsDraftSchema.safeParse([EMPTY_UNIT]).success).toBe(false);
+    expect(WizardUnitsDraftSchema.safeParse([{ ...EMPTY_UNIT, number: '1' }]).success).toBe(true);
   });
 });
 

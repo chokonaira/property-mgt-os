@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ManagementTypeSchema } from '@buena/shared';
+import { FloorSchema, ManagementTypeSchema } from '@buena/shared';
 
 // Per-step draft slices. The wizard owns the union; each step's form
 // trigger validates only its own keys via methods.trigger(['general.*']).
@@ -53,7 +53,64 @@ export const WizardBuildingDraftSchema = z.object({
 export type WizardBuildingDraft = z.infer<typeof WizardBuildingDraftSchema>;
 
 export const WizardBuildingsDraftSchema = z.array(WizardBuildingDraftSchema).min(1);
-export const WizardUnitsDraftSchema = z.array(z.unknown());
+
+// Per-unit draft. Discriminated by type so each variant carries the
+// fields the API will need at atomic-save time (T-407). buildingIndex
+// references the position of the building in the step-2 array — the
+// save endpoint resolves this to a real building id once the parent
+// property + buildings have been created.
+const BaseUnitDraft = z.object({
+  buildingIndex: z.number().int().min(0),
+  number: z.string().trim().min(1).max(20),
+  meaShare: z.number().nonnegative().max(10000),
+  sizeSqm: z.number().positive().optional(),
+  floor: FloorSchema.optional(),
+  entranceLabel: z.string().trim().min(1).max(40).optional(),
+  yearBuilt: z
+    .number()
+    .int()
+    .min(1800)
+    .max(new Date().getFullYear() + 1)
+    .optional(),
+  description: z.string().trim().min(1).max(500).optional(),
+});
+
+export const WizardUnitDraftSchema = z.discriminatedUnion('type', [
+  BaseUnitDraft.extend({
+    type: z.literal('APARTMENT'),
+    rooms: z.number().int().min(0).max(50).optional(),
+    subCategory: z.string().trim().min(1).max(40).optional(),
+  }),
+  BaseUnitDraft.extend({
+    type: z.literal('OFFICE'),
+    layoutNote: z.string().trim().min(1).max(120).optional(),
+  }),
+  BaseUnitDraft.extend({
+    type: z.literal('PARKING'),
+    parkingCode: z.string().trim().min(1).max(20).optional(),
+  }),
+  BaseUnitDraft.extend({
+    type: z.literal('GARDEN'),
+  }),
+]);
+export type WizardUnitDraft = z.infer<typeof WizardUnitDraftSchema>;
+export type WizardUnitType = WizardUnitDraft['type'];
+
+export const WIZARD_UNIT_TYPES: ReadonlyArray<WizardUnitType> = [
+  'APARTMENT',
+  'OFFICE',
+  'PARKING',
+  'GARDEN',
+];
+
+export const WizardUnitsDraftSchema = z.array(WizardUnitDraftSchema).min(1);
+
+export const EMPTY_UNIT: WizardUnitDraft = {
+  type: 'APARTMENT',
+  buildingIndex: 0,
+  number: '',
+  meaShare: 0,
+};
 
 export const WizardDraftSchema = z.object({
   general: WizardGeneralDraftSchema,
@@ -76,7 +133,7 @@ export const WIZARD_DRAFT_DEFAULTS: WizardDraftInput = {
     uniqueNumber: '',
   },
   buildings: [EMPTY_BUILDING],
-  units: [],
+  units: [EMPTY_UNIT],
 };
 
 // Field paths each step must validate via RHF's `trigger`. The wizard

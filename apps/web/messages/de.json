@@ -111,6 +111,37 @@
       "heating": "Heizung",
       "buildingType": "Gebäudetyp"
     },
+    "units": {
+      "title": "Einheiten",
+      "subtitle": "Einheiten je Gebäude erfassen. Der Typ steuert Flächenart und Pflichtfelder.",
+      "addRow": "Einheit hinzufügen",
+      "removeRow": "Zeile {index} entfernen",
+      "buildingFallback": "Gebäude {index}",
+      "columns": {
+        "type": "Typ",
+        "building": "Gebäude",
+        "floor": "Etage",
+        "entrance": "Aufgang",
+        "size": "Größe",
+        "metric": "Maß",
+        "rooms": "Zimmer",
+        "mea": "MEA",
+        "year": "Baujahr",
+        "description": "Beschreibung"
+      },
+      "types": {
+        "APARTMENT": "Wohnung",
+        "OFFICE": "Gewerbe",
+        "PARKING": "Stellplatz",
+        "GARDEN": "Garten"
+      },
+      "floor": {
+        "empty": "—",
+        "kind": "Art",
+        "level": "Etage",
+        "qualifier": "Zusatz"
+      }
+    },
     "placeholders": {
       "general": {
         "title": "Formular Allgemeine Angaben",
@@ -180,12 +211,6 @@
       "balanced": "Die Summe entspricht dem deklarierten Gesamtwert.",
       "mismatch": "Die Summe weicht um {delta} vom deklarierten Gesamtwert ab."
     }
-  },
-  "units": {
-    "addRow": "Einheit hinzufügen",
-    "generate": "Einheiten generieren",
-    "deleteSelected": "Ausgewählte löschen",
-    "meaTotal": "MEA-Summe"
   },
   "extraction": {
     "loading": "Dokument wird gelesen… (kann 10–15 Sekunden dauern).",

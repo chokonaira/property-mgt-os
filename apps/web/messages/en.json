@@ -111,6 +111,37 @@
       "heating": "Heating",
       "buildingType": "Building type"
     },
+    "units": {
+      "title": "Units",
+      "subtitle": "Add the units in each building. Type drives metric and which fields are required.",
+      "addRow": "Add unit",
+      "removeRow": "Remove row {index}",
+      "buildingFallback": "Building {index}",
+      "columns": {
+        "type": "Type",
+        "building": "Building",
+        "floor": "Floor",
+        "entrance": "Entrance",
+        "size": "Size",
+        "metric": "Metric",
+        "rooms": "Rooms",
+        "mea": "MEA",
+        "year": "Year",
+        "description": "Description"
+      },
+      "types": {
+        "APARTMENT": "Apartment",
+        "OFFICE": "Office",
+        "PARKING": "Parking",
+        "GARDEN": "Garden"
+      },
+      "floor": {
+        "empty": "—",
+        "kind": "Kind",
+        "level": "Level",
+        "qualifier": "Qualifier"
+      }
+    },
     "placeholders": {
       "general": {
         "title": "General info form",
@@ -180,12 +211,6 @@
       "balanced": "Sum matches the declared total.",
       "mismatch": "Sum differs from declared total by {delta}."
     }
-  },
-  "units": {
-    "addRow": "Add unit",
-    "generate": "Generate units",
-    "deleteSelected": "Delete selected",
-    "meaTotal": "MEA total"
   },
   "extraction": {
     "loading": "Reading the document… (this can take 10–15 seconds).",

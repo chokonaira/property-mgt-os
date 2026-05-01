@@ -43,13 +43,20 @@ describe('parseStoredDraft', () => {
 
   it('round-trips a populated draft', () => {
     const populated = {
-      ...WIZARD_DRAFT_DEFAULTS,
       general: {
-        ...WIZARD_DRAFT_DEFAULTS.general,
+        managementType: 'WEG' as const,
         name: 'Parkview',
         uniqueNumber: 'AB-1',
       },
       buildings: [{ street: 'Musterstr.', houseNumber: '1' }],
+      units: [
+        {
+          type: 'APARTMENT' as const,
+          buildingIndex: 0,
+          number: '1',
+          meaShare: 100,
+        },
+      ],
     };
     const round = parseStoredDraft(serializeDraft(populated));
     expect(round?.draft).toEqual(populated);
