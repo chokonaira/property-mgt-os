@@ -86,6 +86,10 @@ export class GlobalErrorFilter implements ExceptionFilter {
         return 'NOT_FOUND';
       case HttpStatus.CONFLICT:
         return 'CONFLICT';
+      case HttpStatus.PAYLOAD_TOO_LARGE:
+        return 'PAYLOAD_TOO_LARGE';
+      case HttpStatus.UNSUPPORTED_MEDIA_TYPE:
+        return 'UNSUPPORTED_MEDIA_TYPE';
       case HttpStatus.UNPROCESSABLE_ENTITY:
         return 'VALIDATION_FAILED';
       case HttpStatus.TOO_MANY_REQUESTS:
