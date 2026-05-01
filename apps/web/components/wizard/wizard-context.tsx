@@ -10,6 +10,15 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  STEP_FIELDS,
+  WIZARD_DRAFT_DEFAULTS,
+  WizardDraftSchema,
+  type WizardDraft,
+  type WizardDraftInput,
+} from '@/lib/schemas/wizard-draft';
 import { WIZARD_STEPS, type WizardStepId } from './steps';
 
 type ValidatorFn = () => Promise<boolean> | boolean;
@@ -32,6 +41,17 @@ const initialValidity: StepValidityMap = {
 const WizardContext = createContext<WizardContextValue | null>(null);
 
 export function WizardProvider({ children }: { children: ReactNode }) {
+  // Single shared FormProvider for the wizard. Step-specific validation
+  // is delegated to RHF's `trigger`, scoped to the field paths declared
+  // in STEP_FIELDS. Step components can still register a custom
+  // validator (e.g. when they cross-check against the API) — registered
+  // validators take precedence over the schema trigger.
+  const methods = useForm<WizardDraftInput, unknown, WizardDraft>({
+    defaultValues: WIZARD_DRAFT_DEFAULTS,
+    resolver: zodResolver(WizardDraftSchema),
+    mode: 'onTouched',
+  });
+
   const [validity, setValidity] = useState<StepValidityMap>(initialValidity);
   const validators = useRef<Partial<Record<WizardStepId, ValidatorFn>>>({});
 
@@ -50,25 +70,29 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const validateStep = useCallback(
     async (step: WizardStepId) => {
       const fn = validators.current[step];
-      if (!fn) return false;
-      const result = await fn();
+      const result = fn ? await fn() : await methods.trigger(STEP_FIELDS[step]);
       setStepValid(step, result);
       return result;
     },
-    [setStepValid],
+    [methods, setStepValid],
   );
 
   const reset = useCallback(() => {
     setValidity(initialValidity);
     validators.current = {};
-  }, []);
+    methods.reset(WIZARD_DRAFT_DEFAULTS);
+  }, [methods]);
 
   const value = useMemo<WizardContextValue>(
     () => ({ validity, registerValidator, setStepValid, validateStep, reset }),
     [validity, registerValidator, setStepValid, validateStep, reset],
   );
 
-  return <WizardContext.Provider value={value}>{children}</WizardContext.Provider>;
+  return (
+    <FormProvider {...methods}>
+      <WizardContext.Provider value={value}>{children}</WizardContext.Provider>
+    </FormProvider>
+  );
 }
 
 export function useWizard(): WizardContextValue {
