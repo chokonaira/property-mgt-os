@@ -16,10 +16,20 @@ import type { WizardDraft, WizardDraftInput } from '@/lib/schemas/wizard-draft';
 import { buildCreatePropertyRequest } from '@/lib/wizard-to-create-request';
 
 const FIELD_DETAIL_PREFIX_TO_STEP: Array<[RegExp, string]> = [
-  [/^property\./, '/properties/new'],
+  [/^(property|general)\./, '/properties/new'],
   [/^buildings(\.|$)/, '/properties/new/buildings'],
   [/^units(\.|$)/, '/properties/new/units'],
 ];
+
+// The wire schema (CreatePropertyRequestSchema) reports server paths
+// rooted at `property.…`, while the wizard's RHF form holds the same
+// fields under `general.…`. Translate at the boundary so setError pins
+// the inline error to the actual input rather than a phantom path.
+function serverPathToFormPath(serverPath: string): string {
+  if (serverPath === 'property') return 'general';
+  if (serverPath.startsWith('property.')) return `general.${serverPath.slice('property.'.length)}`;
+  return serverPath;
+}
 
 export function WizardChrome({ children }: { children: ReactNode }) {
   const t = useTranslations('wizard');
@@ -104,7 +114,8 @@ export function WizardChrome({ children }: { children: ReactNode }) {
             const details = error.body.details as Detail[];
             for (const issue of details) {
               if (!issue.path) continue;
-              setError(issue.path as keyof WizardDraftInput, {
+              const formPath = serverPathToFormPath(issue.path);
+              setError(formPath as keyof WizardDraftInput, {
                 type: 'server',
                 message: issue.message ?? tToasts('failureValidation'),
               });

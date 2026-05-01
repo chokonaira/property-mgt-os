@@ -12,9 +12,10 @@ import { FloorSchema, ManagementTypeSchema } from '@buena/shared';
 // format expectation.
 export const WizardGeneralDraftSchema = z.object({
   managementType: ManagementTypeSchema,
-  name: z.string().min(1).max(200),
+  name: z.string().trim().min(1).max(200),
   uniqueNumber: z
     .string()
+    .trim()
     .min(1)
     .max(64)
     .regex(/^[A-Za-z0-9-]+$/),

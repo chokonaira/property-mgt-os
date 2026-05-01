@@ -94,6 +94,18 @@ export class PropertiesService {
    */
   async create(tenantId: string, dto: CreatePropertyRequest): Promise<PropertyDetail> {
     return this.prisma.$transaction(async (tx) => {
+      // Tenant-scoped foreign-key check. The wire schema only proves the
+      // ids are well-formed strings; the only authoritative check is
+      // "does this id belong to MY tenant?". Without this gate a crafted
+      // request could attach another tenant's contact and read it back
+      // through the response. Failing surfaces as a 422 with a path-
+      // pointed detail so the form pins the wrong-tenant id back to its
+      // combobox without leaking whether the id exists elsewhere.
+      await assertTenantOwnsContacts(tx, tenantId, [
+        { path: 'property.propertyManagerId', id: dto.property.propertyManagerId },
+        { path: 'property.accountantId', id: dto.property.accountantId },
+      ]);
+
       const property = await tx.property.create({
         data: {
           tenantId,
@@ -180,6 +192,38 @@ export class PropertiesService {
       return mapPropertyDetail(detail);
     });
   }
+}
+
+interface TenantContactRef {
+  path: string;
+  id: string | undefined;
+}
+
+async function assertTenantOwnsContacts(
+  tx: Prisma.TransactionClient,
+  tenantId: string,
+  refs: TenantContactRef[],
+): Promise<void> {
+  const present = refs.filter((r): r is { path: string; id: string } => Boolean(r.id));
+  if (present.length === 0) return;
+  const ids = present.map((r) => r.id);
+  const owned = await tx.contact.findMany({
+    where: { tenantId, id: { in: ids } },
+    select: { id: true },
+  });
+  const ownedSet = new Set(owned.map((row) => row.id));
+  const offending = present.filter((r) => !ownedSet.has(r.id));
+  if (offending.length === 0) return;
+  throw new AppException(
+    'VALIDATION_FAILED',
+    'One or more contact references are not in this tenant.',
+    HttpStatus.UNPROCESSABLE_ENTITY,
+    offending.map((r) => ({
+      path: r.path,
+      message: 'Contact does not exist or belongs to another tenant.',
+      code: 'invalid_reference',
+    })),
+  );
 }
 
 function unitToData(

@@ -66,14 +66,39 @@ interface PropertyRow {
   buildings: BuildingRow[];
 }
 
-function makePrisma() {
+interface ContactRow {
+  id: string;
+  tenantId: string;
+  name: string;
+  role: string;
+}
+
+function makePrisma(seedContacts: ContactRow[] = []) {
   let nextId = 0;
   const id = (prefix: string) => `${prefix}-${++nextId}`;
   const properties: PropertyRow[] = [];
   const buildings: BuildingRow[] = [];
   const units: UnitRow[] = [];
+  const contacts: ContactRow[] = [...seedContacts];
 
   const tx = {
+    contact: {
+      findMany: vi.fn(
+        async ({
+          where,
+          select,
+        }: {
+          where: { tenantId: string; id: { in: string[] } };
+          select?: { id?: boolean };
+        }) => {
+          const matches = contacts.filter(
+            (c) => c.tenantId === where.tenantId && where.id.in.includes(c.id),
+          );
+          if (select?.id) return matches.map((m) => ({ id: m.id }));
+          return matches;
+        },
+      ),
+    },
     property: {
       create: vi.fn(async ({ data }: { data: Partial<PropertyRow> }) => {
         const row: PropertyRow = {
@@ -150,7 +175,7 @@ function makePrisma() {
 
   const $transaction = vi.fn(async (cb: (tx: typeof prisma) => Promise<unknown>) => cb(prisma));
   const prisma = { ...tx, $transaction } as unknown as PrismaService;
-  return { prisma, tx, $transaction, snapshot: { properties, buildings, units } };
+  return { prisma, tx, $transaction, snapshot: { properties, buildings, units, contacts } };
 }
 
 const baseProperty = {
@@ -298,6 +323,63 @@ describe('PropertiesService.create', () => {
 
     const subCategories = harness.snapshot.units.map((u) => u.subCategory);
     expect(subCategories).toEqual(['duplex', 'P-12']);
+  });
+
+  it('rejects a propertyManagerId that belongs to another tenant', async () => {
+    const harness = makePrisma([
+      { id: 'demo-mgr', tenantId: 'demo', name: 'Demo Mgr', role: 'WEG-Verwalter' },
+      { id: 'other-mgr', tenantId: 'other-tenant', name: 'Other Mgr', role: 'WEG-Verwalter' },
+    ]);
+    const svc = new PropertiesService(harness.prisma);
+    await expect(
+      svc.create('demo', {
+        property: { ...baseProperty, propertyManagerId: 'other-mgr' },
+        buildings: [{ street: 'Hauptstr.', houseNumber: '1', country: 'DE' }],
+        units: [
+          {
+            type: 'APARTMENT',
+            buildingIndex: 0,
+            number: '1',
+            meaShare: 100,
+            sizeSqm: 70,
+            rooms: 2,
+          },
+        ],
+      } satisfies CreatePropertyRequest),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        code: 'VALIDATION_FAILED',
+        details: expect.arrayContaining([
+          expect.objectContaining({ path: 'property.propertyManagerId' }),
+        ]),
+      }),
+    });
+    // No partial state persisted on a tenant-mismatch failure.
+    expect(harness.snapshot.properties).toHaveLength(0);
+    expect(harness.snapshot.buildings).toHaveLength(0);
+    expect(harness.snapshot.units).toHaveLength(0);
+  });
+
+  it('admits a propertyManagerId that belongs to the calling tenant', async () => {
+    const harness = makePrisma([
+      { id: 'demo-mgr', tenantId: 'demo', name: 'Demo Mgr', role: 'WEG-Verwalter' },
+    ]);
+    const svc = new PropertiesService(harness.prisma);
+    await svc.create('demo', {
+      property: { ...baseProperty, propertyManagerId: 'demo-mgr' },
+      buildings: [{ street: 'Hauptstr.', houseNumber: '1', country: 'DE' }],
+      units: [
+        {
+          type: 'APARTMENT',
+          buildingIndex: 0,
+          number: '1',
+          meaShare: 100,
+          sizeSqm: 70,
+          rooms: 2,
+        },
+      ],
+    } satisfies CreatePropertyRequest);
+    expect(harness.snapshot.properties[0]?.propertyManagerId).toBe('demo-mgr');
   });
 
   it('returns the full PropertyDetail with mapped buildings + units', async () => {
