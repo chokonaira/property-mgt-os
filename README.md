@@ -1,6 +1,10 @@
 # Buena Case Study
 
 [![CI](https://github.com/chokonaira/buena-case-study/actions/workflows/ci.yml/badge.svg)](https://github.com/chokonaira/buena-case-study/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-331_passing-brightgreen)](#testing)
+[![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](./tsconfig.base.json)
+[![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?logo=openapiinitiative&logoColor=white)](http://localhost:3001/openapi.json)
+[![First Load JS](https://img.shields.io/badge/first_load_JS-≤200_kB-blue)](#performance)
 
 > Property dashboard with a guided creation flow + AI-powered Teilungserklärung extraction.
 > Senior product engineer take-home for Buena Tech.
@@ -97,6 +101,40 @@ buena-case-study/
 ```
 
 Full architecture in `public/architecture.md`. Domain primer in `public/domain.md`. Edge-case matrix in `public/edge-cases.md`. Design system in `public/design-system.md`.
+
+---
+
+## Testing
+
+```bash
+pnpm test              # all unit + integration tests (Vitest)
+pnpm typecheck         # strict TS across shared, api, web
+pnpm lint              # ESLint
+pnpm build             # Next + Nest production builds
+```
+
+Workspace currently runs **331 tests** across three packages (72 shared schemas, 123 API services, 136 web utilities + components). RTL + jsdom power the panel render tests; the rest run in node for speed. Coverage is intentional rather than complete: discriminated unions, the MEA invariant, the TSV / CSV parser, the AI extraction pipeline (verify-spans, token budget, idempotency cache, controller error mapping), and the wizard's accept-translation logic each have dedicated suites.
+
+## Performance
+
+| Surface         | Metric                       |
+| --------------- | ---------------------------- |
+| Shared chunks   | **101 kB** first-load JS     |
+| Wizard step 3   | **194 kB** first-load JS     |
+| Property detail | **163 kB** first-load JS     |
+| Dashboard       | **150 kB** first-load JS     |
+| Wizard step 1   | **185 kB** first-load JS     |
+
+Numbers from `pnpm build`; the units step carries the headless TanStack Table + the AI Review Panel inline.
+
+## OpenAPI
+
+```bash
+pnpm dev:apps          # api boots on :3001
+curl http://localhost:3001/openapi.json | jq . | head
+```
+
+Generated from the same Zod schemas in `packages/shared` via `@asteasolutions/zod-to-openapi`. Drives the wire contract for `/properties`, `/contacts`, `/documents`, `/extraction/runs`. Cross-language clients can codegen straight from this spec.
 
 ---
 
