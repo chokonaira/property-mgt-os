@@ -81,6 +81,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const [validityHydrated, setValidityHydrated] = useState(false);
   const [declarationFile, setDeclarationFile] = useState<File | undefined>(undefined);
   const validators = useRef<Partial<Record<WizardStepId, ValidatorFn>>>({});
+  // Generation counter — bumped on every reset(). The hydration trigger
+  // pass captures its generation at start and only commits validity if
+  // it still matches at completion, so a Discard mid-hydration cannot
+  // overwrite the freshly-cleared map with stale pre-discard truth.
+  const hydrationGeneration = useRef(0);
 
   const registerValidator = useCallback((step: WizardStepId, fn: ValidatorFn | null) => {
     if (fn) {
@@ -105,7 +110,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   );
 
   const reset = useCallback(() => {
+    // Bump the generation FIRST so any in-flight hydration trigger pass
+    // sees a stale generation when it tries to write back its result.
+    hydrationGeneration.current += 1;
     setValidity(initialValidity);
+    setValidityHydrated(false);
     setDeclarationFile(undefined);
     validators.current = {};
     methods.reset(WIZARD_DRAFT_DEFAULTS);
@@ -120,11 +129,15 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!persistenceHydrated) return;
     let cancelled = false;
+    const myGeneration = hydrationGeneration.current;
     void (async () => {
       const results = await Promise.all(
         WIZARD_STEPS.map(async (step) => [step, await methods.trigger(STEP_FIELDS[step])] as const),
       );
-      if (cancelled) return;
+      // Bail if the effect was torn down OR if reset() bumped the
+      // generation while we were awaiting. Either way the in-flight
+      // result is now stale.
+      if (cancelled || hydrationGeneration.current !== myGeneration) return;
       setValidity((prev) => {
         const next = { ...prev };
         for (const [step, ok] of results) next[step] = ok;
