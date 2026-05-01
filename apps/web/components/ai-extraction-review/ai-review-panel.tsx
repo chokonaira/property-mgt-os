@@ -3,9 +3,10 @@
 import { useMemo } from 'react';
 import { CheckCircle2, Database, Sparkles, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import type { ExtractionResult, ExtractionRunResponse } from '@buena/shared';
+import type { ExtractionResult, ExtractionRunResponse, Floor } from '@buena/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { formatFloor } from '@/lib/format';
 import { ConfidenceChip } from './confidence-chip';
 import { ExtractionWarnings } from './extraction-warnings';
 import { SourceSpanPopover } from './source-span-popover';
@@ -43,6 +44,11 @@ const TRACKED_PROPERTY_FIELDS: ReadonlyArray<{
   { key: 'flurstueck', path: 'property.flurstueck' },
 ];
 
+// `country` is intentionally excluded — the wizard hard-codes it to
+// 'DE' in `buildCreatePropertyRequest` and there's no input on the
+// BuildingCard, so a chip whose only post-accept option is to "edit
+// the value" would never clear. If we ever surface a country picker
+// in the wizard, add it here too.
 const TRACKED_BUILDING_FIELDS: ReadonlyArray<{
   key: keyof ExtractionResult['buildings'][number];
   labelKey: string;
@@ -53,7 +59,6 @@ const TRACKED_BUILDING_FIELDS: ReadonlyArray<{
   { key: 'houseNumber', labelKey: 'houseNumber' },
   { key: 'postalCode', labelKey: 'postalCode' },
   { key: 'city', labelKey: 'city' },
-  { key: 'country', labelKey: 'country' },
   { key: 'yearBuilt', labelKey: 'yearBuilt' },
   { key: 'floorsCount', labelKey: 'floorsCount' },
   { key: 'hasElevator', labelKey: 'hasElevator' },
@@ -221,8 +226,8 @@ export function AiReviewPanel({
                   const display =
                     field.key === 'type'
                       ? typeLabel
-                      : typeof raw === 'object'
-                        ? formatFloor(raw as ExtractionResult['units'][number]['floor' & keyof typeof unit])
+                      : field.key === 'floor'
+                        ? formatFloor(raw as unknown as Floor, '')
                         : String(raw);
                   const path = `units[${idx}].${field.key}`;
                   return [
@@ -329,26 +334,4 @@ function unitTypeLabel(
 
 function booleanLabel(t: ReturnType<typeof useTranslations>, raw: boolean): string {
   return raw ? t('booleans.yes') : t('booleans.no');
-}
-
-interface ExtractedFloor {
-  kind: 'EG' | 'OG' | 'UG' | 'DG' | 'STAFFEL';
-  level?: number;
-  qualifier?: string;
-}
-
-function formatFloor(floor: ExtractedFloor | undefined | null): string {
-  if (!floor) return '';
-  switch (floor.kind) {
-    case 'EG':
-      return 'EG';
-    case 'OG':
-      return floor.qualifier ? `${floor.level}. OG ${floor.qualifier}` : `${floor.level}. OG`;
-    case 'UG':
-      return `${floor.level}. UG`;
-    case 'DG':
-      return 'DG';
-    case 'STAFFEL':
-      return 'Staffel';
-  }
 }

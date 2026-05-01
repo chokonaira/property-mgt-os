@@ -162,6 +162,9 @@ describe('AiReviewPanel', () => {
   });
 
   it('renders building optional fields including booleans', () => {
+    // `country` is intentionally omitted from the panel — the wizard
+    // hard-codes country='DE' in the create-request mapper, so a chip
+    // that "stays until the user changes the value" would never clear.
     const result = makeResult({
       extraction: {
         ...makeResult().extraction,
@@ -171,7 +174,6 @@ describe('AiReviewPanel', () => {
             nickname: 'Park Side',
             street: 'Hauptstr.',
             houseNumber: '12',
-            country: 'DE',
             energyStandard: 'EH-55',
             heating: 'Fernwärme',
             buildingType: 'Mehrfamilienhaus',
@@ -186,7 +188,6 @@ describe('AiReviewPanel', () => {
     const buildingsSection = container.querySelector('[aria-labelledby="ai-review-buildings"]');
     const text = buildingsSection?.textContent ?? '';
     expect(text).toContain('Park Side');
-    expect(text).toContain('DE');
     expect(text).toContain('EH-55');
     expect(text).toContain('Fernwärme');
     expect(text).toContain('Mehrfamilienhaus');
@@ -228,7 +229,11 @@ describe('AiReviewPanel', () => {
     expect(text).toContain('P-12');
   });
 
-  it('renders extracted floor fields formatted by kind', () => {
+  it('renders extracted floor fields via the shared formatFloor helper', () => {
+    // Critical: panel preview MUST agree with the wizard cell trigger
+    // (apps/web/lib/format.ts formatFloor) so a value previewed
+    // pre-accept renders identically post-accept. See format.test.ts
+    // for the canonical formatting matrix.
     const result = makeResult({
       extraction: {
         ...makeResult().extraction,
@@ -248,7 +253,7 @@ describe('AiReviewPanel', () => {
       withIntl(<AiReviewPanel result={result} onAccept={() => {}} onDiscard={() => {}} />),
     );
     const unitsSection = container.querySelector('[aria-labelledby="ai-review-units"]');
-    expect(unitsSection?.textContent).toContain('2. OG links');
+    expect(unitsSection?.textContent).toContain('OG 2 links');
   });
 
   it('shows the dropped-units note only when count > 0', () => {

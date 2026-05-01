@@ -72,7 +72,11 @@ function FloorEditor({
   }
   const kind = value?.kind ?? '';
   const level = value && (value.kind === 'OG' || value.kind === 'UG') ? value.level : undefined;
-  const qualifier = value?.kind === 'STAFFEL' ? value.qualifier : undefined;
+  // OG and STAFFEL both carry an optional qualifier — OG for floor-side
+  // ("links" / "rechts"), STAFFEL for the wing label. We track them in
+  // one slot since only one variant is active at a time.
+  const qualifier =
+    value?.kind === 'STAFFEL' || value?.kind === 'OG' ? value.qualifier : undefined;
 
   function setKind(nextKind: FloorKind | '') {
     if (!nextKind) {
@@ -80,19 +84,40 @@ function FloorEditor({
       return;
     }
     if (nextKind === 'EG' || nextKind === 'DG') onChange({ kind: nextKind });
-    else if (nextKind === 'OG') onChange({ kind: 'OG', level: level ?? 1 });
+    else if (nextKind === 'OG')
+      onChange({
+        kind: 'OG',
+        level: level ?? 1,
+        ...(qualifier ? { qualifier } : {}),
+      });
     else if (nextKind === 'UG') onChange({ kind: 'UG', level: level ?? 1 });
-    else onChange({ kind: 'STAFFEL', qualifier });
+    else onChange({ kind: 'STAFFEL', ...(qualifier ? { qualifier } : {}) });
   }
 
   function setLevel(next: number | undefined) {
     if (!value || (value.kind !== 'OG' && value.kind !== 'UG')) return;
-    if (next == null || Number.isNaN(next)) onChange({ kind: value.kind, level: 1 });
-    else onChange({ kind: value.kind, level: next });
+    if (next == null || Number.isNaN(next)) {
+      if (value.kind === 'OG') {
+        onChange({ kind: 'OG', level: 1, ...(value.qualifier ? { qualifier: value.qualifier } : {}) });
+      } else {
+        onChange({ kind: 'UG', level: 1 });
+      }
+      return;
+    }
+    if (value.kind === 'OG') {
+      onChange({ kind: 'OG', level: next, ...(value.qualifier ? { qualifier: value.qualifier } : {}) });
+    } else {
+      onChange({ kind: 'UG', level: next });
+    }
   }
 
   function setQualifier(next: string) {
-    onChange({ kind: 'STAFFEL', qualifier: next.trim() || undefined });
+    const trimmed = next.trim() || undefined;
+    if (value?.kind === 'OG') {
+      onChange({ kind: 'OG', level: value.level, ...(trimmed ? { qualifier: trimmed } : {}) });
+      return;
+    }
+    onChange({ kind: 'STAFFEL', ...(trimmed ? { qualifier: trimmed } : {}) });
   }
 
   return (
@@ -140,7 +165,7 @@ function FloorEditor({
             />
           </div>
         )}
-        {kind === 'STAFFEL' && (
+        {(kind === 'OG' || kind === 'STAFFEL') && (
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-muted-foreground">{t('qualifier')}</label>
             <input

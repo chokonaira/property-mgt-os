@@ -3,8 +3,9 @@ import type { Floor, Unit } from '@buena/shared';
 import { evaluateMea, formatFloor, formatNumber, formatSqm, sumMea } from '@/lib/format';
 
 describe('formatFloor', () => {
-  it('returns "—" for undefined', () => {
+  it('returns the placeholder for undefined', () => {
     expect(formatFloor(undefined)).toBe('—');
+    expect(formatFloor(undefined, '')).toBe('');
   });
 
   it('handles ground / top floors', () => {
@@ -15,6 +16,12 @@ describe('formatFloor', () => {
   it('formats numbered floors', () => {
     expect(formatFloor({ kind: 'OG', level: 3 } satisfies Floor)).toBe('OG 3');
     expect(formatFloor({ kind: 'UG', level: 1 } satisfies Floor)).toBe('UG 1');
+  });
+
+  it('appends an OG qualifier when provided (panel + form must agree)', () => {
+    expect(formatFloor({ kind: 'OG', level: 2, qualifier: 'links' } satisfies Floor)).toBe(
+      'OG 2 links',
+    );
   });
 
   it('formats Staffel with optional qualifier', () => {

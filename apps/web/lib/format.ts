@@ -1,14 +1,22 @@
 import type { Floor, Unit } from '@buena/shared';
 
-export function formatFloor(floor: Floor | undefined): string {
-  if (!floor) return '—';
+/**
+ * Single source of truth for floor display. Used by both the wizard
+ * unit-table cell trigger and the AI Review Panel — they MUST agree
+ * so a value previewed pre-accept renders identically post-accept.
+ *
+ * `placeholder` is the empty-state string used when no floor is
+ * picked yet ("—" in the wizard cell, "" in the panel preview).
+ */
+export function formatFloor(floor: Floor | undefined, placeholder = '—'): string {
+  if (!floor) return placeholder;
   switch (floor.kind) {
     case 'EG':
       return 'EG';
     case 'DG':
       return 'DG';
     case 'OG':
-      return `OG ${floor.level}`;
+      return floor.qualifier ? `OG ${floor.level} ${floor.qualifier}` : `OG ${floor.level}`;
     case 'UG':
       return `UG ${floor.level}`;
     case 'STAFFEL':
