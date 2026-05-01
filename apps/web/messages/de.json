@@ -230,8 +230,12 @@
       "acceptAll": "Alles übernehmen",
       "discard": "Verwerfen & manuell eingeben",
       "droppedUnits": "{count, plural, one {# Einheit verwies auf ein unbekanntes Gebäude und wurde nicht übernommen.} other {# Einheiten verwiesen auf unbekannte Gebäude und wurden nicht übernommen.}}",
+      "noUnits": "Keine Einheiten aus diesem Dokument extrahiert.",
+      "buildingFallback": "Gebäude {index}",
       "sections": {
         "property": "Objekt",
+        "buildings": "Gebäude",
+        "units": "Einheiten ({count, plural, one {# Einheit} other {# Einheiten}})",
         "summary": "Übersicht"
       },
       "stats": {
@@ -244,7 +248,31 @@
         "name": "Name",
         "uniqueNumber": "Objektnummer",
         "managementType": "Verwaltungsart",
-        "totalMea": "Gesamt-MEA"
+        "totalMea": "Gesamt-MEA",
+        "notarialRollNo": "Urkundenrolle Nr.",
+        "grundbuchOffice": "Grundbuchamt",
+        "grundbuchSheet": "Grundbuchblatt",
+        "gemarkung": "Gemarkung",
+        "flur": "Flur",
+        "flurstueck": "Flurstück"
+      },
+      "building": {
+        "label": "Bezeichnung",
+        "street": "Straße",
+        "houseNumber": "Hausnr.",
+        "postalCode": "PLZ",
+        "city": "Stadt",
+        "yearBuilt": "Baujahr",
+        "floorsCount": "Stockwerke"
+      },
+      "unit": {
+        "type": "Typ",
+        "number": "Nr.",
+        "buildingLabel": "Gebäude",
+        "sizeSqm": "Fläche (m²)",
+        "rooms": "Zimmer",
+        "meaShare": "MEA",
+        "yearBuilt": "Baujahr"
       }
     },
     "chip": {

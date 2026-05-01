@@ -78,25 +78,57 @@ describe('AiReviewPanel', () => {
     expect(screen.getByRole('alert').textContent).toContain('900');
   });
 
-  it('renders building + unit counts in the summary', () => {
+  it('renders a section per extracted building with its address fields', () => {
     const result = makeResult({
       extraction: {
         ...makeResult().extraction,
         buildings: [
-          { label: 'Haus A', street: 'X', houseNumber: '1' },
-          { label: 'Haus B', street: 'Y', houseNumber: '2' },
+          { label: 'Haus A', street: 'Hauptstr.', houseNumber: '1', postalCode: '10115' },
+          { label: 'Haus B', street: 'Nebenstr.', houseNumber: '2', city: 'Berlin' },
         ],
+      },
+    });
+    const { container } = render(
+      withIntl(<AiReviewPanel result={result} onAccept={() => {}} onDiscard={() => {}} />),
+    );
+    // Building label "Haus A" can also appear as a unit row's
+    // buildingLabel cell, so query the buildings section directly.
+    const buildingsSection = container.querySelector('[aria-labelledby="ai-review-buildings"]');
+    expect(buildingsSection).not.toBeNull();
+    const text = buildingsSection?.textContent ?? '';
+    expect(text).toContain('Haus A');
+    expect(text).toContain('Haus B');
+    expect(text).toContain('Hauptstr.');
+    expect(text).toContain('Nebenstr.');
+    expect(text).toContain('10115');
+    expect(text).toContain('Berlin');
+  });
+
+  it('renders one row per extracted unit with its key cells', () => {
+    const result = makeResult({
+      extraction: {
+        ...makeResult().extraction,
         units: [
-          { type: 'APARTMENT', number: '1', buildingLabel: 'Haus A', rooms: 3, sizeSqm: 80 },
+          { type: 'APARTMENT', number: '1.1', buildingLabel: 'Haus A', rooms: 3, sizeSqm: 80 },
           { type: 'PARKING', number: 'P1', buildingLabel: 'Haus A' },
-          { type: 'GARDEN', number: 'G1', buildingLabel: 'Haus B' },
+          { type: 'GARDEN', number: 'G1', buildingLabel: 'Haus A' },
         ],
       },
     });
     render(withIntl(<AiReviewPanel result={result} onAccept={() => {}} onDiscard={() => {}} />));
-    const summary = screen.getByLabelText(/Summary/i);
-    expect(summary.textContent).toContain('2');
-    expect(summary.textContent).toContain('3');
+    expect(screen.getByText('Apartment')).toBeTruthy();
+    expect(screen.getByText('Parking')).toBeTruthy();
+    expect(screen.getByText('Garden')).toBeTruthy();
+    expect(screen.getByText('1.1')).toBeTruthy();
+    expect(screen.getByText('P1')).toBeTruthy();
+    expect(screen.getByText('80')).toBeTruthy();
+    expect(screen.getByText('3')).toBeTruthy();
+  });
+
+  it('shows an empty-state message when no units were extracted', () => {
+    const result = makeResult({ extraction: { ...makeResult().extraction, units: [] } });
+    render(withIntl(<AiReviewPanel result={result} onAccept={() => {}} onDiscard={() => {}} />));
+    expect(screen.getByText(/No units extracted/i)).toBeTruthy();
   });
 
   it('shows the dropped-units note only when count > 0', () => {
@@ -133,7 +165,7 @@ describe('AiReviewPanel', () => {
     expect(onDiscard).toHaveBeenCalledTimes(1);
   });
 
-  it('renders only populated property fields (skips undefined values)', () => {
+  it('renders only populated property fields (skips undefined property values)', () => {
     const result = makeResult({
       extraction: {
         ...makeResult().extraction,
@@ -143,6 +175,8 @@ describe('AiReviewPanel', () => {
     render(withIntl(<AiReviewPanel result={result} onAccept={() => {}} onDiscard={() => {}} />));
     expect(screen.getByText('Skinny')).toBeTruthy();
     expect(screen.getByText('MV')).toBeTruthy();
-    expect(screen.queryByText('—')).toBeNull();
+    // Property section omits empty rows; the unit table renders dashes
+    // for missing per-cell values, which is intentional.
+    expect(screen.queryByText('Unique number')).toBeNull();
   });
 });

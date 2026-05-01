@@ -30,6 +30,25 @@ import { WIZARD_STEPS, type WizardStepId } from './steps';
 type ValidatorFn = () => Promise<boolean> | boolean;
 type StepValidityMap = Record<WizardStepId, boolean>;
 
+/**
+ * Extraction metadata that survives the AI Review Panel "Accept all"
+ * action so the form can render per-field provenance chips against
+ * AI-populated inputs. Contract:
+ *
+ *   confidenceByField: Record<string, number>   (0..1, server-trusted)
+ *   sourceSpansByField: Record<string, string>  (only verified spans)
+ *   editedFields: Set<string>                   (paths the user changed)
+ *
+ * A chip for `<path>` renders only when `editedFields` does NOT contain
+ * the path. Editing a field calls `markFieldEdited(path)`, which clears
+ * the chip until the next extraction lands.
+ */
+export interface WizardExtractionMeta {
+  confidenceByField: Record<string, number>;
+  sourceSpansByField: Record<string, string>;
+  editedFields: ReadonlySet<string>;
+}
+
 interface WizardContextValue {
   validity: StepValidityMap;
   registerValidator: (step: WizardStepId, fn: ValidatorFn | null) => void;
@@ -40,6 +59,11 @@ interface WizardContextValue {
   // doesn't lose their selection when they Back out of step 1.
   declarationFile: File | undefined;
   setDeclarationFile: (file: File | undefined) => void;
+  extractionMeta: WizardExtractionMeta | null;
+  setExtractionMeta: (
+    meta: { confidenceByField: Record<string, number>; sourceSpansByField: Record<string, string> } | null,
+  ) => void;
+  markFieldEdited: (path: string) => void;
   /**
    * False until the persisted draft (if any) has been restored AND
    * each step's validity has been derived from the restored values.
@@ -80,6 +104,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const [validity, setValidity] = useState<StepValidityMap>(initialValidity);
   const [validityHydrated, setValidityHydrated] = useState(false);
   const [declarationFile, setDeclarationFile] = useState<File | undefined>(undefined);
+  const [extractionMeta, setExtractionMetaState] = useState<WizardExtractionMeta | null>(null);
   const validators = useRef<Partial<Record<WizardStepId, ValidatorFn>>>({});
   // Generation counter — bumped on every reset(). The hydration trigger
   // pass captures its generation at start and only commits validity if
@@ -116,10 +141,41 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setValidity(initialValidity);
     setValidityHydrated(false);
     setDeclarationFile(undefined);
+    setExtractionMetaState(null);
     validators.current = {};
     methods.reset(WIZARD_DRAFT_DEFAULTS);
     clearPersistedWizardDraft();
   }, [methods]);
+
+  const setExtractionMeta = useCallback(
+    (
+      meta: {
+        confidenceByField: Record<string, number>;
+        sourceSpansByField: Record<string, string>;
+      } | null,
+    ) => {
+      if (!meta) {
+        setExtractionMetaState(null);
+        return;
+      }
+      setExtractionMetaState({
+        confidenceByField: meta.confidenceByField,
+        sourceSpansByField: meta.sourceSpansByField,
+        editedFields: new Set(),
+      });
+    },
+    [],
+  );
+
+  const markFieldEdited = useCallback((path: string) => {
+    setExtractionMetaState((prev) => {
+      if (!prev) return prev;
+      if (prev.editedFields.has(path)) return prev;
+      const next = new Set(prev.editedFields);
+      next.add(path);
+      return { ...prev, editedFields: next };
+    });
+  }, []);
 
   // After the persisted draft is restored, run schema-level validation per
   // step to seed the validity map with the truth of the *restored* state.
@@ -161,9 +217,23 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       reset,
       declarationFile,
       setDeclarationFile,
+      extractionMeta,
+      setExtractionMeta,
+      markFieldEdited,
       hydrated,
     }),
-    [validity, registerValidator, setStepValid, validateStep, reset, declarationFile, hydrated],
+    [
+      validity,
+      registerValidator,
+      setStepValid,
+      validateStep,
+      reset,
+      declarationFile,
+      extractionMeta,
+      setExtractionMeta,
+      markFieldEdited,
+      hydrated,
+    ],
   );
 
   return (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId } from 'react';
+import { useCallback, useEffect, useId, useMemo } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { AlertCircle, CheckCircle2, Loader2, Sparkles, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -14,6 +14,7 @@ import {
   AiReviewPanel,
   ExtractionErrorBanner,
   ExtractionLoading,
+  FieldChip,
 } from '@/components/ai-extraction-review';
 import { useUploadDocument } from '@/lib/hooks/use-upload-document';
 import { useExtractDocument } from '@/lib/hooks/use-extract-document';
@@ -49,7 +50,8 @@ export function GeneralInfoForm() {
     reset: resetForm,
     getValues,
   } = useFormContext<WizardDraftInput>();
-  const { setStepValid, declarationFile, setDeclarationFile } = useWizard();
+  const { setStepValid, declarationFile, setDeclarationFile, setExtractionMeta, markFieldEdited } =
+    useWizard();
   const tExtraction = useTranslations('extraction');
   const upload = useUploadDocument();
   const extract = useExtractDocument();
@@ -138,9 +140,17 @@ export function GeneralInfoForm() {
     void runExtraction(declarationFile, true);
   };
 
+  // Memoised so the panel and the accept handler share one
+  // translation pass; cheap, but obvious correctness vs. recomputing
+  // the same draft + droppedUnits twice per render.
+  const translation = useMemo(
+    () => (extractionResult ? extractionToWizardDraft(extractionResult.extraction) : null),
+    [extractionResult],
+  );
+
   const handleAcceptExtraction = useCallback(() => {
-    if (!extractionResult) return;
-    const { draft, droppedUnits } = extractionToWizardDraft(extractionResult.extraction);
+    if (!extractionResult || !translation) return;
+    const { draft, droppedUnits } = translation;
     // Preserve any contact ids the user had already picked — extraction
     // never proposes contacts (we never claim to disambiguate names
     // against the local contact directory), so prior picks survive.
@@ -160,6 +170,13 @@ export function GeneralInfoForm() {
       },
       { keepDirty: false, keepTouched: false },
     );
+    // Persist the per-field provenance maps so post-accept inputs can
+    // render inline confidence chips + source popovers next to each
+    // AI-populated value (T-505 AC: chips stay until the user edits).
+    setExtractionMeta({
+      confidenceByField: extractionResult.extraction.confidenceByField,
+      sourceSpansByField: extractionResult.extraction.sourceSpansByField,
+    });
     extract.reset();
     upload.reset();
     setDeclarationFile(undefined);
@@ -168,16 +185,24 @@ export function GeneralInfoForm() {
         ? tExtraction('toasts.acceptedWithDropped', { count: droppedUnits })
         : tExtraction('toasts.accepted'),
     );
-  }, [extractionResult, getValues, resetForm, extract, upload, setDeclarationFile, tExtraction]);
+  }, [
+    extractionResult,
+    translation,
+    getValues,
+    resetForm,
+    extract,
+    upload,
+    setDeclarationFile,
+    setExtractionMeta,
+    tExtraction,
+  ]);
 
   const handleDiscardExtraction = useCallback(() => {
     extract.reset();
     upload.reset();
   }, [extract, upload]);
 
-  const droppedUnits = extractionResult
-    ? extractionToWizardDraft(extractionResult.extraction).droppedUnits
-    : 0;
+  const droppedUnits = translation?.droppedUnits ?? 0;
 
   const showLoading = (isUploading || isExtracting) && !extractionResult;
   const showError = !showLoading && extractionError && !extractionResult;
@@ -204,6 +229,7 @@ export function GeneralInfoForm() {
         label={t('managementType.label')}
         htmlFor={ids.managementType}
         description={t('managementType.help')}
+        adornment={<FieldChip path="property.managementType" fieldLabel={t('managementType.label')} />}
       >
         <Controller
           control={control}
@@ -213,14 +239,22 @@ export function GeneralInfoForm() {
               name="management-type"
               ariaLabel={t('managementType.label')}
               value={field.value}
-              onChange={(v) => field.onChange(v)}
+              onChange={(v) => {
+                markFieldEdited('property.managementType');
+                field.onChange(v);
+              }}
               options={MANAGEMENT_OPTIONS}
             />
           )}
         />
       </Field>
 
-      <Field label={t('name.label')} htmlFor={ids.name} error={nameError}>
+      <Field
+        label={t('name.label')}
+        htmlFor={ids.name}
+        error={nameError}
+        adornment={<FieldChip path="property.name" fieldLabel={t('name.label')} />}
+      >
         <Input
           id={ids.name}
           type="text"
@@ -228,7 +262,9 @@ export function GeneralInfoForm() {
           maxLength={200}
           aria-invalid={Boolean(nameError) || undefined}
           aria-describedby={nameError ? `${ids.name}-error` : undefined}
-          {...register('general.name')}
+          {...register('general.name', {
+            onChange: () => markFieldEdited('property.name'),
+          })}
         />
       </Field>
 
@@ -236,6 +272,7 @@ export function GeneralInfoForm() {
         label={t('uniqueNumber.label')}
         htmlFor={ids.uniqueNumber}
         description={t('uniqueNumber.help')}
+        adornment={<FieldChip path="property.uniqueNumber" fieldLabel={t('uniqueNumber.label')} />}
         error={uniqueError ?? probeErrorMessage}
         hint={
           status.kind === 'pending' ? (
@@ -262,7 +299,9 @@ export function GeneralInfoForm() {
               ? `${ids.uniqueNumber}-error`
               : `${ids.uniqueNumber}-hint`
           }
-          {...register('general.uniqueNumber')}
+          {...register('general.uniqueNumber', {
+            onChange: () => markFieldEdited('property.uniqueNumber'),
+          })}
         />
       </Field>
 
@@ -354,15 +393,20 @@ interface FieldProps {
   description?: string;
   error?: string;
   hint?: React.ReactNode;
+  /** Optional inline affordance rendered next to the label (e.g. an AI provenance chip). */
+  adornment?: React.ReactNode;
   children: React.ReactNode;
 }
 
-function Field({ label, htmlFor, description, error, hint, children }: FieldProps) {
+function Field({ label, htmlFor, description, error, hint, adornment, children }: FieldProps) {
   const errorId = error ? `${htmlFor}-error` : undefined;
   const hintId = !error && hint ? `${htmlFor}-hint` : undefined;
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <div className="flex flex-wrap items-center gap-2">
+        <Label htmlFor={htmlFor}>{label}</Label>
+        {adornment}
+      </div>
       {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
       {children}
       {error ? (

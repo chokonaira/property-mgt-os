@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { FieldChip } from '@/components/ai-extraction-review';
+import { useWizard } from '@/components/wizard/wizard-context';
 import type { WizardDraftInput } from '@/lib/schemas/wizard-draft';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +26,8 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
     formState: { errors },
     watch,
   } = useFormContext<WizardDraftInput>();
+  const { markFieldEdited } = useWizard();
+  const onEdit = (key: string) => () => markFieldEdited(`buildings[${index}].${key}`);
 
   const [collapsed, setCollapsed] = useState(false);
   const [showMore, setShowMore] = useState(false);
@@ -90,13 +94,14 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                 htmlFor={ids.street}
                 error={buildingErrors?.street?.message}
                 required
+                adornment={<FieldChip path={`buildings[${index}].street`} fieldLabel={t('street')} />}
               >
                 <Input
                   id={ids.street}
                   autoComplete="address-line1"
                   maxLength={200}
                   aria-invalid={Boolean(buildingErrors?.street) || undefined}
-                  {...register(`buildings.${index}.street`)}
+                  {...register(`buildings.${index}.street`, { onChange: onEdit('street') })}
                 />
               </FieldRow>
             </div>
@@ -105,13 +110,16 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
               htmlFor={ids.houseNumber}
               error={buildingErrors?.houseNumber?.message}
               required
+              adornment={
+                <FieldChip path={`buildings[${index}].houseNumber`} fieldLabel={t('houseNumber')} />
+              }
             >
               <Input
                 id={ids.houseNumber}
                 autoComplete="address-line2"
                 maxLength={20}
                 aria-invalid={Boolean(buildingErrors?.houseNumber) || undefined}
-                {...register(`buildings.${index}.houseNumber`)}
+                {...register(`buildings.${index}.houseNumber`, { onChange: onEdit('houseNumber') })}
               />
             </FieldRow>
           </div>
@@ -130,13 +138,16 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                   label={t('postalCode')}
                   htmlFor={ids.postalCode}
                   error={buildingErrors?.postalCode?.message}
+                  adornment={
+                    <FieldChip path={`buildings[${index}].postalCode`} fieldLabel={t('postalCode')} />
+                  }
                 >
                   <Input
                     id={ids.postalCode}
                     autoComplete="postal-code"
                     inputMode="numeric"
                     maxLength={5}
-                    {...register(`buildings.${index}.postalCode`)}
+                    {...register(`buildings.${index}.postalCode`, { onChange: onEdit('postalCode') })}
                   />
                 </FieldRow>
                 <div className="sm:col-span-2">
@@ -144,12 +155,13 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                     label={t('city')}
                     htmlFor={ids.city}
                     error={buildingErrors?.city?.message}
+                    adornment={<FieldChip path={`buildings[${index}].city`} fieldLabel={t('city')} />}
                   >
                     <Input
                       id={ids.city}
                       autoComplete="address-level2"
                       maxLength={120}
-                      {...register(`buildings.${index}.city`)}
+                      {...register(`buildings.${index}.city`, { onChange: onEdit('city') })}
                     />
                   </FieldRow>
                 </div>
@@ -160,8 +172,13 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                   htmlFor={ids.label}
                   error={buildingErrors?.label?.message}
                   description={t('labelHelp')}
+                  adornment={<FieldChip path={`buildings[${index}].label`} fieldLabel={t('label')} />}
                 >
-                  <Input id={ids.label} maxLength={64} {...register(`buildings.${index}.label`)} />
+                  <Input
+                    id={ids.label}
+                    maxLength={64}
+                    {...register(`buildings.${index}.label`, { onChange: onEdit('label') })}
+                  />
                 </FieldRow>
                 <FieldRow
                   label={t('nickname')}
@@ -181,6 +198,9 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                   label={t('yearBuilt')}
                   htmlFor={ids.yearBuilt}
                   error={buildingErrors?.yearBuilt?.message}
+                  adornment={
+                    <FieldChip path={`buildings[${index}].yearBuilt`} fieldLabel={t('yearBuilt')} />
+                  }
                 >
                   <Input
                     id={ids.yearBuilt}
@@ -190,6 +210,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                     max={new Date().getFullYear() + 1}
                     {...register(`buildings.${index}.yearBuilt`, {
                       setValueAs: emptyToUndefinedNumber,
+                      onChange: onEdit('yearBuilt'),
                     })}
                   />
                 </FieldRow>
@@ -197,6 +218,12 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                   label={t('floorsCount')}
                   htmlFor={ids.floorsCount}
                   error={buildingErrors?.floorsCount?.message}
+                  adornment={
+                    <FieldChip
+                      path={`buildings[${index}].floorsCount`}
+                      fieldLabel={t('floorsCount')}
+                    />
+                  }
                 >
                   <Input
                     id={ids.floorsCount}
@@ -206,6 +233,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                     max={50}
                     {...register(`buildings.${index}.floorsCount`, {
                       setValueAs: emptyToUndefinedNumber,
+                      onChange: onEdit('floorsCount'),
                     })}
                   />
                 </FieldRow>
@@ -279,16 +307,28 @@ interface FieldRowProps {
   error?: string;
   description?: string;
   required?: boolean;
+  adornment?: React.ReactNode;
   children: React.ReactNode;
 }
 
-function FieldRow({ label, htmlFor, error, description, required, children }: FieldRowProps) {
+function FieldRow({
+  label,
+  htmlFor,
+  error,
+  description,
+  required,
+  adornment,
+  children,
+}: FieldRowProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={htmlFor}>
-        {label}
-        {required ? <span className="ml-0.5 text-destructive">*</span> : null}
-      </Label>
+      <div className="flex flex-wrap items-center gap-2">
+        <Label htmlFor={htmlFor}>
+          {label}
+          {required ? <span className="ml-0.5 text-destructive">*</span> : null}
+        </Label>
+        {adornment}
+      </div>
       {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
       {children}
       {error ? (
