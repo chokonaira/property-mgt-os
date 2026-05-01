@@ -52,14 +52,31 @@ async function readPages(doc: PdfDocumentProxyLike): Promise<ExtractedPage[]> {
   return pages;
 }
 
+/**
+ * Both unpdf and the legacy pdfjs bundle perform a strict tag check
+ * (`Object.prototype.toString.call(x) === '[object Uint8Array]'`) and
+ * reject Node `Buffer` even though `Buffer extends Uint8Array`. We
+ * normalise to a plain (non-Buffer) Uint8Array view here so callers
+ * can pass either shape from disk reads or HTTP buffers.
+ *
+ * Using `new Uint8Array(buffer.buffer, byteOffset, byteLength)`
+ * creates a zero-copy view into the same backing memory; we don't
+ * need to clone the bytes.
+ */
+function asPlainUint8Array(buffer: Buffer | Uint8Array): Uint8Array {
+  if (Buffer.isBuffer(buffer)) {
+    return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  }
+  return buffer;
+}
+
 export async function unpdfExtract(buffer: Buffer | Uint8Array): Promise<ExtractedPage[]> {
   const { getDocumentProxy } = await import('unpdf');
-  const data = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   // unpdf's getDocumentProxy hands back the underlying pdfjs
   // document with its serverless-friendly defaults (no worker,
   // font fallback sorted). We walk pages ourselves so positions
   // land on every item — same shape as the pdfjs-direct fallback.
-  const doc = (await getDocumentProxy(data)) as unknown as PdfDocumentProxyLike;
+  const doc = (await getDocumentProxy(asPlainUint8Array(buffer))) as unknown as PdfDocumentProxyLike;
   return readPages(doc);
 }
 
@@ -70,9 +87,8 @@ export async function pdfjsExtract(buffer: Buffer | Uint8Array): Promise<Extract
   // exec-from-PDF regressions even though the current dep is
   // patched.
   const pdfjs = (await import('pdfjs-dist/legacy/build/pdf.mjs')) as typeof pdfjsTypes;
-  const data = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   const params = {
-    data,
+    data: asPlainUint8Array(buffer),
     disableFontFace: true,
     isEvalSupported: false,
   } as Parameters<typeof pdfjs.getDocument>[0];
