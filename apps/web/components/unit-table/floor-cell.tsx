@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -51,6 +51,20 @@ function FloorEditor({
   t: (key: string) => string;
 }) {
   const [open, setOpen] = useState(false);
+  // Snapshot the floor value at the moment the popover opens so an
+  // Escape inside the popover can revert any pending edits — the
+  // outer container-level cell-navigation handler can't see this
+  // because Radix portals popover content outside the table tree.
+  const snapshotOnOpen = useRef<Floor | undefined>(undefined);
+  function handleOpenChange(next: boolean) {
+    if (next) snapshotOnOpen.current = value;
+    setOpen(next);
+  }
+  function handleEscape() {
+    // Only revert when the user actually changed something. Don't
+    // preventDefault — Radix should still close the popover on Esc.
+    if (snapshotOnOpen.current !== value) onChange(snapshotOnOpen.current);
+  }
   const kind = value?.kind ?? '';
   const level = value && (value.kind === 'OG' || value.kind === 'UG') ? value.level : undefined;
   const qualifier = value?.kind === 'STAFFEL' ? value.qualifier : undefined;
@@ -77,7 +91,7 @@ function FloorEditor({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         data-cell-row={rowIndex}
         data-cell-col="floor"
@@ -91,7 +105,7 @@ function FloorEditor({
         <span className="truncate">{value ? formatFloor(value) : t('empty')}</span>
         <ChevronDown className="h-3 w-3 shrink-0" aria-hidden="true" />
       </PopoverTrigger>
-      <PopoverContent className="flex w-56 flex-col gap-3">
+      <PopoverContent onEscapeKeyDown={handleEscape} className="flex w-56 flex-col gap-3">
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">{t('kind')}</label>
           <select

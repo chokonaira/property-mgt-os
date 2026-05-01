@@ -86,16 +86,39 @@ function focusCell(el: HTMLElement) {
   }
 }
 
+type Capturable = HTMLInputElement | HTMLSelectElement;
+
+function isCapturable(el: Element | null): el is Capturable {
+  if (!el) return false;
+  if (el.tagName === 'SELECT') return true;
+  return isTextLikeInput(el);
+}
+
+// Use the React-aware property setter so RHF's onChange path picks up
+// the revert. Selects fire `change`; inputs fire `input`. We dispatch
+// both for safety — React listens on the appropriate one per element.
+function revertNativeValue(target: Capturable, original: string) {
+  const proto = Object.getPrototypeOf(target) as Capturable;
+  const descriptor = Object.getOwnPropertyDescriptor(proto, 'value');
+  descriptor?.set?.call(target, original);
+  target.dispatchEvent(new Event('input', { bubbles: true }));
+  target.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
 export function useCellNavigation() {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  // Capture each input's value on focus, indexed by the focused element.
-  // A WeakMap keeps memory bounded — when a row is removed and its inputs
-  // are GC'd, the captured values go with them.
-  const capturedValues = useRef(new WeakMap<HTMLInputElement, string>());
+  // Capture each cell's value on focus, indexed by the focused element.
+  // A WeakMap keeps memory bounded — when a row is removed and its
+  // inputs/selects are GC'd, the captured values go with them. Covers
+  // both <input type="text|number|...">  and native <select> cells.
+  // The floor cell's PopoverTrigger is a button with no editable value
+  // at the trigger level; that revert is handled inside FloorCell on
+  // the popover's onEscapeKeyDown.
+  const capturedValues = useRef(new WeakMap<Capturable, string>());
 
   const onFocus = useCallback((event: React.FocusEvent<HTMLDivElement>) => {
     const target = event.target;
-    if (target instanceof HTMLInputElement && isTextLikeInput(target)) {
+    if (isCapturable(target)) {
       capturedValues.current.set(target, target.value);
     }
   }, []);
@@ -121,15 +144,10 @@ export function useCellNavigation() {
     if ((action === 'up' || action === 'down') && target.tagName === 'SELECT') return;
 
     if (action === 'revert') {
-      if (target instanceof HTMLInputElement && isTextLikeInput(target)) {
+      if (isCapturable(target)) {
         const original = capturedValues.current.get(target);
         if (original !== undefined && original !== target.value) {
-          // Use the React-aware setter so RHF's onChange fires and the
-          // form state matches the visible value.
-          const proto = Object.getPrototypeOf(target) as HTMLInputElement;
-          const descriptor = Object.getOwnPropertyDescriptor(proto, 'value');
-          descriptor?.set?.call(target, original);
-          target.dispatchEvent(new Event('input', { bubbles: true }));
+          revertNativeValue(target, original);
         }
       }
       target.blur();
