@@ -160,9 +160,12 @@ export function GeneralInfoForm() {
     }
     if (lastLoggedError.current === extractionError) return;
     lastLoggedError.current = extractionError;
-    const documentId = extract.data?.runId ?? upload.data?.id;
-    logExtractionFailure(documentId, extractionError);
-  }, [extractionError, extract.data, upload.data]);
+    // Document id, not run id. The ExtractionRunResponse's `runId`
+    // is the run's primary key (only present on success); on the
+    // failure path the documentId is the most we know — what we
+    // tried to extract.
+    logExtractionFailure(upload.data?.id, extractionError);
+  }, [extractionError, upload.data]);
 
   // Memoised so the panel and the accept handler share one
   // translation pass; cheap, but obvious correctness vs. recomputing
