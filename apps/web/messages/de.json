@@ -30,6 +30,45 @@
     "next": "Weiter",
     "discard": "Entwurf verwerfen",
     "discardConfirm": "Entwurf wirklich verwerfen? Alle Eingaben gehen verloren.",
+    "general": {
+      "managementType": {
+        "label": "Verwaltungsart",
+        "help": "WEG-Gemeinschaften benötigen eine Teilungserklärung; MV-Verwaltungen nicht."
+      },
+      "name": { "label": "Objektname" },
+      "uniqueNumber": {
+        "label": "Objektnummer",
+        "checking": "Verfügbarkeit wird geprüft…",
+        "available": "Verfügbar."
+      },
+      "manager": {
+        "label": "Verwalter",
+        "help": "Bestehenden Verwalter wählen oder einen neuen anlegen."
+      },
+      "accountant": {
+        "label": "Buchhaltung",
+        "help": "Bestehende Buchhaltung wählen oder eine neue anlegen."
+      },
+      "upload": {
+        "label": "Teilungserklärung (optional)",
+        "help": "Nur PDF. Wir verarbeiten sie noch nicht — die KI-Extraktion folgt in einem späteren Ticket.",
+        "dropzone": "PDF hier ablegen oder klicken zum Auswählen",
+        "limits": "Nur PDF, bis zu {mb} MB.",
+        "wrongType": "Es werden nur PDF-Dateien akzeptiert.",
+        "tooLarge": "Datei überschreitet das Limit von {mb} MB.",
+        "remove": "Entfernen"
+      },
+      "contacts": {
+        "placeholder": "Auswählen…",
+        "loading": "Wird geladen…",
+        "error": "Kontakte konnten nicht geladen werden.",
+        "create": "Neu anlegen",
+        "createComingSoon": "Inline-Kontaktanlage folgt in T-203."
+      },
+      "errors": {
+        "uniqueTaken": "Diese Nummer wird bereits von einer anderen Immobilie verwendet."
+      }
+    },
     "placeholders": {
       "general": {
         "title": "Formular Allgemeine Angaben",

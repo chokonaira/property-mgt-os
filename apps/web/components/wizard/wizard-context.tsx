@@ -12,6 +12,8 @@ import {
 } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslations } from 'next-intl';
+import { zodI18nResolver } from '@/lib/zod-i18n';
 import {
   STEP_FIELDS,
   WIZARD_DRAFT_DEFAULTS,
@@ -46,9 +48,12 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   // in STEP_FIELDS. Step components can still register a custom
   // validator (e.g. when they cross-check against the API) — registered
   // validators take precedence over the schema trigger.
+  // Route Zod errors through the next-intl resolver so messages render
+  // in the active locale rather than the library default English copy.
+  const tErr = useTranslations('errors');
   const methods = useForm<WizardDraftInput, unknown, WizardDraft>({
     defaultValues: WIZARD_DRAFT_DEFAULTS,
-    resolver: zodResolver(WizardDraftSchema),
+    resolver: zodResolver(WizardDraftSchema, { errorMap: zodI18nResolver(tErr) }),
     mode: 'onTouched',
   });
 

@@ -30,6 +30,45 @@
     "next": "Next",
     "discard": "Discard draft",
     "discardConfirm": "Discard this draft? Any entered data will be lost.",
+    "general": {
+      "managementType": {
+        "label": "Management type",
+        "help": "WEG ownership communities require a Teilungserklärung; MV-managed properties don't."
+      },
+      "name": { "label": "Property name" },
+      "uniqueNumber": {
+        "label": "Unique number",
+        "checking": "Checking availability…",
+        "available": "Available."
+      },
+      "manager": {
+        "label": "Property manager",
+        "help": "Choose an existing manager or create a new one."
+      },
+      "accountant": {
+        "label": "Accountant",
+        "help": "Choose an existing accountant or create a new one."
+      },
+      "upload": {
+        "label": "Teilungserklärung (optional)",
+        "help": "PDF only. We won't process it yet — extraction lands in a later ticket.",
+        "dropzone": "Drop a PDF here or click to browse",
+        "limits": "PDF only, up to {mb} MB.",
+        "wrongType": "Only PDF files are accepted.",
+        "tooLarge": "File exceeds the {mb} MB limit.",
+        "remove": "Remove"
+      },
+      "contacts": {
+        "placeholder": "Choose…",
+        "loading": "Loading…",
+        "error": "Couldn't load contacts.",
+        "create": "Create new",
+        "createComingSoon": "Inline contact creation lands in T-203."
+      },
+      "errors": {
+        "uniqueTaken": "This number is already in use by another property."
+      }
+    },
     "placeholders": {
       "general": {
         "title": "General info form",
