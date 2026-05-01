@@ -13,6 +13,8 @@
     "createCta": "Create new property",
     "empty": "No properties yet. Create your first.",
     "rowAriaLabel": "Open {name}",
+    "savingRow": "Saving {name}…",
+    "saving": "Saving",
     "columns": {
       "name": "Name",
       "type": "Type",

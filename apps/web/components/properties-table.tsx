@@ -1,13 +1,15 @@
 'use client';
 
-import { Building2, RefreshCw } from 'lucide-react';
+import { Building2, Loader2, RefreshCw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { PropertyListItem } from '@buena/shared';
 import { Link } from '@/i18n/navigation';
 import { useProperties } from '@/lib/hooks/use-properties';
+import { isOptimisticId } from '@/lib/optimistic-id';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -79,8 +81,38 @@ export function PropertiesTable() {
 
 function PropertyRow({ property }: { property: PropertyListItem }) {
   const t = useTranslations('dashboard');
+  // Optimistic placeholder: the row was inserted into the cache
+  // before the server confirmed the create. Render as a
+  // non-clickable saving indicator so the user never lands on a
+  // 404 detail page mid-flight.
+  if (isOptimisticId(property.id)) {
+    return (
+      <TableRow
+        className="opacity-60"
+        aria-label={t('savingRow', { name: property.name })}
+      >
+        <TableCell className="font-medium text-foreground">
+          <span className="inline-flex items-center gap-2">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" aria-hidden="true" />
+            <span>{property.name}</span>
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              {t('saving')}
+            </span>
+          </span>
+        </TableCell>
+        <TableCell>
+          <Badge variant={property.managementType === 'WEG' ? 'weg' : 'mv'}>
+            {property.managementType}
+          </Badge>
+        </TableCell>
+        <TableCell className="font-mono text-xs text-muted-foreground">
+          {property.uniqueNumber}
+        </TableCell>
+      </TableRow>
+    );
+  }
   return (
-    <TableRow className="group relative cursor-pointer focus-within:bg-muted/50">
+    <TableRow className={cn('group relative cursor-pointer focus-within:bg-muted/50')}>
       <TableCell className="font-medium text-foreground">
         <Link
           href={`/properties/${property.id}`}

@@ -13,6 +13,8 @@
     "createCta": "Neue Immobilie anlegen",
     "empty": "Noch keine Immobilien. Legen Sie Ihre erste an.",
     "rowAriaLabel": "{name} öffnen",
+    "savingRow": "{name} wird gespeichert…",
+    "saving": "Speichern",
     "columns": {
       "name": "Name",
       "type": "Typ",
