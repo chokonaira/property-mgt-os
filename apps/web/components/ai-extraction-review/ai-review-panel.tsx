@@ -25,12 +25,17 @@ interface FieldRowProps {
   span?: string;
 }
 
-const TRACKED_PROPERTY_FIELDS: ReadonlyArray<{ key: keyof ExtractionResult['property']; path: string }> = [
+const TRACKED_PROPERTY_FIELDS: ReadonlyArray<{
+  key: keyof ExtractionResult['property'];
+  path: string;
+}> = [
   { key: 'name', path: 'property.name' },
   { key: 'uniqueNumber', path: 'property.uniqueNumber' },
   { key: 'managementType', path: 'property.managementType' },
   { key: 'totalMea', path: 'property.totalMea' },
+  { key: 'totalAreaSqm', path: 'property.totalAreaSqm' },
   { key: 'notarialRollNo', path: 'property.notarialRollNo' },
+  { key: 'notarizedAt', path: 'property.notarizedAt' },
   { key: 'grundbuchOffice', path: 'property.grundbuchOffice' },
   { key: 'grundbuchSheet', path: 'property.grundbuchSheet' },
   { key: 'gemarkung', path: 'property.gemarkung' },
@@ -43,17 +48,52 @@ const TRACKED_BUILDING_FIELDS: ReadonlyArray<{
   labelKey: string;
 }> = [
   { key: 'label', labelKey: 'label' },
+  { key: 'nickname', labelKey: 'nickname' },
   { key: 'street', labelKey: 'street' },
   { key: 'houseNumber', labelKey: 'houseNumber' },
   { key: 'postalCode', labelKey: 'postalCode' },
   { key: 'city', labelKey: 'city' },
+  { key: 'country', labelKey: 'country' },
   { key: 'yearBuilt', labelKey: 'yearBuilt' },
   { key: 'floorsCount', labelKey: 'floorsCount' },
+  { key: 'hasElevator', labelKey: 'hasElevator' },
+  { key: 'energyStandard', labelKey: 'energyStandard' },
+  { key: 'heating', labelKey: 'heating' },
+  { key: 'buildingType', labelKey: 'buildingType' },
 ];
 
-type UnitFieldKey = 'number' | 'buildingLabel' | 'sizeSqm' | 'rooms' | 'meaShare' | 'yearBuilt';
+const COMMON_UNIT_FIELDS: ReadonlyArray<{ key: string; labelKey: string }> = [
+  { key: 'type', labelKey: 'type' },
+  { key: 'number', labelKey: 'number' },
+  { key: 'buildingLabel', labelKey: 'buildingLabel' },
+  { key: 'floor', labelKey: 'floor' },
+  { key: 'entranceLabel', labelKey: 'entranceLabel' },
+  { key: 'entranceNote', labelKey: 'entranceNote' },
+  { key: 'sizeSqm', labelKey: 'sizeSqm' },
+  { key: 'meaShare', labelKey: 'meaShare' },
+  { key: 'yearBuilt', labelKey: 'yearBuilt' },
+  { key: 'description', labelKey: 'description' },
+];
 
-export function AiReviewPanel({ result, onAccept, onDiscard, droppedUnits = 0 }: AiReviewPanelProps) {
+const VARIANT_UNIT_FIELDS: Record<
+  ExtractionResult['units'][number]['type'],
+  ReadonlyArray<{ key: string; labelKey: string }>
+> = {
+  APARTMENT: [
+    { key: 'rooms', labelKey: 'rooms' },
+    { key: 'subCategory', labelKey: 'subCategory' },
+  ],
+  OFFICE: [{ key: 'layoutNote', labelKey: 'layoutNote' }],
+  PARKING: [{ key: 'parkingCode', labelKey: 'parkingCode' }],
+  GARDEN: [],
+};
+
+export function AiReviewPanel({
+  result,
+  onAccept,
+  onDiscard,
+  droppedUnits = 0,
+}: AiReviewPanelProps) {
   const t = useTranslations('extraction.panel');
   const tFields = useTranslations('extraction.fields');
   const tUnitTypes = useTranslations('wizard.units.types');
@@ -108,7 +148,10 @@ export function AiReviewPanel({ result, onAccept, onDiscard, droppedUnits = 0 }:
             <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
             {t('overall', { score: overallConfidence })}
           </span>
-          <span className="text-xs text-muted-foreground" aria-label={t('durationAria', { seconds })}>
+          <span
+            className="text-xs text-muted-foreground"
+            aria-label={t('durationAria', { seconds })}
+          >
             {t('duration', { seconds })}
           </span>
         </div>
@@ -127,7 +170,8 @@ export function AiReviewPanel({ result, onAccept, onDiscard, droppedUnits = 0 }:
         <Section title={t('sections.buildings')} id="ai-review-buildings">
           <ul className="flex flex-col gap-3">
             {result.extraction.buildings.map((building, idx) => {
-              const cardLabel = building.label || building.nickname || t('buildingFallback', { index: idx + 1 });
+              const cardLabel =
+                building.label || building.nickname || t('buildingFallback', { index: idx + 1 });
               const rows: FieldRowProps[] = TRACKED_BUILDING_FIELDS.flatMap((field) => {
                 const raw = building[field.key];
                 if (raw === undefined || raw === null || raw === '') return [];
@@ -135,7 +179,7 @@ export function AiReviewPanel({ result, onAccept, onDiscard, droppedUnits = 0 }:
                 return [
                   {
                     label: tFields(`building.${field.labelKey}`),
-                    value: String(raw),
+                    value: typeof raw === 'boolean' ? booleanLabel(t, raw) : String(raw),
                     fieldPath: path,
                     confidence: confidenceMap[path],
                     span: verifiedSpans[path],
@@ -159,41 +203,60 @@ export function AiReviewPanel({ result, onAccept, onDiscard, droppedUnits = 0 }:
           </ul>
         </Section>
 
-        <Section title={t('sections.units', { count: result.extraction.units.length })} id="ai-review-units">
+        <Section
+          title={t('sections.units', { count: result.extraction.units.length })}
+          id="ai-review-units"
+        >
           {result.extraction.units.length === 0 ? (
             <p className="text-xs text-muted-foreground">{t('noUnits')}</p>
           ) : (
-            <div className="overflow-x-auto rounded-md border border-border/60">
-              <table className="w-full min-w-[640px] border-collapse text-left text-xs">
-                <thead className="bg-muted/40 text-[10px] uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2 font-semibold">{tFields('unit.type')}</th>
-                    <th className="px-3 py-2 font-semibold">{tFields('unit.number')}</th>
-                    <th className="px-3 py-2 font-semibold">{tFields('unit.buildingLabel')}</th>
-                    <th className="px-3 py-2 font-semibold">{tFields('unit.sizeSqm')}</th>
-                    <th className="px-3 py-2 font-semibold">{tFields('unit.rooms')}</th>
-                    <th className="px-3 py-2 font-semibold">{tFields('unit.meaShare')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.extraction.units.map((unit, idx) => (
-                    <UnitRow
-                      key={`unit-${idx}`}
-                      idx={idx}
-                      unit={unit}
-                      typeLabel={unitTypeLabel(tUnitTypes, unit.type)}
-                      confidenceMap={confidenceMap}
-                      verifiedSpans={verifiedSpans}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ul className="flex flex-col gap-3">
+              {result.extraction.units.map((unit, idx) => {
+                const fields = [...COMMON_UNIT_FIELDS, ...VARIANT_UNIT_FIELDS[unit.type]];
+                const typeLabel = unitTypeLabel(tUnitTypes, unit.type);
+                const headline = `${typeLabel} · ${unit.number || `#${idx + 1}`}`;
+                const rows: FieldRowProps[] = fields.flatMap((field) => {
+                  const raw = unit[field.key as keyof typeof unit];
+                  if (raw === undefined || raw === null || raw === '') return [];
+                  const display =
+                    field.key === 'type'
+                      ? typeLabel
+                      : typeof raw === 'object'
+                        ? formatFloor(raw as ExtractionResult['units'][number]['floor' & keyof typeof unit])
+                        : String(raw);
+                  const path = `units[${idx}].${field.key}`;
+                  return [
+                    {
+                      label: tFields(`unit.${field.labelKey}`),
+                      value: display,
+                      fieldPath: path,
+                      confidence: confidenceMap[path],
+                      span: verifiedSpans[path],
+                    },
+                  ];
+                });
+                return (
+                  <li
+                    key={`unit-${idx}`}
+                    className="flex flex-col gap-2 rounded-md border border-border/60 bg-muted/20 p-3"
+                  >
+                    <p className="text-xs font-semibold text-foreground">{headline}</p>
+                    <ul className="flex flex-col gap-2">
+                      {rows.map((row) => (
+                        <FieldRow key={row.fieldPath} {...row} />
+                      ))}
+                    </ul>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </Section>
 
         {droppedUnits > 0 ? (
-          <p className="text-xs text-muted-foreground">{t('droppedUnits', { count: droppedUnits })}</p>
+          <p className="text-xs text-muted-foreground">
+            {t('droppedUnits', { count: droppedUnits })}
+          </p>
         ) : null}
 
         <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
@@ -211,10 +274,21 @@ export function AiReviewPanel({ result, onAccept, onDiscard, droppedUnits = 0 }:
   );
 }
 
-function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+function Section({
+  id,
+  title,
+  children,
+}: {
+  id: string;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="flex flex-col gap-3" aria-labelledby={id}>
-      <h3 id={id} className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <h3
+        id={id}
+        className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+      >
         {title}
       </h3>
       {children}
@@ -237,48 +311,10 @@ function FieldRow({ label, value, confidence, span }: FieldRowProps) {
   );
 }
 
-interface UnitRowProps {
-  idx: number;
-  unit: ExtractionResult['units'][number];
-  typeLabel: string;
-  confidenceMap: ExtractionResult['confidenceByField'];
-  verifiedSpans: ExtractionResult['sourceSpansByField'];
-}
-
-function UnitRow({ idx, unit, typeLabel, confidenceMap, verifiedSpans }: UnitRowProps) {
-  const cell = (key: UnitFieldKey) => {
-    const raw = unit[key as keyof typeof unit];
-    if (raw === undefined || raw === null || raw === '') {
-      return <span className="text-muted-foreground/60">—</span>;
-    }
-    const path = `units[${idx}].${key}`;
-    const score = confidenceMap[path];
-    const span = verifiedSpans[path];
-    return (
-      <div className="flex flex-col gap-0.5">
-        <span className="font-medium text-foreground">{String(raw)}</span>
-        <div className="flex items-center gap-1.5">
-          <ConfidenceChip score={score} verified={Boolean(span)} />
-          <SourceSpanPopover span={span} fieldLabel={String(key)} />
-        </div>
-      </div>
-    );
-  };
-  return (
-    <tr className="border-t border-border/60 align-top">
-      <td className="px-3 py-2">
-        <span className="font-semibold text-foreground">{typeLabel}</span>
-      </td>
-      <td className="px-3 py-2">{cell('number')}</td>
-      <td className="px-3 py-2">{cell('buildingLabel')}</td>
-      <td className="px-3 py-2">{cell('sizeSqm')}</td>
-      <td className="px-3 py-2">{cell('rooms')}</td>
-      <td className="px-3 py-2">{cell('meaShare')}</td>
-    </tr>
-  );
-}
-
-function unitTypeLabel(t: ReturnType<typeof useTranslations>, type: ExtractionResult['units'][number]['type']): string {
+function unitTypeLabel(
+  t: ReturnType<typeof useTranslations>,
+  type: ExtractionResult['units'][number]['type'],
+): string {
   switch (type) {
     case 'APARTMENT':
       return t('APARTMENT');
@@ -288,5 +324,31 @@ function unitTypeLabel(t: ReturnType<typeof useTranslations>, type: ExtractionRe
       return t('PARKING');
     case 'GARDEN':
       return t('GARDEN');
+  }
+}
+
+function booleanLabel(t: ReturnType<typeof useTranslations>, raw: boolean): string {
+  return raw ? t('booleans.yes') : t('booleans.no');
+}
+
+interface ExtractedFloor {
+  kind: 'EG' | 'OG' | 'UG' | 'DG' | 'STAFFEL';
+  level?: number;
+  qualifier?: string;
+}
+
+function formatFloor(floor: ExtractedFloor | undefined | null): string {
+  if (!floor) return '';
+  switch (floor.kind) {
+    case 'EG':
+      return 'EG';
+    case 'OG':
+      return floor.qualifier ? `${floor.level}. OG ${floor.qualifier}` : `${floor.level}. OG`;
+    case 'UG':
+      return `${floor.level}. UG`;
+    case 'DG':
+      return 'DG';
+    case 'STAFFEL':
+      return 'Staffel';
   }
 }

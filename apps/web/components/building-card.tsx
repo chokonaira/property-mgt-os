@@ -185,11 +185,14 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                   htmlFor={ids.nickname}
                   error={buildingErrors?.nickname?.message}
                   description={t('nicknameHelp')}
+                  adornment={
+                    <FieldChip path={`buildings[${index}].nickname`} fieldLabel={t('nickname')} />
+                  }
                 >
                   <Input
                     id={ids.nickname}
                     maxLength={64}
-                    {...register(`buildings.${index}.nickname`)}
+                    {...register(`buildings.${index}.nickname`, { onChange: onEdit('nickname') })}
                   />
                 </FieldRow>
               </div>
@@ -237,7 +240,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                     })}
                   />
                 </FieldRow>
-                <div className="flex items-end">
+                <div className="flex items-end gap-2">
                   <label
                     htmlFor={ids.hasElevator}
                     className="inline-flex h-10 cursor-pointer select-none items-center gap-2 text-sm font-medium text-foreground"
@@ -246,10 +249,16 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                       id={ids.hasElevator}
                       type="checkbox"
                       className="h-4 w-4 rounded border border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
-                      {...register(`buildings.${index}.hasElevator`)}
+                      {...register(`buildings.${index}.hasElevator`, {
+                        onChange: onEdit('hasElevator'),
+                      })}
                     />
                     {t('hasElevator')}
                   </label>
+                  <FieldChip
+                    path={`buildings[${index}].hasElevator`}
+                    fieldLabel={t('hasElevator')}
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -257,33 +266,52 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                   label={t('energyStandard')}
                   htmlFor={ids.energyStandard}
                   error={buildingErrors?.energyStandard?.message}
+                  adornment={
+                    <FieldChip
+                      path={`buildings[${index}].energyStandard`}
+                      fieldLabel={t('energyStandard')}
+                    />
+                  }
                 >
                   <Input
                     id={ids.energyStandard}
                     maxLength={40}
-                    {...register(`buildings.${index}.energyStandard`)}
+                    {...register(`buildings.${index}.energyStandard`, {
+                      onChange: onEdit('energyStandard'),
+                    })}
                   />
                 </FieldRow>
                 <FieldRow
                   label={t('heating')}
                   htmlFor={ids.heating}
                   error={buildingErrors?.heating?.message}
+                  adornment={
+                    <FieldChip path={`buildings[${index}].heating`} fieldLabel={t('heating')} />
+                  }
                 >
                   <Input
                     id={ids.heating}
                     maxLength={60}
-                    {...register(`buildings.${index}.heating`)}
+                    {...register(`buildings.${index}.heating`, { onChange: onEdit('heating') })}
                   />
                 </FieldRow>
                 <FieldRow
                   label={t('buildingType')}
                   htmlFor={ids.buildingType}
                   error={buildingErrors?.buildingType?.message}
+                  adornment={
+                    <FieldChip
+                      path={`buildings[${index}].buildingType`}
+                      fieldLabel={t('buildingType')}
+                    />
+                  }
                 >
                   <Input
                     id={ids.buildingType}
                     maxLength={60}
-                    {...register(`buildings.${index}.buildingType`)}
+                    {...register(`buildings.${index}.buildingType`, {
+                      onChange: onEdit('buildingType'),
+                    })}
                   />
                 </FieldRow>
               </div>

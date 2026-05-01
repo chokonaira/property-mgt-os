@@ -6,6 +6,7 @@ import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { Floor } from '@buena/shared';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useWizard } from '@/components/wizard/wizard-context';
 import { formatFloor } from '@/lib/format';
 import type { WizardDraftInput } from '@/lib/schemas/wizard-draft';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ interface FloorCellProps {
 export function FloorCell({ rowIndex }: FloorCellProps) {
   const t = useTranslations('wizard.units.floor');
   const { control } = useFormContext<WizardDraftInput>();
+  const { markFieldEdited } = useWizard();
   return (
     <Controller
       control={control}
@@ -28,7 +30,10 @@ export function FloorCell({ rowIndex }: FloorCellProps) {
         <FloorEditor
           rowIndex={rowIndex}
           value={field.value as Floor | undefined}
-          onChange={(next) => field.onChange(next)}
+          onChange={(next) => {
+            markFieldEdited(`units[${rowIndex}].floor`);
+            field.onChange(next);
+          }}
           invalid={Boolean(fieldState.error)}
           t={t}
         />

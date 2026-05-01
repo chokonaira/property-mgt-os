@@ -232,6 +232,10 @@
       "droppedUnits": "{count, plural, one {# Einheit verwies auf ein unbekanntes Gebäude und wurde nicht übernommen.} other {# Einheiten verwiesen auf unbekannte Gebäude und wurden nicht übernommen.}}",
       "noUnits": "Keine Einheiten aus diesem Dokument extrahiert.",
       "buildingFallback": "Gebäude {index}",
+      "booleans": {
+        "yes": "Ja",
+        "no": "Nein"
+      },
       "sections": {
         "property": "Objekt",
         "buildings": "Gebäude",
@@ -249,7 +253,9 @@
         "uniqueNumber": "Objektnummer",
         "managementType": "Verwaltungsart",
         "totalMea": "Gesamt-MEA",
+        "totalAreaSqm": "Gesamtfläche (m²)",
         "notarialRollNo": "Urkundenrolle Nr.",
+        "notarizedAt": "Beurkundet am",
         "grundbuchOffice": "Grundbuchamt",
         "grundbuchSheet": "Grundbuchblatt",
         "gemarkung": "Gemarkung",
@@ -258,21 +264,34 @@
       },
       "building": {
         "label": "Bezeichnung",
+        "nickname": "Spitzname",
         "street": "Straße",
         "houseNumber": "Hausnr.",
         "postalCode": "PLZ",
         "city": "Stadt",
+        "country": "Land",
         "yearBuilt": "Baujahr",
-        "floorsCount": "Stockwerke"
+        "floorsCount": "Stockwerke",
+        "hasElevator": "Aufzug",
+        "energyStandard": "Energieklasse",
+        "heating": "Heizung",
+        "buildingType": "Gebäudetyp"
       },
       "unit": {
         "type": "Typ",
         "number": "Nr.",
         "buildingLabel": "Gebäude",
+        "floor": "Etage",
+        "entranceLabel": "Eingang",
+        "entranceNote": "Eingang-Notiz",
         "sizeSqm": "Fläche (m²)",
         "rooms": "Zimmer",
         "meaShare": "MEA",
-        "yearBuilt": "Baujahr"
+        "yearBuilt": "Baujahr",
+        "description": "Beschreibung",
+        "subCategory": "Unterkategorie",
+        "layoutNote": "Layout-Notiz",
+        "parkingCode": "Stellplatz-Code"
       }
     },
     "chip": {

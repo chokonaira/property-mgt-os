@@ -1,12 +1,14 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import { Trash2 } from 'lucide-react';
 import { useFormContext, useFieldArray, useWatch } from 'react-hook-form';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { FieldChip } from '@/components/ai-extraction-review';
+import { useWizard } from '@/components/wizard/wizard-context';
 import { FloorCell } from '@/components/unit-table/floor-cell';
 import { useCellNavigation } from '@/components/unit-table/use-cell-navigation';
 import {
@@ -36,6 +38,11 @@ export function UnitTable() {
   const buildingsWatch = useWatch({ control, name: 'buildings' });
   const buildings = useMemo(() => buildingsWatch ?? [], [buildingsWatch]);
   const { containerRef, onKeyDown, onFocus } = useCellNavigation();
+  const { markFieldEdited } = useWizard();
+  const onEdit = useCallback(
+    (rowIndex: number, key: string) => () => markFieldEdited(`units[${rowIndex}].${key}`),
+    [markFieldEdited],
+  );
 
   const columns = useMemo<Array<ColumnDef<WizardUnitDraft & { _id: string }, RowMeta>>>(
     () => [
@@ -51,65 +58,89 @@ export function UnitTable() {
         id: 'number',
         header: '#',
         size: 96,
-        cell: ({ row }) => <NumberCell rowIndex={row.index} />,
+        cell: ({ row }) => (
+          <CellWithChip path={`units[${row.index}].number`} label="#">
+            <NumberCell rowIndex={row.index} onEdit={onEdit(row.index, 'number')} />
+          </CellWithChip>
+        ),
       },
       {
         id: 'type',
         header: t('columns.type'),
         size: 130,
-        cell: ({ row }) => <TypeCell rowIndex={row.index} />,
+        cell: ({ row }) => (
+          <CellWithChip path={`units[${row.index}].type`} label={t('columns.type')}>
+            <TypeCell rowIndex={row.index} onEdit={onEdit(row.index, 'type')} />
+          </CellWithChip>
+        ),
       },
       {
         id: 'building',
         header: t('columns.building'),
         size: 160,
         cell: ({ row }) => (
-          <select
-            data-cell-row={row.index}
-            data-cell-col="building"
-            {...register(`units.${row.index}.buildingIndex`, { valueAsNumber: true })}
-            className={cellInputClass}
-          >
-            {buildings.map((b, idx) => {
-              const summary =
-                b.label || b.nickname || `${b.street ?? ''} ${b.houseNumber ?? ''}`.trim();
-              return (
-                <option key={idx} value={idx}>
-                  {summary || t('buildingFallback', { index: idx + 1 })}
-                </option>
-              );
-            })}
-          </select>
+          <CellWithChip path={`units[${row.index}].buildingLabel`} label={t('columns.building')}>
+            <select
+              data-cell-row={row.index}
+              data-cell-col="building"
+              {...register(`units.${row.index}.buildingIndex`, {
+                valueAsNumber: true,
+                onChange: onEdit(row.index, 'buildingLabel'),
+              })}
+              className={cellInputClass}
+            >
+              {buildings.map((b, idx) => {
+                const summary =
+                  b.label || b.nickname || `${b.street ?? ''} ${b.houseNumber ?? ''}`.trim();
+                return (
+                  <option key={idx} value={idx}>
+                    {summary || t('buildingFallback', { index: idx + 1 })}
+                  </option>
+                );
+              })}
+            </select>
+          </CellWithChip>
         ),
       },
       {
         id: 'floor',
         header: t('columns.floor'),
         size: 110,
-        cell: ({ row }) => <FloorCell rowIndex={row.index} />,
+        cell: ({ row }) => (
+          <CellWithChip path={`units[${row.index}].floor`} label={t('columns.floor')}>
+            <FloorCell rowIndex={row.index} />
+          </CellWithChip>
+        ),
       },
       {
         id: 'entranceLabel',
         header: t('columns.entrance'),
         size: 110,
         cell: ({ row }) => (
-          <input
-            type="text"
-            maxLength={40}
-            data-cell-row={row.index}
-            data-cell-col="entranceLabel"
-            {...register(`units.${row.index}.entranceLabel`, {
-              setValueAs: emptyToUndefined,
-            })}
-            className={cellInputClass}
-          />
+          <CellWithChip path={`units[${row.index}].entranceLabel`} label={t('columns.entrance')}>
+            <input
+              type="text"
+              maxLength={40}
+              data-cell-row={row.index}
+              data-cell-col="entranceLabel"
+              {...register(`units.${row.index}.entranceLabel`, {
+                setValueAs: emptyToUndefined,
+                onChange: onEdit(row.index, 'entranceLabel'),
+              })}
+              className={cellInputClass}
+            />
+          </CellWithChip>
         ),
       },
       {
         id: 'sizeSqm',
         header: t('columns.size'),
         size: 100,
-        cell: ({ row }) => <SizeCell rowIndex={row.index} />,
+        cell: ({ row }) => (
+          <CellWithChip path={`units[${row.index}].sizeSqm`} label={t('columns.size')}>
+            <SizeCell rowIndex={row.index} onEdit={onEdit(row.index, 'sizeSqm')} />
+          </CellWithChip>
+        ),
       },
       {
         id: 'metric',
@@ -121,31 +152,42 @@ export function UnitTable() {
         id: 'rooms',
         header: t('columns.rooms'),
         size: 90,
-        cell: ({ row }) => <RoomsCell rowIndex={row.index} />,
+        cell: ({ row }) => (
+          <CellWithChip path={`units[${row.index}].rooms`} label={t('columns.rooms')}>
+            <RoomsCell rowIndex={row.index} onEdit={onEdit(row.index, 'rooms')} />
+          </CellWithChip>
+        ),
       },
       {
         id: 'meaShare',
         header: t('columns.mea'),
         size: 110,
-        cell: ({ row }) => <MeaCell rowIndex={row.index} />,
+        cell: ({ row }) => (
+          <CellWithChip path={`units[${row.index}].meaShare`} label={t('columns.mea')}>
+            <MeaCell rowIndex={row.index} onEdit={onEdit(row.index, 'meaShare')} />
+          </CellWithChip>
+        ),
       },
       {
         id: 'yearBuilt',
         header: t('columns.year'),
         size: 90,
         cell: ({ row }) => (
-          <input
-            type="number"
-            inputMode="numeric"
-            min={1800}
-            max={new Date().getFullYear() + 1}
-            data-cell-row={row.index}
-            data-cell-col="yearBuilt"
-            {...register(`units.${row.index}.yearBuilt`, {
-              setValueAs: emptyToUndefinedNumber,
-            })}
-            className={cellInputClass}
-          />
+          <CellWithChip path={`units[${row.index}].yearBuilt`} label={t('columns.year')}>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1800}
+              max={new Date().getFullYear() + 1}
+              data-cell-row={row.index}
+              data-cell-col="yearBuilt"
+              {...register(`units.${row.index}.yearBuilt`, {
+                setValueAs: emptyToUndefinedNumber,
+                onChange: onEdit(row.index, 'yearBuilt'),
+              })}
+              className={cellInputClass}
+            />
+          </CellWithChip>
         ),
       },
       {
@@ -153,16 +195,19 @@ export function UnitTable() {
         header: t('columns.description'),
         size: 200,
         cell: ({ row }) => (
-          <input
-            type="text"
-            maxLength={500}
-            data-cell-row={row.index}
-            data-cell-col="description"
-            {...register(`units.${row.index}.description`, {
-              setValueAs: emptyToUndefined,
-            })}
-            className={cellInputClass}
-          />
+          <CellWithChip path={`units[${row.index}].description`} label={t('columns.description')}>
+            <input
+              type="text"
+              maxLength={500}
+              data-cell-row={row.index}
+              data-cell-col="description"
+              {...register(`units.${row.index}.description`, {
+                setValueAs: emptyToUndefined,
+                onChange: onEdit(row.index, 'description'),
+              })}
+              className={cellInputClass}
+            />
+          </CellWithChip>
         ),
       },
       {
@@ -184,7 +229,7 @@ export function UnitTable() {
         ),
       },
     ],
-    [t, register, buildings, fields.length, remove],
+    [t, register, buildings, fields.length, remove, onEdit],
   );
 
   const data = useMemo(
@@ -246,6 +291,29 @@ const cellInputClass = cn(
   'disabled:cursor-not-allowed disabled:bg-muted/50 disabled:text-muted-foreground',
 );
 
+/**
+ * Wraps an editable cell so a tiny `<FieldChip />` renders below the
+ * input when extraction provenance exists for the path. The chip
+ * disappears as soon as the user edits the value (markFieldEdited
+ * lives next to the register() onChange in each cell).
+ */
+function CellWithChip({
+  path,
+  label,
+  children,
+}: {
+  path: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      {children}
+      <FieldChip path={path} fieldLabel={label} className="text-[10px]" />
+    </div>
+  );
+}
+
 function emptyToUndefined(raw: unknown): string | undefined {
   if (raw === '' || raw === undefined || raw === null) return undefined;
   return typeof raw === 'string' ? raw : String(raw);
@@ -263,7 +331,7 @@ function emptyToUndefinedNumber(raw: unknown): number | undefined {
 // state. TypeCell snapshots the variant siblings on focus and
 // restores them along with the type on Esc, then stops propagation
 // so the container handler doesn't double-revert.
-function TypeCell({ rowIndex }: { rowIndex: number }) {
+function TypeCell({ rowIndex, onEdit }: { rowIndex: number; onEdit: () => void }) {
   const { register, setValue, getValues } = useFormContext<WizardDraftInput>();
   const t = useTranslations('wizard.units');
   type Snapshot = {
@@ -326,6 +394,7 @@ function TypeCell({ rowIndex }: { rowIndex: number }) {
       }}
       {...register(`units.${rowIndex}.type`, {
         onChange: (e) => {
+          onEdit();
           const next = e.target.value as WizardUnitType;
           if (next !== 'APARTMENT') {
             setValue(`units.${rowIndex}.rooms` as `units.${number}.rooms`, undefined as never);
@@ -370,7 +439,7 @@ function MetricBadge({ index }: { index: number }) {
   );
 }
 
-function RoomsCell({ rowIndex }: { rowIndex: number }) {
+function RoomsCell({ rowIndex, onEdit }: { rowIndex: number; onEdit: () => void }) {
   const {
     control,
     register,
@@ -394,13 +463,14 @@ function RoomsCell({ rowIndex }: { rowIndex: number }) {
       data-cell-col="rooms"
       {...register(`units.${rowIndex}.rooms`, {
         setValueAs: emptyToUndefinedNumber,
+        onChange: onEdit,
       })}
       className={cn(cellInputClass, error && 'border-destructive')}
     />
   );
 }
 
-function SizeCell({ rowIndex }: { rowIndex: number }) {
+function SizeCell({ rowIndex, onEdit }: { rowIndex: number; onEdit: () => void }) {
   const {
     register,
     formState: { errors },
@@ -419,13 +489,14 @@ function SizeCell({ rowIndex }: { rowIndex: number }) {
       title={error}
       {...register(`units.${rowIndex}.sizeSqm`, {
         setValueAs: emptyToUndefinedNumber,
+        onChange: onEdit,
       })}
       className={cn(cellInputClass, error && 'border-destructive')}
     />
   );
 }
 
-function NumberCell({ rowIndex }: { rowIndex: number }) {
+function NumberCell({ rowIndex, onEdit }: { rowIndex: number; onEdit: () => void }) {
   const {
     register,
     formState: { errors },
@@ -440,13 +511,13 @@ function NumberCell({ rowIndex }: { rowIndex: number }) {
       data-cell-col="number"
       aria-invalid={Boolean(error) || undefined}
       title={error}
-      {...register(`units.${rowIndex}.number`)}
+      {...register(`units.${rowIndex}.number`, { onChange: onEdit })}
       className={cn(cellInputClass, error && 'border-destructive')}
     />
   );
 }
 
-function MeaCell({ rowIndex }: { rowIndex: number }) {
+function MeaCell({ rowIndex, onEdit }: { rowIndex: number; onEdit: () => void }) {
   const {
     register,
     formState: { errors },
@@ -476,6 +547,7 @@ function MeaCell({ rowIndex }: { rowIndex: number }) {
           const n = typeof raw === 'number' ? raw : Number(raw);
           return Number.isFinite(n) ? n : (undefined as unknown as number);
         },
+        onChange: onEdit,
       })}
       className={cn(cellInputClass, error && 'border-destructive')}
     />

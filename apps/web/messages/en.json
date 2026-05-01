@@ -232,6 +232,10 @@
       "droppedUnits": "{count, plural, one {# unit referenced an unknown building and was dropped from the pre-fill.} other {# units referenced unknown buildings and were dropped from the pre-fill.}}",
       "noUnits": "No units extracted from this document.",
       "buildingFallback": "Building {index}",
+      "booleans": {
+        "yes": "Yes",
+        "no": "No"
+      },
       "sections": {
         "property": "Property",
         "buildings": "Buildings",
@@ -249,7 +253,9 @@
         "uniqueNumber": "Unique number",
         "managementType": "Management type",
         "totalMea": "Total MEA",
+        "totalAreaSqm": "Total area (m²)",
         "notarialRollNo": "Notarial roll no.",
+        "notarizedAt": "Notarised on",
         "grundbuchOffice": "Grundbuch office",
         "grundbuchSheet": "Grundbuch sheet",
         "gemarkung": "Gemarkung",
@@ -258,21 +264,34 @@
       },
       "building": {
         "label": "Label",
+        "nickname": "Nickname",
         "street": "Street",
         "houseNumber": "House no.",
         "postalCode": "Postal code",
         "city": "City",
+        "country": "Country",
         "yearBuilt": "Year built",
-        "floorsCount": "Floors"
+        "floorsCount": "Floors",
+        "hasElevator": "Elevator",
+        "energyStandard": "Energy class",
+        "heating": "Heating",
+        "buildingType": "Building type"
       },
       "unit": {
         "type": "Type",
         "number": "No.",
         "buildingLabel": "Building",
+        "floor": "Floor",
+        "entranceLabel": "Entrance",
+        "entranceNote": "Entrance note",
         "sizeSqm": "Size (m²)",
         "rooms": "Rooms",
         "meaShare": "MEA",
-        "yearBuilt": "Year built"
+        "yearBuilt": "Year built",
+        "description": "Description",
+        "subCategory": "Sub-category",
+        "layoutNote": "Layout note",
+        "parkingCode": "Parking code"
       }
     },
     "chip": {

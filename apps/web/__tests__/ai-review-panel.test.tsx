@@ -131,6 +131,126 @@ describe('AiReviewPanel', () => {
     expect(screen.getByText(/No units extracted/i)).toBeTruthy();
   });
 
+  it('renders every populated property field across the schema', () => {
+    const result = makeResult({
+      extraction: {
+        ...makeResult().extraction,
+        property: {
+          name: 'Parkview',
+          uniqueNumber: '10-557-PRB',
+          managementType: 'WEG',
+          totalMea: 1000,
+          totalAreaSqm: 4500,
+          notarialRollNo: 'UR 123/2024',
+          notarizedAt: '2024-03-15',
+          grundbuchOffice: 'Berlin Mitte',
+          grundbuchSheet: '4711',
+          gemarkung: 'Mitte',
+          flur: '7',
+          flurstueck: '42',
+        },
+      },
+    });
+    render(withIntl(<AiReviewPanel result={result} onAccept={() => {}} onDiscard={() => {}} />));
+    expect(screen.getByText('4500')).toBeTruthy();
+    expect(screen.getByText('UR 123/2024')).toBeTruthy();
+    expect(screen.getByText('2024-03-15')).toBeTruthy();
+    expect(screen.getByText('Berlin Mitte')).toBeTruthy();
+    expect(screen.getByText('4711')).toBeTruthy();
+    expect(screen.getByText('Mitte')).toBeTruthy();
+    expect(screen.getByText('42')).toBeTruthy();
+  });
+
+  it('renders building optional fields including booleans', () => {
+    const result = makeResult({
+      extraction: {
+        ...makeResult().extraction,
+        buildings: [
+          {
+            label: 'Haus A',
+            nickname: 'Park Side',
+            street: 'Hauptstr.',
+            houseNumber: '12',
+            country: 'DE',
+            energyStandard: 'EH-55',
+            heating: 'Fernwärme',
+            buildingType: 'Mehrfamilienhaus',
+            hasElevator: true,
+          },
+        ],
+      },
+    });
+    const { container } = render(
+      withIntl(<AiReviewPanel result={result} onAccept={() => {}} onDiscard={() => {}} />),
+    );
+    const buildingsSection = container.querySelector('[aria-labelledby="ai-review-buildings"]');
+    const text = buildingsSection?.textContent ?? '';
+    expect(text).toContain('Park Side');
+    expect(text).toContain('DE');
+    expect(text).toContain('EH-55');
+    expect(text).toContain('Fernwärme');
+    expect(text).toContain('Mehrfamilienhaus');
+    expect(text).toContain('Yes');
+  });
+
+  it('renders variant-specific unit fields per type', () => {
+    const result = makeResult({
+      extraction: {
+        ...makeResult().extraction,
+        units: [
+          {
+            type: 'APARTMENT',
+            number: '1.1',
+            buildingLabel: 'Haus A',
+            rooms: 3,
+            sizeSqm: 80,
+            subCategory: 'Maisonette',
+            description: 'Top floor unit',
+          },
+          {
+            type: 'OFFICE',
+            number: 'O1',
+            buildingLabel: 'Haus A',
+            layoutNote: 'Open plan',
+          },
+          { type: 'PARKING', number: 'P1', buildingLabel: 'Haus A', parkingCode: 'P-12' },
+        ],
+      },
+    });
+    const { container } = render(
+      withIntl(<AiReviewPanel result={result} onAccept={() => {}} onDiscard={() => {}} />),
+    );
+    const unitsSection = container.querySelector('[aria-labelledby="ai-review-units"]');
+    const text = unitsSection?.textContent ?? '';
+    expect(text).toContain('Maisonette');
+    expect(text).toContain('Top floor unit');
+    expect(text).toContain('Open plan');
+    expect(text).toContain('P-12');
+  });
+
+  it('renders extracted floor fields formatted by kind', () => {
+    const result = makeResult({
+      extraction: {
+        ...makeResult().extraction,
+        units: [
+          {
+            type: 'APARTMENT',
+            number: '1.1',
+            buildingLabel: 'Haus A',
+            rooms: 3,
+            sizeSqm: 80,
+            floor: { kind: 'OG', level: 2, qualifier: 'links' },
+          },
+        ],
+      },
+    });
+    const { container } = render(
+      withIntl(<AiReviewPanel result={result} onAccept={() => {}} onDiscard={() => {}} />),
+    );
+    const unitsSection = container.querySelector('[aria-labelledby="ai-review-units"]');
+    expect(unitsSection?.textContent).toContain('2. OG links');
+  });
+
   it('shows the dropped-units note only when count > 0', () => {
     const result = makeResult();
     const { rerender } = render(
