@@ -90,15 +90,37 @@ export function ContactFormModal({ role, open, onOpenChange, onCreated }: Contac
 
   function onSubmit(values: FormValues) {
     setSubmitError(null);
+    // Trim every string + drop fields that collapse to empty so a
+    // user typing only whitespace into an optional field doesn't
+    // persist a blank row. The shared schema enforces the same trim,
+    // but trimming client-side keeps the wire payload tidy.
     const compact: FormValues = Object.fromEntries(
-      Object.entries(values).filter(([, v]) => v !== '' && v !== undefined),
+      Object.entries(values)
+        .map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v] as const)
+        .filter(([, v]) => v !== '' && v !== undefined),
     ) as FormValues;
     mutation.mutate(compact);
   }
 
+  // Block dismissal — overlay click, Escape, or X — while the request is
+  // in flight, otherwise the dialog can vanish before a 422 / 500 has a
+  // chance to render its inline error.
+  const handleOpenChange = (next: boolean) => {
+    if (!next && mutation.isPending) return;
+    onOpenChange(next);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent
+        hideClose={mutation.isPending}
+        onPointerDownOutside={(event) => {
+          if (mutation.isPending) event.preventDefault();
+        }}
+        onEscapeKeyDown={(event) => {
+          if (mutation.isPending) event.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>
             {role === 'PROPERTY_MANAGER' ? t('titleManager') : t('titleAccountant')}

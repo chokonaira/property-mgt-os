@@ -92,4 +92,39 @@ describe('CreateContactRequestSchema', () => {
       }).success,
     ).toBe(false);
   });
+
+  it('rejects a whitespace-only name', () => {
+    expect(
+      CreateContactRequestSchema.safeParse({
+        role: 'PROPERTY_MANAGER',
+        name: '   ',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('trims the name and admits the trimmed value', () => {
+    const result = CreateContactRequestSchema.safeParse({
+      role: 'PROPERTY_MANAGER',
+      name: '  Acme Verwaltung  ',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.name).toBe('Acme Verwaltung');
+  });
+
+  it('rejects whitespace-only optional fields', () => {
+    expect(
+      CreateContactRequestSchema.safeParse({
+        role: 'ACCOUNTANT',
+        name: 'A',
+        street: '   ',
+      }).success,
+    ).toBe(false);
+    expect(
+      CreateContactRequestSchema.safeParse({
+        role: 'ACCOUNTANT',
+        name: 'A',
+        city: ' \t  ',
+      }).success,
+    ).toBe(false);
+  });
 });
