@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Copy, Trash2 } from 'lucide-react';
 import { useFormContext, useFieldArray, useWatch } from 'react-hook-form';
 import { useTranslations } from 'next-intl';
@@ -422,6 +423,27 @@ export function UnitTable() {
     [selectedIds, allSelected, toggleRow, toggleAll],
   );
 
+  // Virtualization kicks in past 50 rows (T-409). Below the
+  // threshold the native table renders every row, which keeps
+  // small lists simple to test + screenshot. Above, TanStack
+  // Virtual measures a scrollable container and renders only
+  // the visible window; we wrap the visible rows in <tr>
+  // padding spacers so the table layout stays valid.
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
+  const rowModel = table.getRowModel();
+  const isVirtualized = rowModel.rows.length > 50;
+  const virtualizer = useVirtualizer({
+    count: isVirtualized ? rowModel.rows.length : 0,
+    getScrollElement: () => tableScrollRef.current,
+    estimateSize: () => 56,
+    overscan: 8,
+  });
+  const virtualRows = isVirtualized ? virtualizer.getVirtualItems() : [];
+  const totalSize = isVirtualized ? virtualizer.getTotalSize() : 0;
+  const paddingTop = virtualRows.length > 0 ? (virtualRows[0]?.start ?? 0) : 0;
+  const paddingBottom =
+    virtualRows.length > 0 ? totalSize - (virtualRows[virtualRows.length - 1]?.end ?? 0) : 0;
+
   return (
     <SelectionContext.Provider value={selectionContextValue}>
     <div
@@ -458,9 +480,18 @@ export function UnitTable() {
           </div>
         </div>
       ) : null}
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+      <div
+        ref={tableScrollRef}
+        className={cn(
+          'overflow-x-auto rounded-lg border border-border bg-card',
+          // Vertical virtualization needs a scrollable container.
+          // Engage only past the AC threshold so small lists render
+          // as a native table with no virtualization overhead.
+          isVirtualized && 'overflow-y-auto max-h-[640px]',
+        )}
+      >
         <table className="w-full min-w-[1000px] caption-bottom text-sm">
-          <thead className="border-b border-border bg-muted/30">
+          <thead className="sticky top-0 z-10 border-b border-border bg-muted/30">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -476,15 +507,47 @@ export function UnitTable() {
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="border-b border-border last:border-0">
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-3 py-2 align-middle">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {isVirtualized ? (
+              <>
+                {paddingTop > 0 ? (
+                  <tr aria-hidden="true">
+                    <td colSpan={columns.length} style={{ height: paddingTop, padding: 0 }} />
+                  </tr>
+                ) : null}
+                {virtualRows.map((virtualRow) => {
+                  const row = rowModel.rows[virtualRow.index];
+                  if (!row) return null;
+                  return (
+                    <tr
+                      key={row.id}
+                      data-index={virtualRow.index}
+                      className="border-b border-border last:border-0"
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="px-3 py-2 align-middle">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+                {paddingBottom > 0 ? (
+                  <tr aria-hidden="true">
+                    <td colSpan={columns.length} style={{ height: paddingBottom, padding: 0 }} />
+                  </tr>
+                ) : null}
+              </>
+            ) : (
+              rowModel.rows.map((row) => (
+                <tr key={row.id} className="border-b border-border last:border-0">
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="px-3 py-2 align-middle">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
