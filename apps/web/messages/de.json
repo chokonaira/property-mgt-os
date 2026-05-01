@@ -398,6 +398,14 @@
     "goHome": "Zur Startseite",
     "notFound": "Seite nicht gefunden",
     "backToDashboard": "Zurück zum Dashboard",
+    "boundary": {
+      "title": "Unerwarteter Fehler aufgetreten",
+      "description": "Beim Anzeigen dieser Seite ist etwas schiefgelaufen. Bitte erneut versuchen oder zum Dashboard zurückkehren."
+    },
+    "notFoundFull": {
+      "title": "Seite nicht gefunden",
+      "description": "Diese URL gehört zu keinem unserer Inhalte. Der Link ist möglicherweise falsch oder die Seite wurde verschoben."
+    },
     "conflictUniqueNumber": "Diese Objektnummer wird bereits von einer anderen Immobilie verwendet.",
     "zod": {
       "required": "Dieses Feld ist erforderlich.",

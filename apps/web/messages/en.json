@@ -398,6 +398,14 @@
     "goHome": "Go home",
     "notFound": "Page not found",
     "backToDashboard": "Back to dashboard",
+    "boundary": {
+      "title": "We hit an unexpected error",
+      "description": "Something broke while rendering this page. Try again or head back to the dashboard."
+    },
+    "notFoundFull": {
+      "title": "Page not found",
+      "description": "That URL doesn't match anything we serve. The link may be wrong, or the page may have moved."
+    },
     "conflictUniqueNumber": "This unique number is already in use by another property.",
     "zod": {
       "required": "This field is required.",
