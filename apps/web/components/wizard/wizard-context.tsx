@@ -40,6 +40,15 @@ interface WizardContextValue {
   // doesn't lose their selection when they Back out of step 1.
   declarationFile: File | undefined;
   setDeclarationFile: (file: File | undefined) => void;
+  /**
+   * False until the persisted draft (if any) has been restored AND
+   * each step's validity has been derived from the restored values.
+   * Consumers (notably WizardChrome's redirect guard) must wait for
+   * this before acting on `validity`, otherwise a hard refresh of
+   * /properties/new/buildings or /units kicks the user back to step 1
+   * before the persisted draft has had a chance to seed validity.
+   */
+  hydrated: boolean;
 }
 
 const initialValidity: StepValidityMap = {
@@ -66,9 +75,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   });
   // Restore from + persist into localStorage so a hard refresh on any step
   // brings the user back to where they left off (T-303 / T-410).
-  useWizardPersistence(methods);
+  const { hydrated: persistenceHydrated } = useWizardPersistence(methods);
 
   const [validity, setValidity] = useState<StepValidityMap>(initialValidity);
+  const [validityHydrated, setValidityHydrated] = useState(false);
   const [declarationFile, setDeclarationFile] = useState<File | undefined>(undefined);
   const validators = useRef<Partial<Record<WizardStepId, ValidatorFn>>>({});
 
@@ -102,6 +112,33 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     clearPersistedWizardDraft();
   }, [methods]);
 
+  // After the persisted draft is restored, run schema-level validation per
+  // step to seed the validity map with the truth of the *restored* state.
+  // Without this, /properties/new/buildings booted from a refresh sees
+  // {general:false, buildings:false} and the chrome redirects to step 1
+  // even though the saved draft would have been valid.
+  useEffect(() => {
+    if (!persistenceHydrated) return;
+    let cancelled = false;
+    void (async () => {
+      const results = await Promise.all(
+        WIZARD_STEPS.map(async (step) => [step, await methods.trigger(STEP_FIELDS[step])] as const),
+      );
+      if (cancelled) return;
+      setValidity((prev) => {
+        const next = { ...prev };
+        for (const [step, ok] of results) next[step] = ok;
+        return next;
+      });
+      setValidityHydrated(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [persistenceHydrated, methods]);
+
+  const hydrated = persistenceHydrated && validityHydrated;
+
   const value = useMemo<WizardContextValue>(
     () => ({
       validity,
@@ -111,8 +148,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       reset,
       declarationFile,
       setDeclarationFile,
+      hydrated,
     }),
-    [validity, registerValidator, setStepValid, validateStep, reset, declarationFile],
+    [validity, registerValidator, setStepValid, validateStep, reset, declarationFile, hydrated],
   );
 
   return (

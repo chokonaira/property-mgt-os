@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import {
   WIZARD_DRAFT_STORAGE_KEY,
@@ -13,22 +13,36 @@ import type { WizardDraft, WizardDraftInput } from '@/lib/schemas/wizard-draft';
 // (silently no-ops on miss/parse failure), then writes the form state back
 // on every change with a 500 ms throttle so we don't flood storage on
 // rapid keystrokes. Server-side render is a no-op (typeof window check).
+//
+// Returns a `hydrated` flag callers can read to gate behaviour that depends
+// on the restored draft being in form state — most importantly the wizard
+// chrome's redirect guard, which would otherwise fire on the very first
+// render of /properties/new/buildings (or /units) before the draft has
+// been pulled out of storage.
 const PERSIST_THROTTLE_MS = 500;
+
+export interface WizardPersistenceState {
+  /** True after the first restore pass has run (or no-op'd). */
+  hydrated: boolean;
+}
 
 export function useWizardPersistence(
   methods: UseFormReturn<WizardDraftInput, unknown, WizardDraft>,
-) {
-  const hydrated = useRef(false);
+): WizardPersistenceState {
+  const restoredOnce = useRef(false);
   const writeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
-  // Restore once.
+  // Restore once. Mark hydrated even if there's nothing to restore so the
+  // gate doesn't sit closed forever on a brand-new visit.
   useEffect(() => {
-    if (typeof window === 'undefined' || hydrated.current) return;
-    hydrated.current = true;
+    if (typeof window === 'undefined' || restoredOnce.current) return;
+    restoredOnce.current = true;
     const stored = parseStoredDraft(window.localStorage.getItem(WIZARD_DRAFT_STORAGE_KEY));
     if (stored) {
       methods.reset(stored.draft, { keepDefaultValues: true });
     }
+    setHydrated(true);
   }, [methods]);
 
   // Persist on change.
@@ -52,6 +66,8 @@ export function useWizardPersistence(
       if (writeTimer.current) clearTimeout(writeTimer.current);
     };
   }, [methods]);
+
+  return { hydrated };
 }
 
 export function clearPersistedWizardDraft() {

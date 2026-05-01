@@ -14,14 +14,19 @@ export function WizardChrome({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const currentStep = stepFromPath(pathname);
-  const { validity, validateStep, reset } = useWizard();
+  const { validity, validateStep, reset, hydrated } = useWizard();
   const [isPending, startTransition] = useTransition();
 
+  // Don't redirect until the persisted draft has been restored AND each
+  // step's validity has been derived from it. Otherwise a hard refresh on
+  // /properties/new/buildings or /units kicks the user back to step 1
+  // before the saved draft has had a chance to seed validity.
   useEffect(() => {
+    if (!hydrated) return;
     if (!isPriorStepValid(validity, currentStep)) {
       router.replace(pathForStep(WIZARD_STEPS[0]));
     }
-  }, [currentStep, validity, router]);
+  }, [hydrated, currentStep, validity, router]);
 
   const back = previousStep(currentStep);
   const next = nextStep(currentStep);
