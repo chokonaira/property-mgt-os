@@ -13,7 +13,7 @@ interface ExtractionLoadingProps {
 export function ExtractionLoading({ stage }: ExtractionLoadingProps) {
   const t = useTranslations('extraction.status');
   return (
-    <Card className="border-primary/30">
+    <Card className="border-primary/30 motion-safe:animate-pulse motion-safe:[animation-duration:2s]">
       <CardContent className="flex items-start gap-3 py-4">
         <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-primary" aria-hidden="true" />
         <div className="flex flex-col gap-1">

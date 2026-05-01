@@ -172,7 +172,11 @@ export function WizardChrome({ children }: { children: ReactNode }) {
         </Button>
       </header>
       <StepIndicator currentStep={currentStep} />
-      <section aria-live="polite" className="rounded-lg border border-border bg-card p-4 sm:p-6">
+      <section
+        key={currentStep}
+        aria-live="polite"
+        className="rounded-lg border border-border bg-card p-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-200 sm:p-6"
+      >
         {children}
       </section>
       <footer className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
