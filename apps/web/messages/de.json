@@ -20,14 +20,29 @@
     }
   },
   "wizard": {
+    "title": "Neue Immobilie anlegen",
+    "subtitle": "Drei kurze Schritte. Sie können jederzeit zurückgehen.",
     "step1": "Allgemeine Angaben",
     "step2": "Gebäude",
-    "step3": "Einheiten"
-  },
-  "comingSoon": {
-    "wizard": {
-      "title": "Assistent folgt in Kürze",
-      "description": "Der geführte Anlegevorgang folgt im nächsten Ticket."
+    "step3": "Einheiten",
+    "progress": "Assistent-Fortschritt",
+    "back": "Zurück",
+    "next": "Weiter",
+    "discard": "Entwurf verwerfen",
+    "discardConfirm": "Entwurf wirklich verwerfen? Alle Eingaben gehen verloren.",
+    "placeholders": {
+      "general": {
+        "title": "Formular Allgemeine Angaben",
+        "description": "Verwaltungsart, Objektname, Objektnummer, Kontakte und optionaler Upload der Teilungserklärung folgen im nächsten Ticket."
+      },
+      "buildings": {
+        "title": "Schritt Gebäude",
+        "description": "Mehrfachfeld für ein oder mehrere Gebäude (Adresse, Baujahr, Etagen, Aufzug) folgt in einem späteren Ticket."
+      },
+      "units": {
+        "title": "Schritt Einheiten",
+        "description": "Bulk-Editierbare Einheiten-Tabelle mit Einfügen, Generieren und Validierung pro Zeile folgt in einem späteren Ticket."
+      }
     }
   },
   "propertyDetail": {

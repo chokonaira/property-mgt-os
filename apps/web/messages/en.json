@@ -20,14 +20,29 @@
     }
   },
   "wizard": {
+    "title": "Create new property",
+    "subtitle": "Three quick steps. You can move back at any time.",
     "step1": "General info",
     "step2": "Buildings",
-    "step3": "Units"
-  },
-  "comingSoon": {
-    "wizard": {
-      "title": "Wizard coming soon",
-      "description": "The guided property creation flow lands in the next ticket."
+    "step3": "Units",
+    "progress": "Wizard progress",
+    "back": "Back",
+    "next": "Next",
+    "discard": "Discard draft",
+    "discardConfirm": "Discard this draft? Any entered data will be lost.",
+    "placeholders": {
+      "general": {
+        "title": "General info form",
+        "description": "Management type, property name, unique number, contacts, and an optional Teilungserklärung upload land in the next ticket."
+      },
+      "buildings": {
+        "title": "Buildings step",
+        "description": "Field array for one or more buildings (address, year built, floors, elevator) lands in a later ticket."
+      },
+      "units": {
+        "title": "Units step",
+        "description": "The bulk-edit unit table with paste, generate, and per-row validation lands in a later ticket."
+      }
     }
   },
   "propertyDetail": {
