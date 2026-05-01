@@ -48,6 +48,10 @@
         "checking": "Checking availability…",
         "available": "Available."
       },
+      "totalMea": {
+        "label": "Total MEA (Miteigentumsanteile)",
+        "help": "The declared total — typically 1000. The unit-shares bar on the next steps compares against this number."
+      },
       "manager": {
         "label": "Property manager",
         "help": "Choose an existing manager or create a new one."
@@ -115,6 +119,13 @@
       "energyStandard": "Energy class",
       "heating": "Heating",
       "buildingType": "Building type"
+    },
+    "meaBar": {
+      "summary": "Σ shares = {sum} / {total}",
+      "noTotal": "—",
+      "matched": "Sum matches the declared total.",
+      "short": "{delta} shares unaccounted.",
+      "exceeded": "{delta} shares over the declared total."
     },
     "units": {
       "title": "Units",

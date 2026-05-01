@@ -21,6 +21,11 @@ export const WizardGeneralDraftSchema = z.object({
     .regex(/^[A-Za-z0-9-]+$/),
   propertyManagerId: z.string().min(1).optional(),
   accountantId: z.string().min(1).optional(),
+  // The property's declared MEA total (typically 1000 in real
+  // Teilungserklärungen — German practice is shares-of-thousands).
+  // Optional: WEG users see a sticky invariant bar comparing the
+  // sum of unit shares against this total; MV doesn't surface it.
+  totalMea: z.number().nonnegative().max(10000).optional(),
 });
 export type WizardGeneralDraft = z.infer<typeof WizardGeneralDraftSchema>;
 

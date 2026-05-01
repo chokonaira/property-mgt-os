@@ -16,6 +16,7 @@ export function buildCreatePropertyRequest(draft: WizardDraft): CreatePropertyRe
       managementType: draft.general.managementType,
       name: draft.general.name,
       uniqueNumber: draft.general.uniqueNumber,
+      ...(draft.general.totalMea !== undefined ? { totalMea: draft.general.totalMea } : {}),
       ...(draft.general.propertyManagerId
         ? { propertyManagerId: draft.general.propertyManagerId }
         : {}),

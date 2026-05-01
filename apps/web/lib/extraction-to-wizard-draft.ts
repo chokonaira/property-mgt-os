@@ -68,6 +68,9 @@ export function extractionToWizardDraft(
         managementType: extraction.property.managementType,
         name: extraction.property.name,
         uniqueNumber: extraction.property.uniqueNumber ?? '',
+        ...(extraction.property.totalMea !== undefined
+          ? { totalMea: extraction.property.totalMea }
+          : {}),
       },
       buildings: buildings.length > 0 ? buildings : [{ street: '', houseNumber: '' }],
       // Wizard draft requires at least one unit to satisfy the schema's

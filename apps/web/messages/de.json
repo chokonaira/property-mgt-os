@@ -48,6 +48,10 @@
         "checking": "Verfügbarkeit wird geprüft…",
         "available": "Verfügbar."
       },
+      "totalMea": {
+        "label": "Gesamt-MEA (Miteigentumsanteile)",
+        "help": "Der deklarierte Gesamtwert — typischerweise 1000. Die Anteils-Leiste auf den nächsten Schritten vergleicht damit."
+      },
       "manager": {
         "label": "Verwalter",
         "help": "Bestehenden Verwalter wählen oder einen neuen anlegen."
@@ -115,6 +119,13 @@
       "energyStandard": "Energieklasse",
       "heating": "Heizung",
       "buildingType": "Gebäudetyp"
+    },
+    "meaBar": {
+      "summary": "Σ Anteile = {sum} / {total}",
+      "noTotal": "—",
+      "matched": "Summe entspricht der deklarierten Gesamtsumme.",
+      "short": "{delta} Anteile fehlen.",
+      "exceeded": "{delta} Anteile über der deklarierten Gesamtsumme."
     },
     "units": {
       "title": "Einheiten",

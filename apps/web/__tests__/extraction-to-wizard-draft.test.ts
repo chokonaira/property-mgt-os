@@ -39,6 +39,18 @@ describe('extractionToWizardDraft', () => {
     expect(draft.general.uniqueNumber).toBe('');
   });
 
+  it('carries totalMea into the general draft when extracted', () => {
+    const { draft } = extractionToWizardDraft(base());
+    expect(draft.general.totalMea).toBe(1000);
+  });
+
+  it('omits totalMea from the draft when missing on the extraction', () => {
+    const { draft } = extractionToWizardDraft(
+      base({ property: { name: 'Test', managementType: 'WEG' } }),
+    );
+    expect(draft.general.totalMea).toBeUndefined();
+  });
+
   it('preserves building order and copies optional fields', () => {
     const { draft } = extractionToWizardDraft(
       base({

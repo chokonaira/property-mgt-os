@@ -4,6 +4,7 @@ import { useCallback, useEffect } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { useTranslations } from 'next-intl';
 import { UnitTable } from '@/components/unit-table/unit-table';
+import { WizardMeaBar } from '@/components/unit-table/mea-bar';
 import { useStepValidator, useWizard } from './wizard-context';
 import type { WizardDraftInput } from '@/lib/schemas/wizard-draft';
 
@@ -29,12 +30,13 @@ export function UnitsStep() {
   }, [unitsKey, trigger, setStepValid]);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 pb-24">
       <div className="flex flex-col gap-1">
         <h2 className="text-lg font-semibold text-foreground">{t('title')}</h2>
         <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
       <UnitTable />
+      <WizardMeaBar />
     </div>
   );
 }

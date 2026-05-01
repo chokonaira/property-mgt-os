@@ -38,6 +38,7 @@ export function GeneralInfoForm() {
     managementType: useId(),
     name: useId(),
     uniqueNumber: useId(),
+    totalMea: useId(),
     manager: useId(),
     accountant: useId(),
   };
@@ -335,6 +336,32 @@ export function GeneralInfoForm() {
           })}
         />
       </Field>
+
+      {managementType === 'WEG' ? (
+        <Field
+          label={t('totalMea.label')}
+          htmlFor={ids.totalMea}
+          description={t('totalMea.help')}
+          adornment={<FieldChip path="property.totalMea" fieldLabel={t('totalMea.label')} />}
+        >
+          <Input
+            id={ids.totalMea}
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            min={0}
+            max={10000}
+            {...register('general.totalMea', {
+              setValueAs: (raw: unknown) => {
+                if (raw === '' || raw === null || raw === undefined) return undefined;
+                const n = typeof raw === 'number' ? raw : Number(raw);
+                return Number.isFinite(n) ? n : undefined;
+              },
+              onChange: () => markFieldEdited('property.totalMea'),
+            })}
+          />
+        </Field>
+      ) : null}
 
       <Field
         label={t('manager.label')}
