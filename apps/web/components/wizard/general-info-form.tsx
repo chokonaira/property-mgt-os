@@ -4,12 +4,21 @@ import { useCallback, useEffect, useId } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { AlertCircle, CheckCircle2, Loader2, Sparkles, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ContactCombobox } from '@/components/contact-combobox';
 import { PdfUploader } from '@/components/pdf-uploader';
+import {
+  AiReviewPanel,
+  ExtractionErrorBanner,
+  ExtractionLoading,
+} from '@/components/ai-extraction-review';
+import { useUploadDocument } from '@/lib/hooks/use-upload-document';
+import { useExtractDocument } from '@/lib/hooks/use-extract-document';
 import { useUniqueNumberCheck } from '@/lib/hooks/use-unique-number-check';
+import { extractionToWizardDraft } from '@/lib/extraction-to-wizard-draft';
 import { useStepValidator, useWizard } from './wizard-context';
 import { SegmentedControl } from './segmented-control';
 import type { WizardDraftInput } from '@/lib/schemas/wizard-draft';
@@ -37,8 +46,17 @@ export function GeneralInfoForm() {
     formState: { errors },
     watch,
     trigger,
+    reset: resetForm,
+    getValues,
   } = useFormContext<WizardDraftInput>();
   const { setStepValid, declarationFile, setDeclarationFile } = useWizard();
+  const tExtraction = useTranslations('extraction');
+  const upload = useUploadDocument();
+  const extract = useExtractDocument();
+  const isUploading = upload.isPending;
+  const isExtracting = extract.isPending;
+  const extractionResult = extract.data;
+  const extractionError = upload.error ?? extract.error;
 
   const managementType = watch('general.managementType');
   const uniqueNumber = watch('general.uniqueNumber') ?? '';
@@ -89,16 +107,99 @@ export function GeneralInfoForm() {
     : isProbeError
       ? tErrors('uniqueProbeFailed')
       : undefined;
-  const handleSkipExtraction = () => setDeclarationFile(undefined);
-  const handleUseExtraction = () => {
-    // T-503/T-504 wires the actual extraction call. For now we surface
-    // the deferral honestly; the file is held in WizardContext so
-    // re-entering the form preserves it.
-    window.alert(t('upload.extractionStub'));
+  const handleSkipExtraction = () => {
+    setDeclarationFile(undefined);
+    upload.reset();
+    extract.reset();
   };
+
+  const runExtraction = useCallback(
+    async (file: File, force = false) => {
+      try {
+        const uploaded = await upload.mutateAsync(file);
+        await extract.mutateAsync({ documentId: uploaded.id, force });
+      } catch {
+        // Errors are surfaced via the ExtractionErrorBanner; no toast
+        // needed here so the user only sees one signal.
+      }
+    },
+    [upload, extract],
+  );
+
+  const handleUseExtraction = () => {
+    if (!declarationFile) return;
+    void runExtraction(declarationFile);
+  };
+
+  const handleRetryExtraction = () => {
+    if (!declarationFile) return;
+    upload.reset();
+    extract.reset();
+    void runExtraction(declarationFile, true);
+  };
+
+  const handleAcceptExtraction = useCallback(() => {
+    if (!extractionResult) return;
+    const { draft, droppedUnits } = extractionToWizardDraft(extractionResult.extraction);
+    // Preserve any contact ids the user had already picked — extraction
+    // never proposes contacts (we never claim to disambiguate names
+    // against the local contact directory), so prior picks survive.
+    const current = getValues();
+    resetForm(
+      {
+        ...draft,
+        general: {
+          ...draft.general,
+          ...(current.general.propertyManagerId
+            ? { propertyManagerId: current.general.propertyManagerId }
+            : {}),
+          ...(current.general.accountantId
+            ? { accountantId: current.general.accountantId }
+            : {}),
+        },
+      },
+      { keepDirty: false, keepTouched: false },
+    );
+    extract.reset();
+    upload.reset();
+    setDeclarationFile(undefined);
+    toast.success(
+      droppedUnits > 0
+        ? tExtraction('toasts.acceptedWithDropped', { count: droppedUnits })
+        : tExtraction('toasts.accepted'),
+    );
+  }, [extractionResult, getValues, resetForm, extract, upload, setDeclarationFile, tExtraction]);
+
+  const handleDiscardExtraction = useCallback(() => {
+    extract.reset();
+    upload.reset();
+  }, [extract, upload]);
+
+  const droppedUnits = extractionResult
+    ? extractionToWizardDraft(extractionResult.extraction).droppedUnits
+    : 0;
+
+  const showLoading = (isUploading || isExtracting) && !extractionResult;
+  const showError = !showLoading && extractionError && !extractionResult;
+  const showPanel = !showLoading && !showError && extractionResult;
 
   return (
     <form className="flex flex-col gap-6" noValidate>
+      {showLoading ? (
+        <ExtractionLoading stage={isUploading ? 'uploading' : 'extracting'} />
+      ) : null}
+      {showError ? (
+        <ExtractionErrorBanner error={extractionError} onRetry={handleRetryExtraction} />
+      ) : null}
+      {showPanel ? (
+        <AiReviewPanel
+          result={extractionResult}
+          onAccept={handleAcceptExtraction}
+          onDiscard={handleDiscardExtraction}
+          droppedUnits={droppedUnits}
+        />
+      ) : null}
+
       <Field
         label={t('managementType.label')}
         htmlFor={ids.managementType}
@@ -215,8 +316,17 @@ export function GeneralInfoForm() {
             <PdfUploader value={declarationFile} onChange={setDeclarationFile} />
             {declarationFile ? (
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Button type="button" onClick={handleUseExtraction} className="sm:flex-1">
-                  <Sparkles className="h-4 w-4" aria-hidden="true" />
+                <Button
+                  type="button"
+                  onClick={handleUseExtraction}
+                  className="sm:flex-1"
+                  disabled={showLoading || Boolean(extractionResult)}
+                >
+                  {showLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" aria-hidden="true" />
+                  )}
                   {t('upload.useAi')}
                 </Button>
                 <Button
@@ -224,6 +334,7 @@ export function GeneralInfoForm() {
                   variant="outline"
                   onClick={handleSkipExtraction}
                   className="sm:flex-1"
+                  disabled={showLoading}
                 >
                   <X className="h-4 w-4" aria-hidden="true" />
                   {t('upload.skipManual')}

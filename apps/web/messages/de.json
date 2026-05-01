@@ -65,8 +65,7 @@
         "tooLarge": "Datei überschreitet das Limit von {mb} MB.",
         "remove": "Entfernen",
         "useAi": "KI-Extraktion verwenden",
-        "skipManual": "Überspringen — ich fülle manuell aus",
-        "extractionStub": "Die KI-Extraktion folgt in einem späteren Ticket. Die Datei bleibt auf diesem Schritt erhalten."
+        "skipManual": "Überspringen — ich fülle manuell aus"
       },
       "contacts": {
         "placeholder": "Auswählen…",
@@ -219,12 +218,75 @@
     }
   },
   "extraction": {
-    "loading": "Dokument wird gelesen… (kann 10–15 Sekunden dauern).",
-    "review": "Wir haben Ihr Dokument gelesen. Bitte prüfen Sie die Ergebnisse, bevor Sie fortfahren.",
-    "acceptAll": "Alles übernehmen & fortfahren",
-    "discard": "Verwerfen & manuell eingeben",
-    "cached": "Aus Cache geladen",
-    "tooLarge": "Dieses Dokument überschreitet das v1-Größenlimit. Bitte füllen Sie das Formular manuell aus."
+    "panel": {
+      "header": "Wir haben Ihr Dokument gelesen.",
+      "subheader": "Prüfen Sie die Ergebnisse, bevor Sie fortfahren. Jedes Feld bleibt editierbar.",
+      "overall": "Konfidenz {score}",
+      "overallAria": "Gesamtkonfidenz {score} Prozent",
+      "duration": "{seconds, number, ::.0} s",
+      "durationAria": "Extraktion in {seconds, number, ::.0} Sekunden",
+      "cached": "Aus Cache",
+      "cachedAria": "Ergebnis aus Cache; kein neuer Modellaufruf",
+      "acceptAll": "Alles übernehmen",
+      "discard": "Verwerfen & manuell eingeben",
+      "droppedUnits": "{count, plural, one {# Einheit verwies auf ein unbekanntes Gebäude und wurde nicht übernommen.} other {# Einheiten verwiesen auf unbekannte Gebäude und wurden nicht übernommen.}}",
+      "sections": {
+        "property": "Objekt",
+        "summary": "Übersicht"
+      },
+      "stats": {
+        "buildings": "Gebäude",
+        "units": "Einheiten"
+      }
+    },
+    "fields": {
+      "property": {
+        "name": "Name",
+        "uniqueNumber": "Objektnummer",
+        "managementType": "Verwaltungsart",
+        "totalMea": "Gesamt-MEA"
+      }
+    },
+    "chip": {
+      "high": "Hoch",
+      "medium": "Mittel",
+      "low": "Niedrig",
+      "unverified": "Ungeprüft",
+      "aria": "{tier} Konfidenz ({score}%)"
+    },
+    "span": {
+      "label": "Quelle",
+      "aria": "Quelle für {field} anzeigen",
+      "header": "Quelle für {field}"
+    },
+    "warnings": {
+      "header": "{count, plural, one {# Hinweis} other {# Hinweise}}",
+      "codes": {
+        "meaMismatch": "MEA-Differenz",
+        "missingField": "Fehlendes Feld",
+        "unrecognizedType": "Unbekannter Einheitentyp",
+        "ambiguousValue": "Mehrdeutiger Wert"
+      }
+    },
+    "status": {
+      "uploading": "Dokument wird hochgeladen…",
+      "extracting": "Dokument wird gelesen…",
+      "hint": "Das kann 10–15 Sekunden dauern. Sobald wir fertig sind, sehen Sie hier die Ergebnisse.",
+      "retry": "Erneut versuchen",
+      "errors": {
+        "tooLarge": "Dieses Dokument überschreitet das v1-Größenlimit.",
+        "timeout": "Das Lesen des Dokuments hat zu lange gedauert.",
+        "parseFailed": "Wir konnten dieses Dokument nicht strukturieren.",
+        "unreadable": "Diese Datei ist kein lesbares PDF.",
+        "unavailable": "Dokumentenspeicher ist vorübergehend nicht verfügbar.",
+        "generic": "Wir konnten dieses Dokument nicht lesen.",
+        "fallbackHint": "Sie können das Formular unten manuell ausfüllen."
+      }
+    },
+    "toasts": {
+      "accepted": "Formular mit den extrahierten Werten vorausgefüllt.",
+      "acceptedWithDropped": "Formular vorausgefüllt. {count, plural, one {# Einheit wurde verworfen, weil das Gebäude nicht erkannt wurde.} other {# Einheiten wurden verworfen, weil die Gebäude nicht erkannt wurden.}}"
+    }
   },
   "errors": {
     "generic": "Auf unserer Seite ist etwas schiefgelaufen",

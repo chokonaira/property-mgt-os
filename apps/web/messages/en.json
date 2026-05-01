@@ -65,8 +65,7 @@
         "tooLarge": "File exceeds the {mb} MB limit.",
         "remove": "Remove",
         "useAi": "Use AI to extract",
-        "skipManual": "Skip — I'll fill manually",
-        "extractionStub": "AI extraction lands in a later ticket. The file is preserved on this step."
+        "skipManual": "Skip — I'll fill manually"
       },
       "contacts": {
         "placeholder": "Choose…",
@@ -219,12 +218,75 @@
     }
   },
   "extraction": {
-    "loading": "Reading the document… (this can take 10–15 seconds).",
-    "review": "We read your document. Review what we found before continuing.",
-    "acceptAll": "Accept all & continue",
-    "discard": "Discard & enter manually",
-    "cached": "Served from cache",
-    "tooLarge": "This document exceeds the v1 size limit. Please fill the form manually."
+    "panel": {
+      "header": "We read your document.",
+      "subheader": "Review what we found before continuing. Every field stays editable.",
+      "overall": "Confidence {score}",
+      "overallAria": "Overall confidence {score} percent",
+      "duration": "{seconds, number, ::.0} s",
+      "durationAria": "Extracted in {seconds, number, ::.0} seconds",
+      "cached": "Served from cache",
+      "cachedAria": "Result served from cache; no new model call",
+      "acceptAll": "Accept all & continue",
+      "discard": "Discard & enter manually",
+      "droppedUnits": "{count, plural, one {# unit referenced an unknown building and was dropped from the pre-fill.} other {# units referenced unknown buildings and were dropped from the pre-fill.}}",
+      "sections": {
+        "property": "Property",
+        "summary": "Summary"
+      },
+      "stats": {
+        "buildings": "Buildings",
+        "units": "Units"
+      }
+    },
+    "fields": {
+      "property": {
+        "name": "Name",
+        "uniqueNumber": "Unique number",
+        "managementType": "Management type",
+        "totalMea": "Total MEA"
+      }
+    },
+    "chip": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "unverified": "Unverified",
+      "aria": "{tier} confidence ({score}%)"
+    },
+    "span": {
+      "label": "Source",
+      "aria": "Show source for {field}",
+      "header": "Source for {field}"
+    },
+    "warnings": {
+      "header": "{count, plural, one {# warning} other {# warnings}}",
+      "codes": {
+        "meaMismatch": "MEA mismatch",
+        "missingField": "Missing field",
+        "unrecognizedType": "Unrecognized unit type",
+        "ambiguousValue": "Ambiguous value"
+      }
+    },
+    "status": {
+      "uploading": "Uploading the document…",
+      "extracting": "Reading the document…",
+      "hint": "This can take 10–15 seconds. We'll show what we found as soon as it's ready.",
+      "retry": "Try again",
+      "errors": {
+        "tooLarge": "This document is too large for the v1 size limit.",
+        "timeout": "Reading the document took too long.",
+        "parseFailed": "We couldn't structure this document.",
+        "unreadable": "This file isn't a readable PDF.",
+        "unavailable": "Document storage is temporarily unavailable.",
+        "generic": "We couldn't read this document.",
+        "fallbackHint": "You can fill the form manually below."
+      }
+    },
+    "toasts": {
+      "accepted": "Pre-filled the form with the extracted values.",
+      "acceptedWithDropped": "Pre-filled the form. {count, plural, one {# unit was dropped because its building wasn't recognized.} other {# units were dropped because their buildings weren't recognized.}}"
+    }
   },
   "errors": {
     "generic": "Something went wrong on our side",
