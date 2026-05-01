@@ -167,7 +167,12 @@ export function GenerateUnitsDialog({ onGenerate }: GenerateUnitsDialogProps) {
               min={1}
               max={GENERATE_MAX_COUNT}
               value={count}
-              onChange={(e) => setCount(Math.max(0, Number(e.target.value) || 0))}
+              onChange={(e) => {
+                const raw = Number(e.target.value) || 0;
+                // Clamp on input — `max` on the <input> only fires
+                // on form submission, which we don't use here.
+                setCount(Math.min(GENERATE_MAX_COUNT, Math.max(0, raw)));
+              }}
             />
           </Field>
           <Field htmlFor={ids.startAt} label={t('startAt')}>

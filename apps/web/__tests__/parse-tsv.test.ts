@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parsePastedRows } from '@/lib/parse-tsv';
+import { parsePastedRows, shouldHandleAsBulkPaste } from '@/lib/parse-tsv';
 
 describe('parsePastedRows', () => {
   it('returns empty when input is blank', () => {
@@ -97,5 +97,43 @@ describe('parsePastedRows', () => {
     const tsv = '1\tAPARTMENT\t0\r\n2\tAPARTMENT\t0';
     const result = parsePastedRows(tsv, { buildingsCount: 1 });
     expect(result.rows).toHaveLength(2);
+  });
+});
+
+describe('shouldHandleAsBulkPaste', () => {
+  // The unit table's container-level paste handler routes based on
+  // this rule. False here = let the focused input handle the paste
+  // natively. True = bulk-paste path (event.preventDefault + parse).
+
+  it('returns false on empty / whitespace-only input', () => {
+    expect(shouldHandleAsBulkPaste('')).toBe(false);
+  });
+
+  it('returns true for multi-line content (Excel rows always have \\n)', () => {
+    expect(shouldHandleAsBulkPaste('1\tAPARTMENT\n2\tAPARTMENT')).toBe(true);
+    expect(shouldHandleAsBulkPaste('1,APARTMENT\n2,APARTMENT')).toBe(true);
+  });
+
+  it('returns true for single-line TSV (tab is unambiguous)', () => {
+    expect(shouldHandleAsBulkPaste('1\tAPARTMENT\t0')).toBe(true);
+  });
+
+  it('returns false for single-line German numbers ("1.234,56")', () => {
+    expect(shouldHandleAsBulkPaste('1.234,56')).toBe(false);
+  });
+
+  it('returns false for single-line prose with a comma ("Berlin, 10115")', () => {
+    expect(shouldHandleAsBulkPaste('Berlin, 10115')).toBe(false);
+    expect(shouldHandleAsBulkPaste('Hi, world')).toBe(false);
+  });
+
+  it('returns false for plain single-cell content', () => {
+    expect(shouldHandleAsBulkPaste('EG')).toBe(false);
+    expect(shouldHandleAsBulkPaste('80')).toBe(false);
+    expect(shouldHandleAsBulkPaste('Apartment')).toBe(false);
+  });
+
+  it('handles \\r\\n line endings as multi-row', () => {
+    expect(shouldHandleAsBulkPaste('1\tAPARTMENT\r\n2\tAPARTMENT')).toBe(true);
   });
 });

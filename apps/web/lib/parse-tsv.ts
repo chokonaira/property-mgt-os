@@ -46,6 +46,23 @@ export interface PasteRowError {
   message: string;
 }
 
+/**
+ * Decision helper for the unit-table's container-level paste handler.
+ * Returns `true` only when the clipboard text is unambiguous bulk
+ * paste; single-line content with a comma is NOT a bulk-paste signal
+ * because German numbers ("1.234,56") and prose ("Berlin, 10115") are
+ * common single-cell pastes that must reach the focused input.
+ *
+ * Pure: no DOM / RHF coupling so the rule can be unit-tested.
+ */
+export function shouldHandleAsBulkPaste(raw: string): boolean {
+  if (!raw) return false;
+  const candidate = raw.replace(/\r\n?/g, '\n');
+  if (candidate.includes('\n')) return true; // multi-row → unambiguous
+  if (candidate.includes('\t')) return true; // single-line TSV → unambiguous
+  return false; // single-line + comma is too noisy to claim
+}
+
 export interface ParsedPaste {
   /** Strict draft rows ready to push into the field-array. */
   rows: WizardUnitDraft[];

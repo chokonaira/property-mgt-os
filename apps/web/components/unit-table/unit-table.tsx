@@ -13,7 +13,7 @@ import { useWizard } from '@/components/wizard/wizard-context';
 import { FloorCell } from '@/components/unit-table/floor-cell';
 import { GenerateUnitsDialog } from '@/components/unit-table/generate-units-dialog';
 import { useCellNavigation } from '@/components/unit-table/use-cell-navigation';
-import { parsePastedRows } from '@/lib/parse-tsv';
+import { parsePastedRows, shouldHandleAsBulkPaste } from '@/lib/parse-tsv';
 import { nextNumber } from '@/lib/duplicate-unit-number';
 import {
   EMPTY_UNIT,
@@ -59,7 +59,15 @@ export function UnitTable() {
       return next;
     });
   }, []);
-  const allSelected = fields.length > 0 && selectedIds.size === fields.length;
+  // Live count: only ids that still exist in the field array. Per-row
+  // Trash deletes don't prune selectedIds (state lives outside RHF),
+  // so a stale id can survive in the Set. Filtering here keeps the
+  // bulk-delete bar's count honest.
+  const liveSelectedCount = useMemo(
+    () => fields.reduce((acc, f) => (selectedIds.has(f.id) ? acc + 1 : acc), 0),
+    [fields, selectedIds],
+  );
+  const allSelected = fields.length > 0 && liveSelectedCount === fields.length;
   const toggleAll = useCallback(() => {
     setSelectedIds((prev) =>
       prev.size === fields.length ? new Set() : new Set(fields.map((f) => f.id)),
@@ -76,7 +84,7 @@ export function UnitTable() {
   );
 
   const deleteSelected = useCallback(() => {
-    if (selectedIds.size === 0) return;
+    if (liveSelectedCount === 0) return;
     const indices: number[] = [];
     fields.forEach((f, idx) => {
       if (selectedIds.has(f.id)) indices.push(idx);
@@ -85,7 +93,7 @@ export function UnitTable() {
     indices.reverse().forEach((idx) => remove(idx));
     setSelectedIds(new Set());
     toast.success(t('bulkDelete.toast', { count: indices.length }));
-  }, [fields, remove, selectedIds, t]);
+  }, [fields, remove, selectedIds, liveSelectedCount, t]);
 
   const columns = useMemo<Array<ColumnDef<WizardUnitDraft & { _id: string }, RowMeta>>>(
     () => [
@@ -324,21 +332,25 @@ export function UnitTable() {
     getCoreRowModel: getCoreRowModel(),
   });
 
-  // Container-level paste handler. Single-cell paste falls through to
-  // the focused input's native paste; multi-row TSV / CSV pastes
-  // trigger row creation. Detection: split candidate text by line
-  // breaks; if more than one row OR the first row has a delimiter,
-  // we treat it as a bulk paste.
+  // Container-level paste handler. Bulk paste triggers row creation;
+  // anything else falls through to the focused input's native paste.
+  //
+  // Bulk-paste signals (must be unambiguous — false positives swallow
+  // the user's text):
+  //   - multi-line content (\n)         — Excel rows always have \n
+  //   - single-line with a tab          — TSV is unambiguous
+  //
+  // Single-line content with a comma is NOT a bulk-paste signal: a
+  // user pasting "1.234,56" (German number) into a sizeSqm cell or
+  // "Berlin, 10115" into a description cell would otherwise lose
+  // their text to the parser. Plain CSV requires multiple lines to
+  // qualify, which matches how Excel's "copy as CSV" actually works.
   const handlePaste = useCallback(
     (event: React.ClipboardEvent<HTMLDivElement>) => {
       const raw = event.clipboardData.getData('text/plain');
-      if (!raw) return;
-      const candidate = raw.replace(/\r\n?/g, '\n');
-      const looksMultiRow = candidate.includes('\n');
-      const looksMultiCol = candidate.includes('\t') || candidate.includes(',');
-      if (!looksMultiRow && !looksMultiCol) return; // single-cell — let native paste win
+      if (!shouldHandleAsBulkPaste(raw)) return;
       event.preventDefault();
-      const parsed = parsePastedRows(candidate, { buildingsCount: buildings.length });
+      const parsed = parsePastedRows(raw, { buildingsCount: buildings.length });
       if (parsed.rows.length === 0) return;
       // Replace the seeded empty unit when the user pastes into a
       // pristine table; otherwise append. Keeps "click Add unit, paste"
@@ -372,10 +384,10 @@ export function UnitTable() {
       onPaste={handlePaste}
       className="flex flex-col gap-3"
     >
-      {selectedIds.size > 0 ? (
+      {liveSelectedCount > 0 ? (
         <div className="flex flex-col-reverse items-stretch gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-foreground">
-            {t('bulkDelete.selectedCount', { count: selectedIds.size })}
+            {t('bulkDelete.selectedCount', { count: liveSelectedCount })}
           </p>
           <div className="flex items-center gap-2 sm:justify-end">
             <Button
@@ -391,7 +403,7 @@ export function UnitTable() {
               variant="destructive"
               size="sm"
               onClick={deleteSelected}
-              disabled={selectedIds.size >= fields.length}
+              disabled={liveSelectedCount >= fields.length}
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
               {t('bulkDelete.deleteSelected')}
