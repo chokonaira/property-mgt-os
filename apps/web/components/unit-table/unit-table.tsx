@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FloorCell } from '@/components/unit-table/floor-cell';
+import { useCellNavigation } from '@/components/unit-table/use-cell-navigation';
 import {
   EMPTY_UNIT,
   WIZARD_UNIT_TYPES,
@@ -34,6 +35,7 @@ export function UnitTable() {
   const { fields, append, remove } = useFieldArray({ control, name: 'units' });
   const buildingsWatch = useWatch({ control, name: 'buildings' });
   const buildings = useMemo(() => buildingsWatch ?? [], [buildingsWatch]);
+  const { containerRef, onKeyDown, onFocus } = useCellNavigation();
 
   const columns = useMemo<Array<ColumnDef<WizardUnitDraft & { _id: string }, RowMeta>>>(
     () => [
@@ -57,6 +59,8 @@ export function UnitTable() {
         size: 130,
         cell: ({ row }) => (
           <select
+            data-cell-row={row.index}
+            data-cell-col="type"
             {...register(`units.${row.index}.type`, {
               onChange: (e) => {
                 const next = e.target.value as WizardUnitType;
@@ -93,6 +97,8 @@ export function UnitTable() {
         size: 160,
         cell: ({ row }) => (
           <select
+            data-cell-row={row.index}
+            data-cell-col="building"
             {...register(`units.${row.index}.buildingIndex`, { valueAsNumber: true })}
             className={cellInputClass}
           >
@@ -122,6 +128,8 @@ export function UnitTable() {
           <input
             type="text"
             maxLength={40}
+            data-cell-row={row.index}
+            data-cell-col="entranceLabel"
             {...register(`units.${row.index}.entranceLabel`, {
               setValueAs: emptyToUndefined,
             })}
@@ -139,6 +147,8 @@ export function UnitTable() {
             inputMode="decimal"
             step="0.01"
             min={0}
+            data-cell-row={row.index}
+            data-cell-col="sizeSqm"
             {...register(`units.${row.index}.sizeSqm`, {
               setValueAs: emptyToUndefinedNumber,
             })}
@@ -174,6 +184,8 @@ export function UnitTable() {
             inputMode="numeric"
             min={1800}
             max={new Date().getFullYear() + 1}
+            data-cell-row={row.index}
+            data-cell-col="yearBuilt"
             {...register(`units.${row.index}.yearBuilt`, {
               setValueAs: emptyToUndefinedNumber,
             })}
@@ -189,6 +201,8 @@ export function UnitTable() {
           <input
             type="text"
             maxLength={500}
+            data-cell-row={row.index}
+            data-cell-col="description"
             {...register(`units.${row.index}.description`, {
               setValueAs: emptyToUndefined,
             })}
@@ -230,7 +244,7 @@ export function UnitTable() {
   });
 
   return (
-    <div className="flex flex-col gap-3">
+    <div ref={containerRef} onKeyDown={onKeyDown} onFocus={onFocus} className="flex flex-col gap-3">
       <div className="overflow-x-auto rounded-lg border border-border bg-card">
         <table className="w-full min-w-[1000px] caption-bottom text-sm">
           <thead className="border-b border-border bg-muted/30">
@@ -310,6 +324,8 @@ function RoomsCell({ rowIndex }: { rowIndex: number }) {
       max={50}
       disabled={!isApartment}
       aria-disabled={!isApartment}
+      data-cell-row={rowIndex}
+      data-cell-col="rooms"
       {...register(`units.${rowIndex}.rooms`, {
         setValueAs: emptyToUndefinedNumber,
       })}
@@ -329,6 +345,8 @@ function NumberCell({ rowIndex }: { rowIndex: number }) {
     <input
       type="text"
       maxLength={20}
+      data-cell-row={rowIndex}
+      data-cell-col="number"
       aria-invalid={Boolean(error) || undefined}
       title={error}
       {...register(`units.${rowIndex}.number`)}
@@ -351,6 +369,8 @@ function MeaCell({ rowIndex }: { rowIndex: number }) {
       step="0.1"
       min={0}
       max={10000}
+      data-cell-row={rowIndex}
+      data-cell-col="meaShare"
       aria-invalid={Boolean(error) || undefined}
       title={error}
       {...register(`units.${rowIndex}.meaShare`, {

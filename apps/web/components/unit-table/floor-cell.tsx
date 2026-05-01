@@ -26,6 +26,7 @@ export function FloorCell({ rowIndex }: FloorCellProps) {
       name={`units.${rowIndex}.floor`}
       render={({ field, fieldState }) => (
         <FloorEditor
+          rowIndex={rowIndex}
           value={field.value as Floor | undefined}
           onChange={(next) => field.onChange(next)}
           invalid={Boolean(fieldState.error)}
@@ -37,11 +38,13 @@ export function FloorCell({ rowIndex }: FloorCellProps) {
 }
 
 function FloorEditor({
+  rowIndex,
   value,
   onChange,
   invalid,
   t,
 }: {
+  rowIndex: number;
   value: Floor | undefined;
   onChange: (value: Floor | undefined) => void;
   invalid: boolean;
@@ -76,6 +79,8 @@ function FloorEditor({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
+        data-cell-row={rowIndex}
+        data-cell-col="floor"
         className={cn(
           'flex h-9 w-full items-center justify-between gap-1 rounded-md border border-input bg-background px-2 text-left text-sm',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
