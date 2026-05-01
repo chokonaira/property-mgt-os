@@ -41,3 +41,22 @@ export function formatSqm(value: number | undefined, locale: string): string {
   if (value === undefined) return '—';
   return `${formatNumber(value, locale)} m²`;
 }
+
+export interface MeaStatus {
+  expected: number;
+  matches: boolean;
+  ratio: number;
+  delta: number;
+}
+
+// `total` undefined ⇒ caller hasn't declared a target; we treat the running
+// sum as the source of truth (always balanced). When `total` is 0 we still
+// compare honestly against it: a non-zero sum is a mismatch.
+export function evaluateMea(sum: number, total: number | undefined): MeaStatus {
+  const tolerance = 0.01;
+  const expected = total ?? sum;
+  const delta = expected - sum;
+  const matches = Math.abs(delta) <= tolerance;
+  const ratio = expected > 0 ? Math.min(sum / expected, 1) : 0;
+  return { expected, matches, ratio, delta };
+}

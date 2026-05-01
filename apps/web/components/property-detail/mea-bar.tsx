@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { formatNumber } from '@/lib/format';
+import { evaluateMea, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 interface MeaBarProps {
@@ -11,11 +11,7 @@ interface MeaBarProps {
 export function MeaBar({ sum, total }: MeaBarProps) {
   const t = useTranslations('propertyDetail.mea');
   const locale = useLocale();
-  const expected = total ?? sum;
-  const diff = expected - sum;
-  const tolerance = 0.01;
-  const matches = Math.abs(diff) <= tolerance;
-  const ratio = expected > 0 ? Math.min(sum / expected, 1) : 0;
+  const { matches, ratio, delta } = evaluateMea(sum, total);
 
   return (
     <div
@@ -48,7 +44,7 @@ export function MeaBar({ sum, total }: MeaBarProps) {
         />
       </div>
       <p className="text-xs text-muted-foreground sm:text-right">
-        {matches ? t('balanced') : t('mismatch', { delta: formatNumber(Math.abs(diff), locale) })}
+        {matches ? t('balanced') : t('mismatch', { delta: formatNumber(Math.abs(delta), locale) })}
       </p>
     </div>
   );
