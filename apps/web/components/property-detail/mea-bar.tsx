@@ -14,7 +14,7 @@ export function MeaBar({ sum, total }: MeaBarProps) {
   const expected = total ?? sum;
   const diff = expected - sum;
   const tolerance = 0.01;
-  const matches = Math.abs(diff) <= tolerance || expected === 0;
+  const matches = Math.abs(diff) <= tolerance;
   const ratio = expected > 0 ? Math.min(sum / expected, 1) : 0;
 
   return (

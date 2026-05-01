@@ -51,7 +51,7 @@ function BuildingCard({ building, unitCount }: { building: Building; unitCount: 
         />
         <Stat
           label={t('floors')}
-          value={building.floorsCount ? String(building.floorsCount) : '—'}
+          value={building.floorsCount != null ? String(building.floorsCount) : '—'}
         />
         <Stat
           label={t('elevator')}
