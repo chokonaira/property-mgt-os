@@ -7,17 +7,27 @@ interface MappedError {
   status: HttpStatus;
   code: ErrorCode;
   message: string;
+  details?: unknown;
 }
 
 function map(error: Prisma.PrismaClientKnownRequestError): MappedError | null {
   switch (error.code) {
     case 'P2002': {
       const target = (error.meta as { target?: string[] | string } | undefined)?.target;
-      const fields = Array.isArray(target) ? target.join(', ') : (target ?? 'value');
+      const fields = Array.isArray(target) ? target : target ? [target] : ['value'];
+      // For atomic-save flows (POST /properties) the wizard needs to point
+      // the offending input — e.g. `uniqueNumber` collisions surface on the
+      // step-1 input. Emitting field-pointed details lets the client map
+      // the conflict back without parsing the message string.
       return {
         status: HttpStatus.CONFLICT,
         code: 'CONFLICT',
-        message: `Duplicate value for unique field(s): ${fields}.`,
+        message: `Duplicate value for unique field(s): ${fields.join(', ')}.`,
+        details: fields.map((field) => ({
+          path: field,
+          message: 'Already in use by another record.',
+          code: 'unique',
+        })),
       };
     }
     case 'P2025':
@@ -46,7 +56,12 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     }
 
     const body: ApiErrorEnvelope = {
-      error: { code: mapped.code, message: mapped.message, requestId },
+      error: {
+        code: mapped.code,
+        message: mapped.message,
+        ...(mapped.details === undefined ? {} : { details: mapped.details }),
+        requestId,
+      },
     };
 
     res.status(mapped.status).json(body);

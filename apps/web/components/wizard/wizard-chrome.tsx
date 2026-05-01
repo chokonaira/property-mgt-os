@@ -1,21 +1,38 @@
 'use client';
 
 import { useEffect, useTransition, type ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Trash2 } from 'lucide-react';
+import { useFormContext } from 'react-hook-form';
+import { ArrowLeft, ArrowRight, Loader2, Save, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 import { useRouter, usePathname } from '@/i18n/navigation';
+import { ApiError } from '@/lib/api-client';
+import { useCreateProperty } from '@/lib/hooks/use-create-property';
 import { Button } from '@/components/ui/button';
 import { StepIndicator } from './step-indicator';
 import { WIZARD_STEPS, nextStep, pathForStep, previousStep, stepFromPath } from './steps';
 import { isPriorStepValid, useWizard } from './wizard-context';
+import type { WizardDraft, WizardDraftInput } from '@/lib/schemas/wizard-draft';
+import { buildCreatePropertyRequest } from '@/lib/wizard-to-create-request';
+
+const FIELD_DETAIL_PREFIX_TO_STEP: Array<[RegExp, string]> = [
+  [/^property\./, '/properties/new'],
+  [/^buildings(\.|$)/, '/properties/new/buildings'],
+  [/^units(\.|$)/, '/properties/new/units'],
+];
 
 export function WizardChrome({ children }: { children: ReactNode }) {
   const t = useTranslations('wizard');
+  const tToasts = useTranslations('wizard.toasts');
+  const tErr = useTranslations('errors');
   const router = useRouter();
   const pathname = usePathname();
   const currentStep = stepFromPath(pathname);
   const { validity, validateStep, reset, hydrated } = useWizard();
+  const { setError, getValues, trigger } = useFormContext<WizardDraftInput, unknown, WizardDraft>();
   const [isPending, startTransition] = useTransition();
+  const createProperty = useCreateProperty();
+  const isLastStep = currentStep === WIZARD_STEPS[WIZARD_STEPS.length - 1];
 
   // Don't redirect until the persisted draft has been restored AND each
   // step's validity has been derived from it. Otherwise a hard refresh on
@@ -48,6 +65,80 @@ export function WizardChrome({ children }: { children: ReactNode }) {
     startTransition(() => router.push('/'));
   }
 
+  async function handleSave() {
+    // Trigger every step's validation up front so the user lands on
+    // the correct step if something earlier is broken (e.g. someone
+    // tampered with the persisted draft).
+    const allOk = await trigger();
+    if (!allOk) {
+      toast.error(tToasts('failureValidation'));
+      return;
+    }
+    const draft = getValues() as WizardDraft;
+    const payload = buildCreatePropertyRequest(draft);
+
+    createProperty.mutate(payload, {
+      onSuccess: (detail) => {
+        reset();
+        toast.success(tToasts('success'));
+        startTransition(() => router.push(`/properties/${detail.id}`));
+      },
+      onError: (error) => {
+        if (error instanceof ApiError) {
+          if (error.status === 409) {
+            // PrismaExceptionFilter pins the conflicting column in details.
+            const details = (error.body.details ?? []) as Array<{ path?: string }>;
+            const onUniqueNumber = details.some((d) => d.path?.includes('uniqueNumber'));
+            if (onUniqueNumber) {
+              setError('general.uniqueNumber', {
+                type: 'conflict',
+                message: tErr('conflictUniqueNumber'),
+              });
+              startTransition(() => router.push(pathForStep(WIZARD_STEPS[0])));
+              toast.error(tErr('conflictUniqueNumber'));
+              return;
+            }
+          }
+          if (error.status === 422 && Array.isArray(error.body.details)) {
+            type Detail = { path?: string; message?: string };
+            const details = error.body.details as Detail[];
+            for (const issue of details) {
+              if (!issue.path) continue;
+              setError(issue.path as keyof WizardDraftInput, {
+                type: 'server',
+                message: issue.message ?? tToasts('failureValidation'),
+              });
+            }
+            // Route the user to the first step that owns a flagged field.
+            const firstPath = details.find((d) => Boolean(d.path))?.path;
+            if (firstPath) {
+              const route = FIELD_DETAIL_PREFIX_TO_STEP.find(([re]) => re.test(firstPath))?.[1];
+              if (route && route !== pathname) {
+                startTransition(() => router.push(route));
+              }
+            }
+            toast.error(tToasts('failureValidation'));
+            return;
+          }
+        }
+        toast.error(tToasts('failureGeneric'));
+      },
+    });
+  }
+
+  const saving = createProperty.isPending;
+  const advanceLabel = isLastStep ? t('save') : t('next');
+  const advanceIcon = isLastStep ? (
+    saving ? (
+      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+    ) : (
+      <Save className="h-4 w-4" aria-hidden="true" />
+    )
+  ) : (
+    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+  );
+  const advanceDisabled = isPending || saving || !validity[currentStep] || (!isLastStep && !next);
+
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -61,6 +152,7 @@ export function WizardChrome({ children }: { children: ReactNode }) {
           variant="ghost"
           size="sm"
           onClick={handleDiscard}
+          disabled={saving}
           className="self-start text-muted-foreground hover:text-destructive"
         >
           <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -75,19 +167,20 @@ export function WizardChrome({ children }: { children: ReactNode }) {
         <Button
           variant="outline"
           onClick={handleBack}
-          disabled={!back || isPending}
+          disabled={!back || isPending || saving}
           className="sm:min-w-32"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           {t('back')}
         </Button>
         <Button
-          onClick={handleNext}
-          disabled={!next || isPending || !validity[currentStep]}
+          onClick={isLastStep ? handleSave : handleNext}
+          disabled={advanceDisabled}
           className="sm:min-w-32"
         >
-          {t('next')}
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          {!isLastStep ? <span>{advanceLabel}</span> : null}
+          {advanceIcon}
+          {isLastStep ? <span>{advanceLabel}</span> : null}
         </Button>
       </footer>
     </main>

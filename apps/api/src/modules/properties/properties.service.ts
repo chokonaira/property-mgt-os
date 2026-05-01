@@ -1,8 +1,10 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import type {
   Building,
   Contact,
+  CreatePropertyRequest,
+  CreateUnitWithBuildingIndex,
   Floor,
   PropertyDetail,
   PropertyListItem,
@@ -71,6 +73,146 @@ export class PropertiesService {
     }
     return mapPropertyDetail(row);
   }
+
+  /**
+   * Atomic create: property + N buildings + M units in a single
+   * Prisma `$transaction`. Either everything persists or nothing
+   * does. Tenant scoping is enforced server-side; clients never
+   * supply `tenantId`.
+   *
+   * The wizard sends each unit with a `buildingIndex` (its position
+   * in the buildings array). We create the buildings first, capture
+   * the assigned id at each index, then resolve `buildingIndex` →
+   * `buildingId` when inserting units. The Zod superRefine has
+   * already verified the index is in-range.
+   *
+   * `uniqueNumber` collisions are not pre-checked: that race would
+   * still let two concurrent requests pass and then collide at
+   * insert. Instead, the DB unique constraint trips P2002, which
+   * the PrismaExceptionFilter maps to a 409 envelope with a
+   * `path: 'uniqueNumber'` detail the form can pin to its input.
+   */
+  async create(tenantId: string, dto: CreatePropertyRequest): Promise<PropertyDetail> {
+    return this.prisma.$transaction(async (tx) => {
+      const property = await tx.property.create({
+        data: {
+          tenantId,
+          managementType: dto.property.managementType,
+          name: dto.property.name,
+          uniqueNumber: dto.property.uniqueNumber,
+          totalMea: dto.property.totalMea ?? null,
+          notarialRollNo: dto.property.notarialRollNo ?? null,
+          notarizedAt: dto.property.notarizedAt ?? null,
+          declarationFileId: dto.property.declarationFileId ?? null,
+          grundbuchOffice: dto.property.grundbuchOffice ?? null,
+          grundbuchSheet: dto.property.grundbuchSheet ?? null,
+          gemarkung: dto.property.gemarkung ?? null,
+          flur: dto.property.flur ?? null,
+          flurstueck: dto.property.flurstueck ?? null,
+          totalAreaSqm: dto.property.totalAreaSqm ?? null,
+          propertyManagerId: dto.property.propertyManagerId ?? null,
+          accountantId: dto.property.accountantId ?? null,
+        },
+      });
+
+      const buildingIds: string[] = [];
+      for (const building of dto.buildings) {
+        const created = await tx.building.create({
+          data: {
+            propertyId: property.id,
+            street: building.street,
+            houseNumber: building.houseNumber,
+            postalCode: building.postalCode ?? null,
+            city: building.city ?? null,
+            country: building.country,
+            label: building.label ?? null,
+            nickname: building.nickname ?? null,
+            yearBuilt: building.yearBuilt ?? null,
+            floorsCount: building.floorsCount ?? null,
+            hasElevator: building.hasElevator ?? null,
+            energyStandard: building.energyStandard ?? null,
+            heating: building.heating ?? null,
+            buildingType: building.buildingType ?? null,
+          },
+        });
+        buildingIds.push(created.id);
+      }
+
+      // Inserting units one-by-one inside the transaction keeps the
+      // invariant that a single failure rolls everything back. With
+      // ~14 units in the seed, throughput is fine; for >100-unit
+      // imports we would batch via createMany when AI extraction
+      // lands.
+      for (const unit of dto.units) {
+        const buildingId = buildingIds[unit.buildingIndex];
+        if (!buildingId) {
+          // The Zod superRefine already guards this, but a defensive
+          // throw inside the transaction keeps the error surface
+          // honest if anyone bypasses the pipe.
+          throw new AppException(
+            'VALIDATION_FAILED',
+            `Unit references buildingIndex ${unit.buildingIndex}, which is out of range.`,
+            HttpStatus.UNPROCESSABLE_ENTITY,
+          );
+        }
+        await tx.unit.create({
+          data: { buildingId, ...unitToData(unit) },
+        });
+      }
+
+      const detail = await tx.property.findUnique({
+        where: { id: property.id },
+        include: {
+          propertyManager: true,
+          accountant: true,
+          buildings: { include: { units: true } },
+        },
+      });
+      if (!detail) {
+        // Unreachable inside the transaction, but Prisma's findUnique
+        // type insists on null possibility.
+        throw new AppException(
+          'INTERNAL',
+          'Failed to read back the created property.',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+      return mapPropertyDetail(detail);
+    });
+  }
+}
+
+function unitToData(
+  unit: CreateUnitWithBuildingIndex,
+): Omit<Prisma.UnitUncheckedCreateInput, 'buildingId'> {
+  const floor = unit.floor;
+  // Discriminated-union flatten: every variant collapses to the same
+  // (floorKind / floorLevel / floorQualifier) trio the row stores.
+  const floorKind = floor?.kind ?? null;
+  const floorLevel = floor?.kind === 'OG' || floor?.kind === 'UG' ? floor.level : null;
+  const floorQualifier = floor?.kind === 'STAFFEL' ? (floor.qualifier ?? null) : null;
+  // The DB has a single `subCategory` column shared across variants.
+  // Each wire variant carries its own field name (subCategory /
+  // layoutNote / parkingCode); collapse to the column on write.
+  let subCategory: string | null = null;
+  if (unit.type === 'APARTMENT') subCategory = unit.subCategory ?? null;
+  else if (unit.type === 'OFFICE') subCategory = unit.layoutNote ?? null;
+  else if (unit.type === 'PARKING') subCategory = unit.parkingCode ?? null;
+
+  return {
+    type: unit.type,
+    number: unit.number,
+    meaShare: new Prisma.Decimal(unit.meaShare),
+    sizeSqm: new Prisma.Decimal(unit.sizeSqm),
+    rooms: unit.type === 'APARTMENT' ? unit.rooms : null,
+    floorKind,
+    floorLevel,
+    floorQualifier,
+    entranceLabel: unit.entranceLabel ?? null,
+    yearBuilt: unit.yearBuilt ?? null,
+    description: unit.description ?? null,
+    subCategory,
+  };
 }
 
 function mapPropertyDetail(row: PropertyWithRelations): PropertyDetail {

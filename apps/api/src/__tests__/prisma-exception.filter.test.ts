@@ -48,6 +48,22 @@ describe('PrismaExceptionFilter', () => {
     });
   });
 
+  it('attaches a field-pointed details array on P2002 so the form can pin the input', () => {
+    const { host, res } = makeHost();
+    const err = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+      code: 'P2002',
+      clientVersion: '5.22.0',
+      meta: { target: ['uniqueNumber'] },
+    });
+
+    filter.catch(err, host);
+
+    const body = res.json.mock.calls[0]?.[0];
+    expect(body.error.details).toEqual([
+      { path: 'uniqueNumber', message: 'Already in use by another record.', code: 'unique' },
+    ]);
+  });
+
   it('maps P2025 record-not-found to 404 NOT_FOUND envelope', () => {
     const { host, res } = makeHost();
     const err = new Prisma.PrismaClientKnownRequestError('Record to update not found', {

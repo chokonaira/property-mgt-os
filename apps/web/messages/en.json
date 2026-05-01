@@ -30,6 +30,12 @@
     "next": "Next",
     "discard": "Discard draft",
     "discardConfirm": "Discard this draft? Any entered data will be lost.",
+    "save": "Save property",
+    "toasts": {
+      "success": "Property saved.",
+      "failureValidation": "Some fields need attention. Check the highlighted inputs.",
+      "failureGeneric": "Couldn't save the property. Try again in a moment."
+    },
     "general": {
       "managementType": {
         "label": "Management type",
@@ -226,6 +232,7 @@
     "goHome": "Go home",
     "notFound": "Page not found",
     "backToDashboard": "Back to dashboard",
+    "conflictUniqueNumber": "This unique number is already in use by another property.",
     "zod": {
       "required": "This field is required.",
       "invalid_type": "Expected {expected}, received {received}.",
