@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
-import { Trash2 } from 'lucide-react';
+import { Copy, Trash2 } from 'lucide-react';
 import { useFormContext, useFieldArray, useWatch } from 'react-hook-form';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -14,6 +14,7 @@ import { FloorCell } from '@/components/unit-table/floor-cell';
 import { GenerateUnitsDialog } from '@/components/unit-table/generate-units-dialog';
 import { useCellNavigation } from '@/components/unit-table/use-cell-navigation';
 import { parsePastedRows } from '@/lib/parse-tsv';
+import { nextNumber } from '@/lib/duplicate-unit-number';
 import {
   EMPTY_UNIT,
   WIZARD_UNIT_TYPES,
@@ -36,8 +37,8 @@ interface RowMeta {
 
 export function UnitTable() {
   const t = useTranslations('wizard.units');
-  const { control, register } = useFormContext<WizardDraftInput>();
-  const { fields, append, remove } = useFieldArray({ control, name: 'units' });
+  const { control, register, getValues } = useFormContext<WizardDraftInput>();
+  const { fields, append, remove, insert } = useFieldArray({ control, name: 'units' });
   const buildingsWatch = useWatch({ control, name: 'buildings' });
   const buildings = useMemo(() => buildingsWatch ?? [], [buildingsWatch]);
   const { containerRef, onKeyDown, onFocus } = useCellNavigation();
@@ -47,8 +48,73 @@ export function UnitTable() {
     [markFieldEdited],
   );
 
+  // Selection state keyed on the field array's stable RHF id (not
+  // the row index — index shifts when rows are removed).
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
+  const toggleRow = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+  const allSelected = fields.length > 0 && selectedIds.size === fields.length;
+  const toggleAll = useCallback(() => {
+    setSelectedIds((prev) =>
+      prev.size === fields.length ? new Set() : new Set(fields.map((f) => f.id)),
+    );
+  }, [fields]);
+
+  const duplicateRow = useCallback(
+    (rowIndex: number) => {
+      const current = (getValues(`units.${rowIndex}`) ?? {}) as WizardUnitDraft;
+      const copy = { ...current, number: nextNumber(current.number) } as WizardUnitDraft;
+      insert(rowIndex + 1, copy, { shouldFocus: false });
+    },
+    [getValues, insert],
+  );
+
+  const deleteSelected = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    const indices: number[] = [];
+    fields.forEach((f, idx) => {
+      if (selectedIds.has(f.id)) indices.push(idx);
+    });
+    // Remove from highest index first so earlier indices stay valid.
+    indices.reverse().forEach((idx) => remove(idx));
+    setSelectedIds(new Set());
+    toast.success(t('bulkDelete.toast', { count: indices.length }));
+  }, [fields, remove, selectedIds, t]);
+
   const columns = useMemo<Array<ColumnDef<WizardUnitDraft & { _id: string }, RowMeta>>>(
     () => [
+      {
+        id: 'select',
+        header: () => (
+          <input
+            type="checkbox"
+            aria-label={t('bulkDelete.selectAll')}
+            checked={allSelected}
+            onChange={toggleAll}
+            className="h-4 w-4 rounded border border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
+          />
+        ),
+        size: 32,
+        cell: ({ row }) => {
+          const id = (row.original as { id?: string }).id;
+          if (!id) return null;
+          return (
+            <input
+              type="checkbox"
+              aria-label={t('bulkDelete.selectRow', { index: row.index + 1 })}
+              checked={selectedIds.has(id)}
+              onChange={() => toggleRow(id)}
+              className="h-4 w-4 rounded border border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          );
+        },
+      },
       {
         id: 'rowIndex',
         header: '',
@@ -216,23 +282,35 @@ export function UnitTable() {
       {
         id: 'actions',
         header: '',
-        size: 48,
+        size: 84,
         cell: ({ row }) => (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => remove(row.index)}
-            disabled={fields.length === 1}
-            aria-label={t('removeRow', { index: row.index + 1 })}
-            className="text-muted-foreground hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-          </Button>
+          <div className="flex items-center gap-0.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => duplicateRow(row.index)}
+              aria-label={t('duplicateRow', { index: row.index + 1 })}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Copy className="h-4 w-4" aria-hidden="true" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => remove(row.index)}
+              disabled={fields.length === 1}
+              aria-label={t('removeRow', { index: row.index + 1 })}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </div>
         ),
       },
     ],
-    [t, register, buildings, fields.length, remove, onEdit],
+    [t, register, buildings, fields.length, remove, onEdit, allSelected, toggleAll, selectedIds, toggleRow, duplicateRow],
   );
 
   const data = useMemo(
@@ -294,6 +372,33 @@ export function UnitTable() {
       onPaste={handlePaste}
       className="flex flex-col gap-3"
     >
+      {selectedIds.size > 0 ? (
+        <div className="flex flex-col-reverse items-stretch gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-foreground">
+            {t('bulkDelete.selectedCount', { count: selectedIds.size })}
+          </p>
+          <div className="flex items-center gap-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              {t('bulkDelete.clearSelection')}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={deleteSelected}
+              disabled={selectedIds.size >= fields.length}
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              {t('bulkDelete.deleteSelected')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
       <div className="overflow-x-auto rounded-lg border border-border bg-card">
         <table className="w-full min-w-[1000px] caption-bottom text-sm">
           <thead className="border-b border-border bg-muted/30">

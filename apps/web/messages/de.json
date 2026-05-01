@@ -132,6 +132,15 @@
       "subtitle": "Einheiten je Gebäude erfassen. Der Typ steuert Flächenart und Pflichtfelder.",
       "addRow": "Einheit hinzufügen",
       "removeRow": "Zeile {index} entfernen",
+      "duplicateRow": "Zeile {index} duplizieren",
+      "bulkDelete": {
+        "selectAll": "Alle Zeilen auswählen",
+        "selectRow": "Zeile {index} auswählen",
+        "selectedCount": "{count, plural, one {# Zeile ausgewählt.} other {# Zeilen ausgewählt.}}",
+        "clearSelection": "Aufheben",
+        "deleteSelected": "Ausgewählte löschen",
+        "toast": "{count, plural, one {# Zeile entfernt.} other {# Zeilen entfernt.}}"
+      },
       "buildingFallback": "Gebäude {index}",
       "paste": {
         "successAll": "{count, plural, one {# Einheit eingefügt.} other {# Einheiten eingefügt.}}",

@@ -132,6 +132,15 @@
       "subtitle": "Add the units in each building. Type drives metric and which fields are required.",
       "addRow": "Add unit",
       "removeRow": "Remove row {index}",
+      "duplicateRow": "Duplicate row {index}",
+      "bulkDelete": {
+        "selectAll": "Select all rows",
+        "selectRow": "Select row {index}",
+        "selectedCount": "{count, plural, one {# row selected.} other {# rows selected.}}",
+        "clearSelection": "Clear",
+        "deleteSelected": "Delete selected",
+        "toast": "{count, plural, one {Removed # row.} other {Removed # rows.}}"
+      },
       "buildingFallback": "Building {index}",
       "paste": {
         "successAll": "{count, plural, one {Pasted # unit.} other {Pasted # units.}}",
