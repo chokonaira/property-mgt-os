@@ -83,15 +83,25 @@ function FloorEditor({
       onChange(undefined);
       return;
     }
+    // Qualifier semantics differ between OG ("links" / "rechts") and
+    // STAFFEL (wing / penthouse label). Carry the qualifier only when
+    // staying within the same family — switching across the OG ↔
+    // STAFFEL boundary should drop it so an OG selection doesn't end
+    // up labelled "Penthouse" by accident.
+    const prevKind = value?.kind;
     if (nextKind === 'EG' || nextKind === 'DG') onChange({ kind: nextKind });
-    else if (nextKind === 'OG')
+    else if (nextKind === 'OG') {
+      const carry = prevKind === 'OG' ? qualifier : undefined;
       onChange({
         kind: 'OG',
         level: level ?? 1,
-        ...(qualifier ? { qualifier } : {}),
+        ...(carry ? { qualifier: carry } : {}),
       });
-    else if (nextKind === 'UG') onChange({ kind: 'UG', level: level ?? 1 });
-    else onChange({ kind: 'STAFFEL', ...(qualifier ? { qualifier } : {}) });
+    } else if (nextKind === 'UG') onChange({ kind: 'UG', level: level ?? 1 });
+    else {
+      const carry = prevKind === 'STAFFEL' ? qualifier : undefined;
+      onChange({ kind: 'STAFFEL', ...(carry ? { qualifier: carry } : {}) });
+    }
   }
 
   function setLevel(next: number | undefined) {
