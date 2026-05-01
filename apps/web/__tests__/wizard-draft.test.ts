@@ -235,6 +235,10 @@ describe('WizardUnitsDraftSchema', () => {
       WizardUnitsDraftSchema.safeParse([{ ...EMPTY_UNIT, number: '1', meaShare: 100 }]).success,
     ).toBe(true);
   });
+
+  it('EMPTY_UNIT must not carry a meaShare default — the "+ Add unit" button uses this same shape, so any default would let users skip the required-MEA contract', () => {
+    expect((EMPTY_UNIT as { meaShare?: unknown }).meaShare).toBeUndefined();
+  });
 });
 
 describe('STEP_FIELDS', () => {

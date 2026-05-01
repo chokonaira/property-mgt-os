@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FloorCell } from '@/components/unit-table/floor-cell';
 import {
+  EMPTY_UNIT,
   WIZARD_UNIT_TYPES,
   type WizardDraftInput,
   type WizardUnitDraft,
@@ -261,18 +262,7 @@ export function UnitTable() {
         </table>
       </div>
       <div className="flex justify-start">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() =>
-            append({
-              type: 'APARTMENT',
-              buildingIndex: 0,
-              number: '',
-              meaShare: 0,
-            })
-          }
-        >
+        <Button type="button" variant="outline" onClick={() => append(EMPTY_UNIT)}>
           + {t('addRow')}
         </Button>
       </div>
