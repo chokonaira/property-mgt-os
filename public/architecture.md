@@ -83,7 +83,7 @@ buena-case-study/
 | Database                 | PostgreSQL 16                                                       |
 | Validation               | Zod (shared package)                                                |
 | AI                       | OpenAI gpt-4o-mini, structured outputs (json_schema mode)           |
-| PDF                      | pdf-parse, pdfjs-dist as fallback                                   |
+| PDF                      | unpdf (modern pdfjs-dist wrapper), pdfjs-dist directly as fallback  |
 | i18n                     | next-intl, en + de catalogs, locale-aware route segment             |
 | Security                 | helmet, CORS allowlist, structured error envelope, pino redaction   |
 | Rate limit / idempotency | `@nestjs/throttler` on AI endpoints; per-document idempotency cache |
@@ -373,7 +373,7 @@ POST   /chat/messages                   SSE stream of assistant replies
 ```
 PDF upload
   └─ POST /documents → documentId
-PDF text extraction (pdf-parse → pdfjs-dist fallback)
+PDF text extraction (unpdf → pdfjs-dist fallback; rejected pdf-parse — unmaintained since 2018, brittle on German Teilungserklärung layouts)
 Pre-call token guard: > 25K tokens → ExtractionError('document_too_large')
 Idempotency cache lookup keyed by documentId — hit returns cached run with cached: true
 OpenAI gpt-4o-mini call with strict JSON schema (zod-to-json-schema of ExtractionResult)

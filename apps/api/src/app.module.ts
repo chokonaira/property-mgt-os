@@ -3,6 +3,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { HealthController } from './health/health.controller';
 import { ContactsModule } from './modules/contacts/contacts.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { ExtractionModule } from './modules/extraction/extraction.module';
 import { OpenApiModule } from './modules/openapi/openapi.module';
 import { PropertiesModule } from './modules/properties/properties.module';
 import { PrismaModule } from './shared/prisma.module';
@@ -44,6 +45,7 @@ import { requestIdMiddleware } from './shared/request-id.middleware';
     PropertiesModule,
     ContactsModule,
     DocumentsModule,
+    ExtractionModule,
     OpenApiModule,
   ],
   controllers: [HealthController],

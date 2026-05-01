@@ -17,7 +17,7 @@
     "verbatimModuleSyntax": true,
     "baseUrl": ".",
     "paths": {
-      "@buena/shared": ["packages/shared/src/index.ts"],
+      "@buena/shared": ["packages/shared/src/index"],
       "@buena/shared/*": ["packages/shared/src/*"]
     }
   }
