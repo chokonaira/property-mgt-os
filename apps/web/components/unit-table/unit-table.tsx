@@ -37,12 +37,18 @@ export function UnitTable() {
   const columns = useMemo<Array<ColumnDef<WizardUnitDraft & { _id: string }, RowMeta>>>(
     () => [
       {
-        id: 'index',
-        header: '#',
-        size: 48,
+        id: 'rowIndex',
+        header: '',
+        size: 32,
         cell: ({ row }) => (
-          <span className="font-mono text-xs text-muted-foreground">{row.index + 1}</span>
+          <span className="font-mono text-[10px] text-muted-foreground">{row.index + 1}</span>
         ),
+      },
+      {
+        id: 'number',
+        header: '#',
+        size: 96,
+        cell: ({ row }) => <NumberCell rowIndex={row.index} />,
       },
       {
         id: 'type',
@@ -53,17 +59,21 @@ export function UnitTable() {
             {...register(`units.${row.index}.type`, {
               onChange: (e) => {
                 const next = e.target.value as WizardUnitType;
-                // The discriminator change drops the prior variant's
-                // type-specific fields. RHF won't auto-prune them — we
-                // explicitly clear so the schema parses cleanly.
-                setValue(`units.${row.index}`, {
-                  ...row.original,
-                  type: next,
-                  rooms: undefined,
-                  subCategory: undefined,
-                  layoutNote: undefined,
-                  parkingCode: undefined,
-                } as unknown as WizardUnitDraft);
+                // Discriminator change: only clear variant-specific
+                // keys via targeted setValue. Reading row.original here
+                // would replay a stale field-array snapshot and clobber
+                // the user's recent edits to shared fields like number
+                // / meaShare / sizeSqm / entranceLabel.
+                if (next !== 'APARTMENT') {
+                  setValue(`units.${row.index}.rooms`, undefined as never);
+                  setValue(`units.${row.index}.subCategory`, undefined as never);
+                }
+                if (next !== 'OFFICE') {
+                  setValue(`units.${row.index}.layoutNote`, undefined as never);
+                }
+                if (next !== 'PARKING') {
+                  setValue(`units.${row.index}.parkingCode`, undefined as never);
+                }
               },
             })}
             className={cellInputClass}
@@ -318,6 +328,25 @@ function RoomsCell({ rowIndex }: { rowIndex: number }) {
   );
 }
 
+function NumberCell({ rowIndex }: { rowIndex: number }) {
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext<WizardDraftInput>();
+  const error = (errors.units?.[rowIndex] as { number?: { message?: string } } | undefined)?.number
+    ?.message;
+  return (
+    <input
+      type="text"
+      maxLength={20}
+      aria-invalid={Boolean(error) || undefined}
+      title={error}
+      {...register(`units.${rowIndex}.number`)}
+      className={cn(cellInputClass, error && 'border-destructive')}
+    />
+  );
+}
+
 function MeaCell({ rowIndex }: { rowIndex: number }) {
   const {
     register,
@@ -335,10 +364,16 @@ function MeaCell({ rowIndex }: { rowIndex: number }) {
       aria-invalid={Boolean(error) || undefined}
       title={error}
       {...register(`units.${rowIndex}.meaShare`, {
+        // Empty input must surface as a schema error, not silently
+        // become 0. Returning undefined for empty makes z.number()
+        // fail invalid_type, which lights up aria-invalid + the
+        // tooltip — matching the AC's "MEA is required".
         setValueAs: (raw) => {
-          if (raw === '' || raw === null || raw === undefined) return 0;
+          if (raw === '' || raw === null || raw === undefined) {
+            return undefined as unknown as number;
+          }
           const n = typeof raw === 'number' ? raw : Number(raw);
-          return Number.isFinite(n) ? n : 0;
+          return Number.isFinite(n) ? n : (undefined as unknown as number);
         },
       })}
       className={cn(cellInputClass, error && 'border-destructive')}

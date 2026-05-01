@@ -105,12 +105,16 @@ export const WIZARD_UNIT_TYPES: ReadonlyArray<WizardUnitType> = [
 
 export const WizardUnitsDraftSchema = z.array(WizardUnitDraftSchema).min(1);
 
-export const EMPTY_UNIT: WizardUnitDraft = {
+// `number` and `meaShare` are intentionally absent so the seeded row
+// fails schema validation until the user fills both. The cast
+// satisfies WizardDraftInput's array element shape (the schema's
+// input requires the fields; the runtime parse trips on the missing
+// ones, which is the desired UX).
+export const EMPTY_UNIT = {
   type: 'APARTMENT',
   buildingIndex: 0,
   number: '',
-  meaShare: 0,
-};
+} as unknown as WizardUnitDraft;
 
 export const WizardDraftSchema = z.object({
   general: WizardGeneralDraftSchema,

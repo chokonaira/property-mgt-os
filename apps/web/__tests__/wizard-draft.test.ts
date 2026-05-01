@@ -227,9 +227,13 @@ describe('WizardUnitsDraftSchema', () => {
     expect(WizardUnitsDraftSchema.safeParse([]).success).toBe(false);
   });
 
-  it('rejects the seeded EMPTY_UNIT until number is filled', () => {
+  it('rejects the seeded EMPTY_UNIT until both number and meaShare are filled', () => {
     expect(WizardUnitsDraftSchema.safeParse([EMPTY_UNIT]).success).toBe(false);
-    expect(WizardUnitsDraftSchema.safeParse([{ ...EMPTY_UNIT, number: '1' }]).success).toBe(true);
+    // Filling only number is still invalid — meaShare is required too.
+    expect(WizardUnitsDraftSchema.safeParse([{ ...EMPTY_UNIT, number: '1' }]).success).toBe(false);
+    expect(
+      WizardUnitsDraftSchema.safeParse([{ ...EMPTY_UNIT, number: '1', meaShare: 100 }]).success,
+    ).toBe(true);
   });
 });
 
