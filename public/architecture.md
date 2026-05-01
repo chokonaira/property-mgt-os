@@ -373,7 +373,7 @@ POST   /chat/messages                   SSE stream of assistant replies
 ```
 PDF upload
   └─ POST /documents → documentId
-PDF text extraction (unpdf → pdfjs-dist fallback; rejected pdf-parse — unmaintained since 2018, brittle on German Teilungserklärung layouts)
+PDF text extraction (unpdf → pdfjs-dist fallback; rejected pdf-parse — unmaintained since 2018)
 Pre-call token guard: > 25K tokens → ExtractionError('document_too_large')
 Idempotency cache lookup keyed by documentId — hit returns cached run with cached: true
 OpenAI gpt-4o-mini call with strict JSON schema (zod-to-json-schema of ExtractionResult)

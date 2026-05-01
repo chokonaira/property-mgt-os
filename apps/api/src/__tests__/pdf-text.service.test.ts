@@ -37,20 +37,39 @@ describe('PdfTextService', () => {
     return target;
   }
 
-  it('returns the joined text + pages when unpdf succeeds', async () => {
+  it('returns the joined text + pages with positions on the unpdf primary path', async () => {
     const harness = makePrisma([{ id: 'doc-1', storageKey: 'demo/doc-1.pdf' }]);
     await writeFile('demo/doc-1.pdf');
-    const unpdfExtract = vi
-      .fn()
-      .mockResolvedValue({ totalPages: 2, text: ['Page one\nLine A', 'Page two'] });
+    const primaryPages: ExtractedPage[] = [
+      {
+        pageNumber: 1,
+        text: 'Page one heading',
+        items: [
+          { page: 1, text: 'Page', x: 50, y: 700 },
+          { page: 1, text: 'one', x: 90, y: 700 },
+          { page: 1, text: 'heading', x: 130, y: 700 },
+        ],
+      },
+      {
+        pageNumber: 2,
+        text: 'Page two',
+        items: [
+          { page: 2, text: 'Page', x: 50, y: 700 },
+          { page: 2, text: 'two', x: 90, y: 700 },
+        ],
+      },
+    ];
+    const unpdfExtract = vi.fn().mockResolvedValue(primaryPages);
     const pdfjsExtract = vi.fn();
     const svc = new PdfTextService(harness.prisma, { uploadDir }, { unpdfExtract, pdfjsExtract });
 
     const result = await svc.extractTextWithSpans('doc-1');
     expect(result.extractor).toBe('unpdf');
-    expect(result.text).toBe('Page one\nLine A\n\nPage two');
+    expect(result.text).toBe('Page one heading\n\nPage two');
     expect(result.pages).toHaveLength(2);
-    expect(result.pages[0]?.items.map((i) => i.text)).toEqual(['Page one', 'Line A']);
+    // Positions land on every primary-path item — T-505 source citations
+    // work whether unpdf or pdfjs ran.
+    expect(result.pages[0]?.items.every((i) => typeof i.x === 'number')).toBe(true);
     expect(pdfjsExtract).not.toHaveBeenCalled();
   });
 
@@ -133,7 +152,13 @@ describe('PdfTextService', () => {
   it('extractText is a thin alias over extractTextWithSpans', async () => {
     const harness = makePrisma([{ id: 'doc-6', storageKey: 'demo/doc-6.pdf' }]);
     await writeFile('demo/doc-6.pdf');
-    const unpdfExtract = vi.fn().mockResolvedValue({ totalPages: 1, text: ['Quick brown fox'] });
+    const unpdfExtract = vi.fn().mockResolvedValue([
+      {
+        pageNumber: 1,
+        text: 'Quick brown fox',
+        items: [{ page: 1, text: 'Quick brown fox', x: 50, y: 700 }],
+      },
+    ] satisfies ExtractedPage[]);
     const svc = new PdfTextService(
       harness.prisma,
       { uploadDir },

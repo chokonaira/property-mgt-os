@@ -34,21 +34,20 @@ export interface ExtractedDocument {
   extractor: 'unpdf' | 'pdfjs-fallback';
 }
 
+/**
+ * Both adapters return ExtractedPage[] — text plus per-glyph x/y —
+ * so T-505's source-line popover renders citations no matter which
+ * extractor produced the result. Adapters are injected so tests can
+ * stub without dragging unpdf's wasm or pdfjs's font setup into the
+ * test runtime.
+ */
+type PdfExtractor = (buffer: Buffer | Uint8Array) => Promise<ExtractedPage[]>;
+
 interface PdfTextDeps {
-  /**
-   * Primary extractor — wraps unpdf. Injectable so tests can stub
-   * without requiring a real PDF buffer through unpdf's wasm.
-   */
-  unpdfExtract: (buffer: Buffer | Uint8Array) => Promise<{
-    totalPages: number;
-    text: string[];
-  }>;
-  /**
-   * Fallback extractor — wraps pdfjs-dist directly. Returns the
-   * raw textContent.items per page so we can keep positions for
-   * source-span citations.
-   */
-  pdfjsExtract: (buffer: Buffer | Uint8Array) => Promise<ExtractedPage[]>;
+  /** Primary extractor — wraps unpdf. */
+  unpdfExtract: PdfExtractor;
+  /** Fallback extractor — wraps pdfjs-dist directly. */
+  pdfjsExtract: PdfExtractor;
 }
 
 interface PdfTextConfig {
@@ -87,16 +86,7 @@ export class PdfTextService {
     const buffer = await this.loadFromStorage(documentId);
 
     try {
-      const result = await this.deps.unpdfExtract(buffer);
-      const pages: ExtractedPage[] = result.text.map((pageText, idx) => ({
-        pageNumber: idx + 1,
-        text: pageText,
-        items: pageText
-          .split(/\n+/)
-          .map((line) => line.trim())
-          .filter((line) => line.length > 0)
-          .map((text) => ({ page: idx + 1, text })),
-      }));
+      const pages = await this.deps.unpdfExtract(buffer);
       return {
         text: pages.map((p) => p.text).join('\n\n'),
         pages,
@@ -158,5 +148,12 @@ export class PdfTextService {
 function messageOf(value: unknown): string {
   if (value instanceof Error) return value.message;
   if (typeof value === 'string') return value;
-  return JSON.stringify(value);
+  // JSON.stringify throws on circular references, which would mask
+  // the real error inside the same catch block. Fall back to
+  // String(value) — never throws.
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
 }

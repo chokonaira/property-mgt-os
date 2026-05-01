@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
-    "build": "nest build",
+    "build": "pnpm --filter @buena/shared build && nest build",
     "start": "node dist/apps/api/src/main.js",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
