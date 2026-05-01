@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+// Wire shape (read responses). `country` is always present; the API
+// mapper substitutes 'DE' when the column is null. Avoiding `.default()`
+// here keeps `z.infer` output cleanly required (zod's default helper
+// produces a string|undefined input which leaks into TanStack Query
+// generic inference under bundler module resolution).
 export const BuildingSchema = z.object({
   id: z.string().min(1),
   propertyId: z.string().min(1),
@@ -10,7 +15,7 @@ export const BuildingSchema = z.object({
     .regex(/^\d{5}$/, '5-digit German postal code')
     .optional(),
   city: z.string().optional(),
-  country: z.string().length(2).default('DE'),
+  country: z.string().length(2),
   label: z.string().optional(),
   nickname: z.string().optional(),
   yearBuilt: z
@@ -27,7 +32,14 @@ export const BuildingSchema = z.object({
 });
 export type Building = z.infer<typeof BuildingSchema>;
 
-export const CreateBuildingSchema = BuildingSchema.omit({ id: true, propertyId: true });
+// Write contract: country may be omitted by the wizard; the API fills 'DE'.
+export const CreateBuildingSchema = BuildingSchema.omit({
+  id: true,
+  propertyId: true,
+  country: true,
+}).extend({
+  country: z.string().length(2).default('DE'),
+});
 export type CreateBuilding = z.infer<typeof CreateBuildingSchema>;
 
 export const UpdateBuildingSchema = CreateBuildingSchema.partial();

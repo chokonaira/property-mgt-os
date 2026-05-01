@@ -28,10 +28,61 @@
     "wizard": {
       "title": "Assistent folgt in Kürze",
       "description": "Der geführte Anlegevorgang folgt im nächsten Ticket."
+    }
+  },
+  "propertyDetail": {
+    "edit": "Bearbeiten",
+    "editStubMessage": "Die Bearbeitung folgt in einem späteren Ticket.",
+    "notFound": {
+      "title": "Immobilie nicht gefunden",
+      "description": "Diese Immobilie wurde möglicherweise gelöscht oder der Link ist fehlerhaft."
     },
-    "detail": {
-      "title": "Detailansicht folgt in Kürze",
-      "description": "Die Lese-Ansicht mit Allgemeinen Angaben, Gebäuden und Einheiten folgt im nächsten Ticket."
+    "general": {
+      "title": "Allgemeine Angaben",
+      "uniqueNumber": "Objektnummer",
+      "manager": "Verwalter",
+      "accountant": "Buchhaltung",
+      "grundbuchOffice": "Grundbuchamt",
+      "grundbuchSheet": "Grundbuchblatt",
+      "gemarkung": "Gemarkung",
+      "flur": "Flur",
+      "flurstueck": "Flurstück",
+      "notarialRollNo": "UR-Nr."
+    },
+    "buildings": {
+      "title": "Gebäude",
+      "count": "{count, plural, =0 {keine Gebäude} one {# Gebäude} other {# Gebäude}}",
+      "units": "Einheiten",
+      "yearBuilt": "Baujahr",
+      "floors": "Etagen",
+      "elevator": "Aufzug",
+      "heating": "Heizung",
+      "energy": "Energieklasse",
+      "yes": "Ja",
+      "no": "Nein"
+    },
+    "units": {
+      "title": "Einheiten",
+      "count": "{count, plural, =0 {keine Einheiten} one {# Einheit} other {# Einheiten}}",
+      "rowCount": "{count, plural, =0 {keine Einheiten} one {# Einheit} other {# Einheiten}}",
+      "columns": {
+        "number": "Nr.",
+        "type": "Typ",
+        "floor": "Etage",
+        "size": "Größe",
+        "rooms": "Zimmer",
+        "mea": "MEA"
+      },
+      "types": {
+        "APARTMENT": "Wohnung",
+        "OFFICE": "Gewerbe",
+        "PARKING": "Stellplatz",
+        "GARDEN": "Garten"
+      }
+    },
+    "mea": {
+      "balanced": "Die Summe entspricht dem deklarierten Gesamtwert.",
+      "mismatch": "Die Summe weicht um {delta} vom deklarierten Gesamtwert ab."
     }
   },
   "units": {

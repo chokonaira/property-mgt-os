@@ -28,10 +28,61 @@
     "wizard": {
       "title": "Wizard coming soon",
       "description": "The guided property creation flow lands in the next ticket."
+    }
+  },
+  "propertyDetail": {
+    "edit": "Edit",
+    "editStubMessage": "Editing lands in a future ticket.",
+    "notFound": {
+      "title": "Property not found",
+      "description": "This property may have been deleted, or the link is incorrect."
     },
-    "detail": {
-      "title": "Property detail coming soon",
-      "description": "Read-only property detail with sections for general info, buildings, and units lands in the next ticket."
+    "general": {
+      "title": "General info",
+      "uniqueNumber": "Unique number",
+      "manager": "Property manager",
+      "accountant": "Accountant",
+      "grundbuchOffice": "Grundbuch office",
+      "grundbuchSheet": "Grundbuch sheet",
+      "gemarkung": "Gemarkung",
+      "flur": "Flur",
+      "flurstueck": "Flurstück",
+      "notarialRollNo": "Notarial roll no."
+    },
+    "buildings": {
+      "title": "Buildings",
+      "count": "{count, plural, =0 {no buildings} one {# building} other {# buildings}}",
+      "units": "Units",
+      "yearBuilt": "Year built",
+      "floors": "Floors",
+      "elevator": "Elevator",
+      "heating": "Heating",
+      "energy": "Energy class",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "units": {
+      "title": "Units",
+      "count": "{count, plural, =0 {no units} one {# unit} other {# units}}",
+      "rowCount": "{count, plural, =0 {no units} one {# unit} other {# units}}",
+      "columns": {
+        "number": "No.",
+        "type": "Type",
+        "floor": "Floor",
+        "size": "Size",
+        "rooms": "Rooms",
+        "mea": "MEA"
+      },
+      "types": {
+        "APARTMENT": "Apartment",
+        "OFFICE": "Office",
+        "PARKING": "Parking",
+        "GARDEN": "Garden"
+      }
+    },
+    "mea": {
+      "balanced": "Sum matches the declared total.",
+      "mismatch": "Sum differs from declared total by {delta}."
     }
   },
   "units": {

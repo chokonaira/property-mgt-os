@@ -1,18 +1,16 @@
-import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
-import { ComingSoon } from '@/components/coming-soon';
+import { PropertyDetailView } from '@/components/property-detail/detail-view';
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
 }
 
 export default async function PropertyDetailPage({ params }: PageProps) {
-  const { locale } = await params;
+  const { locale, id } = await params;
   setRequestLocale(locale);
-  return <PropertyDetailStub />;
-}
-
-function PropertyDetailStub() {
-  const t = useTranslations('comingSoon.detail');
-  return <ComingSoon title={t('title')} description={t('description')} ticketRef="T-103" />;
+  return (
+    <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+      <PropertyDetailView id={id} />
+    </main>
+  );
 }
