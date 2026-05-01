@@ -27,7 +27,7 @@
   "comingSoon": {
     "wizard": {
       "title": "Assistent folgt in Kürze",
-      "description": "Der geführte Anlegevorgang folgt im nächsten Ticket. Zwischengespeicherte Entwürfe werden hier sichtbar sein."
+      "description": "Der geführte Anlegevorgang folgt im nächsten Ticket."
     },
     "detail": {
       "title": "Detailansicht folgt in Kürze",
