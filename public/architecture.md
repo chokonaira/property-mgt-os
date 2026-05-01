@@ -53,7 +53,7 @@ flowchart LR
 A pnpm monorepo with two apps and one shared package. Schemas defined once in `packages/shared` are consumed by both client (RHF resolver) and server (NestJS validation pipe) — and used as the JSON schema for OpenAI structured output. Single source of truth, no drift.
 
 ```
-buena-case-study/
+property-mgt-os/
 ├── apps/
 │   ├── web/                  # Next.js 15
 │   └── api/                  # NestJS

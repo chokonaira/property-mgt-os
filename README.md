@@ -1,6 +1,6 @@
 # Buena Case Study
 
-[![CI](https://github.com/chokonaira/buena-case-study/actions/workflows/ci.yml/badge.svg)](https://github.com/chokonaira/buena-case-study/actions/workflows/ci.yml)
+[![CI](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml/badge.svg)](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-331_passing-brightgreen)](#testing)
 [![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](./tsconfig.base.json)
 [![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?logo=openapiinitiative&logoColor=white)](http://localhost:3001/openapi.json)
@@ -87,7 +87,7 @@ Domain terms — `WEG`, `MV`, `MEA`, `Teilungserklärung`, `Wohnfläche`, `Nutzf
 ## Repo layout
 
 ```
-buena-case-study/
+property-mgt-os/
 ├── apps/
 │   ├── web/           Next.js 15, App Router, locale-aware [locale] segment
 │   └── api/           NestJS, Prisma, OpenAI extraction + chat
