@@ -4,6 +4,9 @@ import { encode } from 'gpt-tokenizer';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { ExtractionResultSchema } from '@buena/shared';
 import { PrismaService } from '../../shared/prisma.service';
+import { RATE_LIMIT_BUCKET, rateLimitBucket } from '../../shared/rate-limit';
+import { RateLimitGuard } from '../../shared/rate-limit.guard';
+import { ExtractionController } from './extraction.controller';
 import { ExtractionService } from './extraction.service';
 import { OpenAIService, type OpenAIChatClient } from './openai.service';
 import { pdfjsExtract, unpdfExtract } from './pdf-extractors';
@@ -21,7 +24,15 @@ const OPENAI_CONFIG = {
 const TOKEN_BUDGET = Number(process.env.EXTRACTION_MAX_TOKENS ?? 25_000);
 
 @Module({
+  controllers: [ExtractionController],
   providers: [
+    // The RateLimitGuard depends on RATE_LIMIT_BUCKET. AppModule
+    // already declares both for global scope, but
+    // @UseGuards(RateLimitGuard) on a feature controller needs them
+    // resolvable inside this module's DI scope. Declare both
+    // locally — same singleton bucket as AppModule.
+    { provide: RATE_LIMIT_BUCKET, useValue: rateLimitBucket },
+    RateLimitGuard,
     {
       provide: PdfTextService,
       useFactory: (prisma: PrismaService) =>

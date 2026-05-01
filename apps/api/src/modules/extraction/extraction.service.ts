@@ -5,6 +5,7 @@ import type { ExtractionResult } from '@buena/shared';
 import { PrismaService } from '../../shared/prisma.service';
 import { ExtractionError } from './extraction-error';
 import { findCachedExtractionRun, type CachedExtractionRun } from './lib/extraction-cache';
+import { ensureMeaWarning } from './lib/mea-invariant';
 import { checkTokenBudget, type Encoder } from './lib/token-budget';
 import { verifySpans } from './lib/verify-spans';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- runtime value: Nest DI reads constructor param metadata
@@ -89,7 +90,7 @@ export class ExtractionService {
 
     // Drop hallucinated citations + warn on unverified spans.
     const verified = verifySpans(call.parsed.sourceSpansByField, sourceText);
-    const finalExtraction: ExtractionResult = {
+    let finalExtraction: ExtractionResult = {
       ...call.parsed,
       sourceSpansByField: verified.verified,
       warnings: verified.unverified.length
@@ -103,6 +104,11 @@ export class ExtractionService {
           ]
         : call.parsed.warnings,
     };
+
+    // Server-side MEA invariant: recompute the unit-share sum vs the
+    // declared total and inject a warning if the model didn't already.
+    // The wedge demo hinges on this warning surfacing reliably.
+    finalExtraction = ensureMeaWarning(finalExtraction);
 
     const confidence = computeOverallConfidence(finalExtraction.confidenceByField);
 

@@ -125,3 +125,29 @@ export const ExtractionResultSchema = z.object({
     .default([]),
 });
 export type ExtractionResult = z.infer<typeof ExtractionResultSchema>;
+
+/**
+ * Wire shape for POST /extraction/runs. Validated at the boundary
+ * via ZodValidationPipe; the controller forwards `documentId` to
+ * the orchestrator and reads `?force=true` from the query string.
+ */
+export const ExtractionRunRequestSchema = z.object({
+  documentId: z.string().min(1),
+});
+export type ExtractionRunRequest = z.infer<typeof ExtractionRunRequestSchema>;
+
+export const ExtractionRunResponseSchema = z.object({
+  runId: z.string().min(1),
+  extraction: ExtractionResultSchema,
+  warnings: z.array(
+    z.object({
+      code: z.enum(['MEA_MISMATCH', 'MISSING_FIELD', 'UNRECOGNIZED_TYPE', 'AMBIGUOUS_VALUE']),
+      message: z.string(),
+      fields: z.array(z.string()),
+    }),
+  ),
+  confidence: z.number().min(0).max(1),
+  durationMs: z.number().int().nonnegative(),
+  cached: z.boolean(),
+});
+export type ExtractionRunResponse = z.infer<typeof ExtractionRunResponseSchema>;
