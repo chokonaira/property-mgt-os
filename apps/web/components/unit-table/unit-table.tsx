@@ -109,20 +109,7 @@ export function UnitTable() {
         id: 'sizeSqm',
         header: t('columns.size'),
         size: 100,
-        cell: ({ row }) => (
-          <input
-            type="number"
-            inputMode="decimal"
-            step="0.01"
-            min={0}
-            data-cell-row={row.index}
-            data-cell-col="sizeSqm"
-            {...register(`units.${row.index}.sizeSqm`, {
-              setValueAs: emptyToUndefinedNumber,
-            })}
-            className={cellInputClass}
-          />
-        ),
+        cell: ({ row }) => <SizeCell rowIndex={row.index} />,
       },
       {
         id: 'metric',
@@ -300,10 +287,25 @@ function TypeCell({ rowIndex }: { rowIndex: number }) {
 
   function restoreSnapshot(snap: Snapshot) {
     setValue(`units.${rowIndex}.type`, snap.type);
-    setValue(`units.${rowIndex}.rooms` as `units.${number}.rooms`, snap.rooms);
-    setValue(`units.${rowIndex}.subCategory` as `units.${number}.subCategory`, snap.subCategory);
-    setValue(`units.${rowIndex}.layoutNote` as `units.${number}.layoutNote`, snap.layoutNote);
-    setValue(`units.${rowIndex}.parkingCode` as `units.${number}.parkingCode`, snap.parkingCode);
+    // Restoring to undefined (when the snapshot row was non-APARTMENT,
+    // for instance) is intentional — we want the row to reflect its
+    // pre-edit shape. The wire schema expects rooms to be a number for
+    // APARTMENT, but RHF's setValue is permissive at runtime; the
+    // schema's later trigger() will surface any missing-value error
+    // inline.
+    setValue(`units.${rowIndex}.rooms` as `units.${number}.rooms`, snap.rooms as never);
+    setValue(
+      `units.${rowIndex}.subCategory` as `units.${number}.subCategory`,
+      snap.subCategory as never,
+    );
+    setValue(
+      `units.${rowIndex}.layoutNote` as `units.${number}.layoutNote`,
+      snap.layoutNote as never,
+    );
+    setValue(
+      `units.${rowIndex}.parkingCode` as `units.${number}.parkingCode`,
+      snap.parkingCode as never,
+    );
   }
 
   return (
@@ -369,9 +371,15 @@ function MetricBadge({ index }: { index: number }) {
 }
 
 function RoomsCell({ rowIndex }: { rowIndex: number }) {
-  const { control, register } = useFormContext<WizardDraftInput>();
+  const {
+    control,
+    register,
+    formState: { errors },
+  } = useFormContext<WizardDraftInput>();
   const type = useWatch({ control, name: `units.${rowIndex}.type` }) as WizardUnitType;
   const isApartment = type === 'APARTMENT';
+  const error = (errors.units?.[rowIndex] as { rooms?: { message?: string } } | undefined)?.rooms
+    ?.message;
   return (
     <input
       type="number"
@@ -380,12 +388,39 @@ function RoomsCell({ rowIndex }: { rowIndex: number }) {
       max={50}
       disabled={!isApartment}
       aria-disabled={!isApartment}
+      aria-invalid={Boolean(error) || undefined}
+      title={error}
       data-cell-row={rowIndex}
       data-cell-col="rooms"
       {...register(`units.${rowIndex}.rooms`, {
         setValueAs: emptyToUndefinedNumber,
       })}
-      className={cellInputClass}
+      className={cn(cellInputClass, error && 'border-destructive')}
+    />
+  );
+}
+
+function SizeCell({ rowIndex }: { rowIndex: number }) {
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext<WizardDraftInput>();
+  const error = (errors.units?.[rowIndex] as { sizeSqm?: { message?: string } } | undefined)
+    ?.sizeSqm?.message;
+  return (
+    <input
+      type="number"
+      inputMode="decimal"
+      step="0.01"
+      min={0}
+      data-cell-row={rowIndex}
+      data-cell-col="sizeSqm"
+      aria-invalid={Boolean(error) || undefined}
+      title={error}
+      {...register(`units.${rowIndex}.sizeSqm`, {
+        setValueAs: emptyToUndefinedNumber,
+      })}
+      className={cn(cellInputClass, error && 'border-destructive')}
     />
   );
 }

@@ -82,6 +82,8 @@ export function GeneralInfoForm() {
   const generalErrors = errors.general;
   const nameError = generalErrors?.name?.message;
   const uniqueError = generalErrors?.uniqueNumber?.message;
+  const managerError = generalErrors?.propertyManagerId?.message;
+  const accountantError = generalErrors?.accountantId?.message;
   const probeErrorMessage = isUnavailable
     ? tErrors('uniqueTaken')
     : isProbeError
@@ -163,7 +165,12 @@ export function GeneralInfoForm() {
         />
       </Field>
 
-      <Field label={t('manager.label')} htmlFor={ids.manager} description={t('manager.help')}>
+      <Field
+        label={t('manager.label')}
+        htmlFor={ids.manager}
+        description={t('manager.help')}
+        error={managerError}
+      >
         <Controller
           control={control}
           name="general.propertyManagerId"
@@ -173,6 +180,8 @@ export function GeneralInfoForm() {
               role="PROPERTY_MANAGER"
               value={field.value ?? undefined}
               onChange={(v) => field.onChange(v ?? null)}
+              ariaInvalid={Boolean(managerError) || undefined}
+              ariaDescribedBy={managerError ? `${ids.manager}-error` : undefined}
             />
           )}
         />
@@ -182,6 +191,7 @@ export function GeneralInfoForm() {
         label={t('accountant.label')}
         htmlFor={ids.accountant}
         description={t('accountant.help')}
+        error={accountantError}
       >
         <Controller
           control={control}
@@ -192,6 +202,8 @@ export function GeneralInfoForm() {
               role="ACCOUNTANT"
               value={field.value ?? undefined}
               onChange={(v) => field.onChange(v ?? null)}
+              ariaInvalid={Boolean(accountantError) || undefined}
+              ariaDescribedBy={accountantError ? `${ids.accountant}-error` : undefined}
             />
           )}
         />

@@ -60,11 +60,16 @@ export const WizardBuildingsDraftSchema = z.array(WizardBuildingDraftSchema).min
 // references the position of the building in the step-2 array — the
 // save endpoint resolves this to a real building id once the parent
 // property + buildings have been created.
+//
+// `sizeSqm` is required at the draft layer too (mirrors the strict
+// CreatePropertyRequestSchema) so the wizard surfaces the missing-
+// value error inline rather than letting the user submit only to
+// hit a 422 they can't see.
 const BaseUnitDraft = z.object({
   buildingIndex: z.number().int().min(0),
   number: z.string().trim().min(1).max(20),
   meaShare: z.number().nonnegative().max(10000),
-  sizeSqm: z.number().positive().optional(),
+  sizeSqm: z.number().positive(),
   floor: FloorSchema.optional(),
   entranceLabel: z.string().trim().min(1).max(40).optional(),
   yearBuilt: z
@@ -77,9 +82,12 @@ const BaseUnitDraft = z.object({
 });
 
 export const WizardUnitDraftSchema = z.discriminatedUnion('type', [
+  // APARTMENT.rooms is required for the same reason — the wire
+  // schema enforces it; making it optional here would let the
+  // user submit and see a 422 with no inline cue.
   BaseUnitDraft.extend({
     type: z.literal('APARTMENT'),
-    rooms: z.number().int().min(0).max(50).optional(),
+    rooms: z.number().int().min(0).max(50),
     subCategory: z.string().trim().min(1).max(40).optional(),
   }),
   BaseUnitDraft.extend({

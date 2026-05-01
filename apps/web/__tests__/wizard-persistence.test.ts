@@ -55,6 +55,8 @@ describe('parseStoredDraft', () => {
           buildingIndex: 0,
           number: '1',
           meaShare: 100,
+          sizeSqm: 70,
+          rooms: 2,
         },
       ],
     };

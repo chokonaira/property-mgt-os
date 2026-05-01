@@ -164,6 +164,15 @@ describe('WizardUnitDraftSchema', () => {
     buildingIndex: 0,
     number: '1',
     meaShare: 100,
+    sizeSqm: 70,
+    rooms: 2,
+  };
+  const office = {
+    type: 'OFFICE' as const,
+    buildingIndex: 0,
+    number: '1',
+    meaShare: 100,
+    sizeSqm: 80,
   };
 
   it('accepts the minimum APARTMENT row', () => {
@@ -171,9 +180,9 @@ describe('WizardUnitDraftSchema', () => {
   });
 
   it('accepts each of the four discriminated types', () => {
-    expect(WizardUnitDraftSchema.safeParse({ ...apt, type: 'OFFICE' }).success).toBe(true);
-    expect(WizardUnitDraftSchema.safeParse({ ...apt, type: 'PARKING' }).success).toBe(true);
-    expect(WizardUnitDraftSchema.safeParse({ ...apt, type: 'GARDEN' }).success).toBe(true);
+    expect(WizardUnitDraftSchema.safeParse(office).success).toBe(true);
+    expect(WizardUnitDraftSchema.safeParse({ ...office, type: 'PARKING' }).success).toBe(true);
+    expect(WizardUnitDraftSchema.safeParse({ ...office, type: 'GARDEN' }).success).toBe(true);
   });
 
   it('rejects rows missing buildingIndex / number / meaShare', () => {
@@ -182,21 +191,25 @@ describe('WizardUnitDraftSchema', () => {
     expect(WizardUnitDraftSchema.safeParse({ ...apt, meaShare: -1 }).success).toBe(false);
   });
 
-  it('admits an APARTMENT-only `rooms` field', () => {
-    expect(WizardUnitDraftSchema.safeParse({ ...apt, rooms: 3 }).success).toBe(true);
+  it('rejects an APARTMENT row missing sizeSqm or rooms — same strictness as the wire schema', () => {
+    expect(WizardUnitDraftSchema.safeParse({ ...apt, sizeSqm: undefined }).success).toBe(false);
+    expect(WizardUnitDraftSchema.safeParse({ ...apt, rooms: undefined }).success).toBe(false);
+  });
+
+  it('rejects OFFICE / PARKING / GARDEN missing sizeSqm', () => {
+    expect(WizardUnitDraftSchema.safeParse({ ...office, sizeSqm: undefined }).success).toBe(false);
   });
 
   it('admits the OFFICE / PARKING-specific fields', () => {
     expect(
       WizardUnitDraftSchema.safeParse({
-        ...apt,
-        type: 'OFFICE',
+        ...office,
         layoutNote: 'open plan',
       }).success,
     ).toBe(true);
     expect(
       WizardUnitDraftSchema.safeParse({
-        ...apt,
+        ...office,
         type: 'PARKING',
         parkingCode: 'P-12',
       }).success,
@@ -227,12 +240,14 @@ describe('WizardUnitsDraftSchema', () => {
     expect(WizardUnitsDraftSchema.safeParse([]).success).toBe(false);
   });
 
-  it('rejects the seeded EMPTY_UNIT until both number and meaShare are filled', () => {
+  it('rejects the seeded EMPTY_UNIT until number, meaShare, sizeSqm, and rooms are all filled', () => {
     expect(WizardUnitsDraftSchema.safeParse([EMPTY_UNIT]).success).toBe(false);
-    // Filling only number is still invalid — meaShare is required too.
+    // Filling only number is still invalid — meaShare + sizeSqm + rooms required too.
     expect(WizardUnitsDraftSchema.safeParse([{ ...EMPTY_UNIT, number: '1' }]).success).toBe(false);
     expect(
-      WizardUnitsDraftSchema.safeParse([{ ...EMPTY_UNIT, number: '1', meaShare: 100 }]).success,
+      WizardUnitsDraftSchema.safeParse([
+        { ...EMPTY_UNIT, number: '1', meaShare: 100, sizeSqm: 70, rooms: 2 },
+      ]).success,
     ).toBe(true);
   });
 
