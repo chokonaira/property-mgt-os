@@ -133,6 +133,10 @@
       "addRow": "Add unit",
       "removeRow": "Remove row {index}",
       "buildingFallback": "Building {index}",
+      "paste": {
+        "successAll": "{count, plural, one {Pasted # unit.} other {Pasted # units.}}",
+        "successPartial": "{count, plural, one {Pasted # unit.} other {Pasted # units.}} {errors, plural, one {# row had errors.} other {# rows had errors.}}"
+      },
       "columns": {
         "type": "Type",
         "building": "Building",

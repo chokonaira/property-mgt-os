@@ -133,6 +133,10 @@
       "addRow": "Einheit hinzufügen",
       "removeRow": "Zeile {index} entfernen",
       "buildingFallback": "Gebäude {index}",
+      "paste": {
+        "successAll": "{count, plural, one {# Einheit eingefügt.} other {# Einheiten eingefügt.}}",
+        "successPartial": "{count, plural, one {# Einheit eingefügt.} other {# Einheiten eingefügt.}} {errors, plural, one {# Zeile mit Fehlern.} other {# Zeilen mit Fehlern.}}"
+      },
       "columns": {
         "type": "Typ",
         "building": "Gebäude",

@@ -5,12 +5,14 @@ import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tan
 import { Trash2 } from 'lucide-react';
 import { useFormContext, useFieldArray, useWatch } from 'react-hook-form';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FieldChip } from '@/components/ai-extraction-review';
 import { useWizard } from '@/components/wizard/wizard-context';
 import { FloorCell } from '@/components/unit-table/floor-cell';
 import { useCellNavigation } from '@/components/unit-table/use-cell-navigation';
+import { parsePastedRows } from '@/lib/parse-tsv';
 import {
   EMPTY_UNIT,
   WIZARD_UNIT_TYPES,
@@ -243,8 +245,54 @@ export function UnitTable() {
     getCoreRowModel: getCoreRowModel(),
   });
 
+  // Container-level paste handler. Single-cell paste falls through to
+  // the focused input's native paste; multi-row TSV / CSV pastes
+  // trigger row creation. Detection: split candidate text by line
+  // breaks; if more than one row OR the first row has a delimiter,
+  // we treat it as a bulk paste.
+  const handlePaste = useCallback(
+    (event: React.ClipboardEvent<HTMLDivElement>) => {
+      const raw = event.clipboardData.getData('text/plain');
+      if (!raw) return;
+      const candidate = raw.replace(/\r\n?/g, '\n');
+      const looksMultiRow = candidate.includes('\n');
+      const looksMultiCol = candidate.includes('\t') || candidate.includes(',');
+      if (!looksMultiRow && !looksMultiCol) return; // single-cell — let native paste win
+      event.preventDefault();
+      const parsed = parsePastedRows(candidate, { buildingsCount: buildings.length });
+      if (parsed.rows.length === 0) return;
+      // Replace the seeded empty unit when the user pastes into a
+      // pristine table; otherwise append. Keeps "click Add unit, paste"
+      // and "paste straight into a fresh table" both intuitive.
+      const isPristineSeed =
+        fields.length === 1 &&
+        (fields[0] as unknown as WizardUnitDraft).number === '' &&
+        (fields[0] as unknown as WizardUnitDraft).type === 'APARTMENT';
+      if (isPristineSeed) {
+        remove(0);
+      }
+      for (const row of parsed.rows) {
+        append(row, { shouldFocus: false });
+      }
+      const errorCount = parsed.errors.length;
+      const okCount = parsed.rows.length - new Set(parsed.errors.map((e) => e.rowIndex)).size;
+      toast.success(
+        errorCount === 0
+          ? t('paste.successAll', { count: parsed.rows.length })
+          : t('paste.successPartial', { count: okCount, errors: errorCount }),
+      );
+    },
+    [append, remove, fields, buildings.length, t],
+  );
+
   return (
-    <div ref={containerRef} onKeyDown={onKeyDown} onFocus={onFocus} className="flex flex-col gap-3">
+    <div
+      ref={containerRef}
+      onKeyDown={onKeyDown}
+      onFocus={onFocus}
+      onPaste={handlePaste}
+      className="flex flex-col gap-3"
+    >
       <div className="overflow-x-auto rounded-lg border border-border bg-card">
         <table className="w-full min-w-[1000px] caption-bottom text-sm">
           <thead className="border-b border-border bg-muted/30">
