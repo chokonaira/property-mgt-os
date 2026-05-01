@@ -7,14 +7,12 @@
     "next": "Next",
     "discard": "Discard"
   },
-  "home": {
-    "tagline": "Property dashboard with guided creation flow + AI-powered Teilungserklärung extraction.",
-    "cta": "Get started"
-  },
   "dashboard": {
     "title": "Properties",
+    "subtitle": "All managed properties across your tenant.",
     "createCta": "Create new property",
     "empty": "No properties yet. Create your first.",
+    "rowAriaLabel": "Open {name}",
     "columns": {
       "name": "Name",
       "type": "Type",

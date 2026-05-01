@@ -7,14 +7,12 @@
     "next": "Weiter",
     "discard": "Verwerfen"
   },
-  "home": {
-    "tagline": "Immobilien-Dashboard mit geführtem Anlegevorgang und KI-gestützter Extraktion aus der Teilungserklärung.",
-    "cta": "Jetzt starten"
-  },
   "dashboard": {
     "title": "Immobilien",
+    "subtitle": "Alle verwalteten Immobilien Ihres Mandanten.",
     "createCta": "Neue Immobilie anlegen",
     "empty": "Noch keine Immobilien. Legen Sie Ihre erste an.",
+    "rowAriaLabel": "{name} öffnen",
     "columns": {
       "name": "Name",
       "type": "Typ",
