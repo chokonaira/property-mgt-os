@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
-import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, Sparkles, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ContactCombobox } from '@/components/contact-combobox';
@@ -37,45 +38,62 @@ export function GeneralInfoForm() {
     watch,
     trigger,
   } = useFormContext<WizardDraftInput>();
-  const { setStepValid } = useWizard();
-
-  const [declarationFile, setDeclarationFile] = useState<File | undefined>(undefined);
+  const { setStepValid, declarationFile, setDeclarationFile } = useWizard();
 
   const managementType = watch('general.managementType');
   const uniqueNumber = watch('general.uniqueNumber') ?? '';
   const status = useUniqueNumberCheck(uniqueNumber.trim());
   const isUnavailable = status.kind === 'taken';
+  const isProbeError = status.kind === 'error';
 
-  // Step validator: schema fields + uniqueness check. The wizard chrome's
-  // Next button calls validateStep('general') → falls back to RHF trigger
-  // when no validator registered. We register here to also gate on the
-  // uniqueness probe.
-  useStepValidator('general', async () => {
+  // Treat 'pending' AND 'error' as not-yet-passed: a transient
+  // /properties?uniqueNumber=… failure must not advance the user past
+  // an unchecked number.
+  const probeOk = status.kind === 'available' || status.kind === 'idle';
+
+  // The wizard chrome's Next calls validateStep('general'). Registered
+  // validator runs both schema + uniqueness; only `available` (or
+  // 'idle' for empty input, which schema then rejects on min(1))
+  // counts as passed.
+  const validator = useCallback(async () => {
     const schemaOk = await trigger([
       'general.managementType',
       'general.name',
       'general.uniqueNumber',
     ]);
-    return schemaOk && !isUnavailable && status.kind !== 'pending';
-  });
+    return schemaOk && probeOk;
+  }, [trigger, probeOk]);
+  useStepValidator('general', validator);
 
-  // Keep validity in sync as the user types — so the indicator + Next
-  // button reflect the live state without waiting for a click.
+  // Live-sync validity so the indicator + Next button reflect state on
+  // every keystroke without waiting for a click.
   useEffect(() => {
     let cancelled = false;
     const fields = ['general.managementType', 'general.name', 'general.uniqueNumber'] as const;
     void (async () => {
       const ok = await trigger(fields);
-      if (!cancelled) setStepValid('general', ok && !isUnavailable && status.kind !== 'pending');
+      if (!cancelled) setStepValid('general', ok && probeOk);
     })();
     return () => {
       cancelled = true;
     };
-  }, [managementType, uniqueNumber, isUnavailable, status.kind, trigger, setStepValid]);
+  }, [managementType, uniqueNumber, probeOk, trigger, setStepValid]);
 
   const generalErrors = errors.general;
   const nameError = generalErrors?.name?.message;
   const uniqueError = generalErrors?.uniqueNumber?.message;
+  const probeErrorMessage = isUnavailable
+    ? tErrors('uniqueTaken')
+    : isProbeError
+      ? tErrors('uniqueProbeFailed')
+      : undefined;
+  const handleSkipExtraction = () => setDeclarationFile(undefined);
+  const handleUseExtraction = () => {
+    // T-503/T-504 wires the actual extraction call. For now we surface
+    // the deferral honestly; the file is held in WizardContext so
+    // re-entering the form preserves it.
+    window.alert(t('upload.extractionStub'));
+  };
 
   return (
     <form className="flex flex-col gap-6" noValidate>
@@ -114,7 +132,8 @@ export function GeneralInfoForm() {
       <Field
         label={t('uniqueNumber.label')}
         htmlFor={ids.uniqueNumber}
-        error={uniqueError ?? (isUnavailable ? tErrors('uniqueTaken') : undefined)}
+        description={t('uniqueNumber.help')}
+        error={uniqueError ?? probeErrorMessage}
         hint={
           status.kind === 'pending' ? (
             <Hint
@@ -134,9 +153,11 @@ export function GeneralInfoForm() {
           type="text"
           autoComplete="off"
           maxLength={64}
-          aria-invalid={Boolean(uniqueError) || isUnavailable || undefined}
+          aria-invalid={Boolean(uniqueError) || isUnavailable || isProbeError || undefined}
           aria-describedby={
-            uniqueError || isUnavailable ? `${ids.uniqueNumber}-error` : `${ids.uniqueNumber}-hint`
+            uniqueError || probeErrorMessage
+              ? `${ids.uniqueNumber}-error`
+              : `${ids.uniqueNumber}-hint`
           }
           {...register('general.uniqueNumber')}
         />
@@ -178,7 +199,26 @@ export function GeneralInfoForm() {
 
       {managementType === 'WEG' ? (
         <Field label={t('upload.label')} htmlFor="declaration-pdf" description={t('upload.help')}>
-          <PdfUploader value={declarationFile} onChange={setDeclarationFile} />
+          <div className="flex flex-col gap-3">
+            <PdfUploader value={declarationFile} onChange={setDeclarationFile} />
+            {declarationFile ? (
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button type="button" onClick={handleUseExtraction} className="sm:flex-1">
+                  <Sparkles className="h-4 w-4" aria-hidden="true" />
+                  {t('upload.useAi')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSkipExtraction}
+                  className="sm:flex-1"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                  {t('upload.skipManual')}
+                </Button>
+              </div>
+            ) : null}
+          </div>
         </Field>
       ) : null}
     </form>

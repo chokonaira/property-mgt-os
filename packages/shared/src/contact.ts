@@ -45,3 +45,21 @@ export const ContactListResponseSchema = z.object({
   items: z.array(ContactSchema),
 });
 export type ContactListResponse = z.infer<typeof ContactListResponseSchema>;
+
+// Create request: the wizard sends a role *category* (PROPERTY_MANAGER /
+// ACCOUNTANT); the API substitutes the canonical German label string
+// per CONTACT_ROLE_LABELS[role][0] before the row hits Prisma.
+export const CreateContactRequestSchema = z.object({
+  role: ContactRoleSchema,
+  name: z.string().min(1).max(200),
+  street: z.string().max(200).optional(),
+  houseNumber: z.string().max(20).optional(),
+  postalCode: z
+    .string()
+    .regex(/^\d{5}$/, '5-digit German postal code')
+    .optional(),
+  city: z.string().max(120).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().max(40).optional(),
+});
+export type CreateContactRequest = z.infer<typeof CreateContactRequestSchema>;

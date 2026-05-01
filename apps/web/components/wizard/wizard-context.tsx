@@ -32,6 +32,10 @@ interface WizardContextValue {
   setStepValid: (step: WizardStepId, valid: boolean) => void;
   validateStep: (step: WizardStepId) => Promise<boolean>;
   reset: () => void;
+  // Stepwise file picks live on the layout-level provider so the user
+  // doesn't lose their selection when they Back out of step 1.
+  declarationFile: File | undefined;
+  setDeclarationFile: (file: File | undefined) => void;
 }
 
 const initialValidity: StepValidityMap = {
@@ -58,6 +62,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   });
 
   const [validity, setValidity] = useState<StepValidityMap>(initialValidity);
+  const [declarationFile, setDeclarationFile] = useState<File | undefined>(undefined);
   const validators = useRef<Partial<Record<WizardStepId, ValidatorFn>>>({});
 
   const registerValidator = useCallback((step: WizardStepId, fn: ValidatorFn | null) => {
@@ -84,13 +89,22 @@ export function WizardProvider({ children }: { children: ReactNode }) {
 
   const reset = useCallback(() => {
     setValidity(initialValidity);
+    setDeclarationFile(undefined);
     validators.current = {};
     methods.reset(WIZARD_DRAFT_DEFAULTS);
   }, [methods]);
 
   const value = useMemo<WizardContextValue>(
-    () => ({ validity, registerValidator, setStepValid, validateStep, reset }),
-    [validity, registerValidator, setStepValid, validateStep, reset],
+    () => ({
+      validity,
+      registerValidator,
+      setStepValid,
+      validateStep,
+      reset,
+      declarationFile,
+      setDeclarationFile,
+    }),
+    [validity, registerValidator, setStepValid, validateStep, reset, declarationFile],
   );
 
   return (

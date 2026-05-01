@@ -6,6 +6,10 @@ import { ManagementTypeSchema } from '@buena/shared';
 // Sub-arrays for buildings + units are intentionally permissive at this
 // shell layer — T-301 + T-401 replace them with the strict create schemas
 // when real fields land.
+// Custom messages on the schema would short-circuit zodI18nResolver, so
+// the regex constraint here intentionally relies on Zod's default
+// invalid_string issue and the helper text on the input describes the
+// format expectation.
 export const WizardGeneralDraftSchema = z.object({
   managementType: ManagementTypeSchema,
   name: z.string().min(1).max(200),
@@ -13,7 +17,7 @@ export const WizardGeneralDraftSchema = z.object({
     .string()
     .min(1)
     .max(64)
-    .regex(/^[A-Za-z0-9-]+$/, 'alphanumeric and hyphens only'),
+    .regex(/^[A-Za-z0-9-]+$/),
   propertyManagerId: z.string().min(1).optional(),
   accountantId: z.string().min(1).optional(),
 });

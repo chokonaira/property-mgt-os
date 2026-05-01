@@ -38,6 +38,7 @@
       "name": { "label": "Objektname" },
       "uniqueNumber": {
         "label": "Objektnummer",
+        "help": "Nur Buchstaben, Ziffern und Bindestriche.",
         "checking": "Verfügbarkeit wird geprüft…",
         "available": "Verfügbar."
       },
@@ -56,17 +57,34 @@
         "limits": "Nur PDF, bis zu {mb} MB.",
         "wrongType": "Es werden nur PDF-Dateien akzeptiert.",
         "tooLarge": "Datei überschreitet das Limit von {mb} MB.",
-        "remove": "Entfernen"
+        "remove": "Entfernen",
+        "useAi": "KI-Extraktion verwenden",
+        "skipManual": "Überspringen — ich fülle manuell aus",
+        "extractionStub": "Die KI-Extraktion folgt in einem späteren Ticket. Die Datei bleibt auf diesem Schritt erhalten."
       },
       "contacts": {
         "placeholder": "Auswählen…",
         "loading": "Wird geladen…",
         "error": "Kontakte konnten nicht geladen werden.",
-        "create": "Neu anlegen",
-        "createComingSoon": "Inline-Kontaktanlage folgt in T-203."
+        "create": "Neu anlegen"
+      },
+      "contactForm": {
+        "titleManager": "Neuer Verwalter",
+        "titleAccountant": "Neue Buchhaltung",
+        "description": "Wird in Ihrem Mandanten gespeichert. Der neue Kontakt wird nach dem Speichern automatisch ausgewählt.",
+        "name": "Name",
+        "street": "Straße",
+        "houseNumber": "Hausnr.",
+        "postalCode": "PLZ",
+        "city": "Stadt",
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "cancel": "Abbrechen",
+        "save": "Speichern"
       },
       "errors": {
-        "uniqueTaken": "Diese Nummer wird bereits von einer anderen Immobilie verwendet."
+        "uniqueTaken": "Diese Nummer wird bereits von einer anderen Immobilie verwendet.",
+        "uniqueProbeFailed": "Verfügbarkeit konnte nicht geprüft werden. Bitte erneut versuchen."
       }
     },
     "placeholders": {

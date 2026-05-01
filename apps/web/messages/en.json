@@ -38,6 +38,7 @@
       "name": { "label": "Property name" },
       "uniqueNumber": {
         "label": "Unique number",
+        "help": "Letters, numbers, and hyphens only.",
         "checking": "Checking availability…",
         "available": "Available."
       },
@@ -56,17 +57,34 @@
         "limits": "PDF only, up to {mb} MB.",
         "wrongType": "Only PDF files are accepted.",
         "tooLarge": "File exceeds the {mb} MB limit.",
-        "remove": "Remove"
+        "remove": "Remove",
+        "useAi": "Use AI to extract",
+        "skipManual": "Skip — I'll fill manually",
+        "extractionStub": "AI extraction lands in a later ticket. The file is preserved on this step."
       },
       "contacts": {
         "placeholder": "Choose…",
         "loading": "Loading…",
         "error": "Couldn't load contacts.",
-        "create": "Create new",
-        "createComingSoon": "Inline contact creation lands in T-203."
+        "create": "Create new"
+      },
+      "contactForm": {
+        "titleManager": "New property manager",
+        "titleAccountant": "New accountant",
+        "description": "Saves to your tenant. The new contact is auto-selected on save.",
+        "name": "Name",
+        "street": "Street",
+        "houseNumber": "House no.",
+        "postalCode": "Postal code",
+        "city": "City",
+        "email": "Email",
+        "phone": "Phone",
+        "cancel": "Cancel",
+        "save": "Save"
       },
       "errors": {
-        "uniqueTaken": "This number is already in use by another property."
+        "uniqueTaken": "This number is already in use by another property.",
+        "uniqueProbeFailed": "Couldn't verify availability. Try again in a moment."
       }
     },
     "placeholders": {

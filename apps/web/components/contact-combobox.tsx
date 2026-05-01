@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { Contact, ContactRole } from '@buena/shared';
 import { Button } from '@/components/ui/button';
+import { ContactFormModal } from '@/components/contact-form-modal';
 import { useContacts } from '@/lib/hooks/use-contacts';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +28,11 @@ export function ContactCombobox({
 }: ContactComboboxProps) {
   const t = useTranslations('wizard.general.contacts');
   const { data, isPending, isError } = useContacts(role);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  function handleCreated(contact: Contact) {
+    onChange(contact.id);
+  }
 
   return (
     <div className="flex gap-2">
@@ -56,13 +63,18 @@ export function ContactCombobox({
         type="button"
         variant="outline"
         size="default"
-        disabled
-        title={t('createComingSoon')}
+        onClick={() => setModalOpen(true)}
         className="shrink-0"
       >
         <Plus className="h-4 w-4" aria-hidden="true" />
         <span className="hidden sm:inline">{t('create')}</span>
       </Button>
+      <ContactFormModal
+        role={role}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onCreated={handleCreated}
+      />
     </div>
   );
 }

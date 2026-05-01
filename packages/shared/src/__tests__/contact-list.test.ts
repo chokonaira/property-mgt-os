@@ -4,6 +4,7 @@ import {
   ContactListQuerySchema,
   ContactListResponseSchema,
   ContactRoleSchema,
+  CreateContactRequestSchema,
 } from '../contact';
 
 describe('ContactRoleSchema', () => {
@@ -43,5 +44,52 @@ describe('ContactListQuerySchema', () => {
 describe('ContactListResponseSchema', () => {
   it('accepts an empty items array', () => {
     expect(ContactListResponseSchema.safeParse({ items: [] }).success).toBe(true);
+  });
+});
+
+describe('CreateContactRequestSchema', () => {
+  it('requires role + name', () => {
+    expect(CreateContactRequestSchema.safeParse({ name: 'Acme' }).success).toBe(false);
+    expect(CreateContactRequestSchema.safeParse({ role: 'PROPERTY_MANAGER' }).success).toBe(false);
+  });
+
+  it('admits role + name as the minimum payload', () => {
+    expect(
+      CreateContactRequestSchema.safeParse({
+        role: 'PROPERTY_MANAGER',
+        name: 'Acme Verwaltung',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects an arbitrary role string', () => {
+    expect(CreateContactRequestSchema.safeParse({ role: 'OWNER', name: 'A' }).success).toBe(false);
+  });
+
+  it('enforces 5-digit German postcode when provided', () => {
+    expect(
+      CreateContactRequestSchema.safeParse({
+        role: 'ACCOUNTANT',
+        name: 'A',
+        postalCode: '1234',
+      }).success,
+    ).toBe(false);
+    expect(
+      CreateContactRequestSchema.safeParse({
+        role: 'ACCOUNTANT',
+        name: 'A',
+        postalCode: '12345',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects an invalid email', () => {
+    expect(
+      CreateContactRequestSchema.safeParse({
+        role: 'ACCOUNTANT',
+        name: 'A',
+        email: 'not-an-email',
+      }).success,
+    ).toBe(false);
   });
 });
