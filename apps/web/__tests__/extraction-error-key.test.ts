@@ -37,6 +37,10 @@ describe('extractionErrorKey', () => {
     expect(extractionErrorKey(apiError('SERVICE_UNAVAILABLE', 503))).toBe('unavailable');
   });
 
+  it('maps RATE_LIMITED to rateLimited', () => {
+    expect(extractionErrorKey(apiError('RATE_LIMITED', 429))).toBe('rateLimited');
+  });
+
   it('falls back to generic for unmapped codes', () => {
     expect(extractionErrorKey(apiError('INTERNAL', 500))).toBe('generic');
     expect(extractionErrorKey(apiError('NOT_FOUND', 404))).toBe('generic');

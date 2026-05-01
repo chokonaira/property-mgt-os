@@ -320,12 +320,14 @@
       "extracting": "Dokument wird gelesen…",
       "hint": "Das kann 10–15 Sekunden dauern. Sobald wir fertig sind, sehen Sie hier die Ergebnisse.",
       "retry": "Erneut versuchen",
+      "fillManually": "Manuell ausfüllen",
       "errors": {
         "tooLarge": "Dieses Dokument überschreitet das v1-Größenlimit.",
         "timeout": "Das Lesen des Dokuments hat zu lange gedauert.",
         "parseFailed": "Wir konnten dieses Dokument nicht strukturieren.",
         "unreadable": "Diese Datei ist kein lesbares PDF.",
         "unavailable": "Dokumentenspeicher ist vorübergehend nicht verfügbar.",
+        "rateLimited": "Aktuell ratenbegrenzt. Bitte in einem Moment erneut versuchen.",
         "generic": "Wir konnten dieses Dokument nicht lesen.",
         "fallbackHint": "Sie können das Formular unten manuell ausfüllen."
       }

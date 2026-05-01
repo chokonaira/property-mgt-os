@@ -320,12 +320,14 @@
       "extracting": "Reading the document…",
       "hint": "This can take 10–15 seconds. We'll show what we found as soon as it's ready.",
       "retry": "Try again",
+      "fillManually": "Fill manually",
       "errors": {
         "tooLarge": "This document is too large for the v1 size limit.",
         "timeout": "Reading the document took too long.",
         "parseFailed": "We couldn't structure this document.",
         "unreadable": "This file isn't a readable PDF.",
         "unavailable": "Document storage is temporarily unavailable.",
+        "rateLimited": "We're rate-limited right now. Try again in a moment.",
         "generic": "We couldn't read this document.",
         "fallbackHint": "You can fill the form manually below."
       }

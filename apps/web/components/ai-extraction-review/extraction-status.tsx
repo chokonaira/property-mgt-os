@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, Loader2, RefreshCcw } from 'lucide-react';
+import { AlertCircle, Loader2, RefreshCcw, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -35,9 +35,11 @@ export function ExtractionLoading({ stage }: ExtractionLoadingProps) {
 interface ExtractionErrorBannerProps {
   error: unknown;
   onRetry: () => void;
+  /** Optional dismiss action; renders a "Fill manually" button next to Retry. */
+  onDismiss?: () => void;
 }
 
-export function ExtractionErrorBanner({ error, onRetry }: ExtractionErrorBannerProps) {
+export function ExtractionErrorBanner({ error, onRetry, onDismiss }: ExtractionErrorBannerProps) {
   const t = useTranslations('extraction.status');
   const messageKey = extractionErrorKey(error);
   return (
@@ -52,10 +54,18 @@ export function ExtractionErrorBanner({ error, onRetry }: ExtractionErrorBannerP
             <p className="text-xs text-destructive/80">{t('errors.fallbackHint')}</p>
           </div>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-          <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" />
-          {t('retry')}
-        </Button>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-shrink-0 sm:items-center">
+          {onDismiss ? (
+            <Button type="button" variant="ghost" size="sm" onClick={onDismiss}>
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
+              {t('fillManually')}
+            </Button>
+          ) : null}
+          <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+            <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" />
+            {t('retry')}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

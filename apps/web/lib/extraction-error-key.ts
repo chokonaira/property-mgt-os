@@ -6,6 +6,7 @@ export type ExtractionErrorKey =
   | 'parseFailed'
   | 'unreadable'
   | 'unavailable'
+  | 'rateLimited'
   | 'generic';
 
 /**
@@ -28,6 +29,8 @@ export function extractionErrorKey(error: unknown): ExtractionErrorKey {
         return 'unreadable';
       case 'SERVICE_UNAVAILABLE':
         return 'unavailable';
+      case 'RATE_LIMITED':
+        return 'rateLimited';
       default:
         return 'generic';
     }

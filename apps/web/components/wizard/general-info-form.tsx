@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { AlertCircle, CheckCircle2, Loader2, Sparkles, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -20,6 +20,7 @@ import { useUploadDocument } from '@/lib/hooks/use-upload-document';
 import { useExtractDocument } from '@/lib/hooks/use-extract-document';
 import { useUniqueNumberCheck } from '@/lib/hooks/use-unique-number-check';
 import { extractionToWizardDraft } from '@/lib/extraction-to-wizard-draft';
+import { logExtractionFailure } from '@/lib/extraction-logger';
 import { useStepValidator, useWizard } from './wizard-context';
 import { SegmentedControl } from './segmented-control';
 import type { WizardDraftInput } from '@/lib/schemas/wizard-draft';
@@ -140,6 +141,29 @@ export function GeneralInfoForm() {
     void runExtraction(declarationFile, true);
   };
 
+  const handleDismissError = useCallback(() => {
+    setDeclarationFile(undefined);
+    upload.reset();
+    extract.reset();
+  }, [setDeclarationFile, upload, extract]);
+
+  // Log every extraction-pipeline failure exactly once with the
+  // documentId we attempted (so prompt-iteration triage can correlate
+  // an ExtractionRun row with the user-facing error). The effect
+  // guards against re-firing for the same error reference; React
+  // Query keeps it stable until the mutation runs again.
+  const lastLoggedError = useRef<unknown>(null);
+  useEffect(() => {
+    if (!extractionError) {
+      lastLoggedError.current = null;
+      return;
+    }
+    if (lastLoggedError.current === extractionError) return;
+    lastLoggedError.current = extractionError;
+    const documentId = extract.data?.runId ?? upload.data?.id;
+    logExtractionFailure(documentId, extractionError);
+  }, [extractionError, extract.data, upload.data]);
+
   // Memoised so the panel and the accept handler share one
   // translation pass; cheap, but obvious correctness vs. recomputing
   // the same draft + droppedUnits twice per render.
@@ -214,7 +238,11 @@ export function GeneralInfoForm() {
         <ExtractionLoading stage={isUploading ? 'uploading' : 'extracting'} />
       ) : null}
       {showError ? (
-        <ExtractionErrorBanner error={extractionError} onRetry={handleRetryExtraction} />
+        <ExtractionErrorBanner
+          error={extractionError}
+          onRetry={handleRetryExtraction}
+          onDismiss={handleDismissError}
+        />
       ) : null}
       {showPanel ? (
         <AiReviewPanel
