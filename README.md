@@ -1,4 +1,4 @@
-# Buena Case Study
+# A Buena Case Study
 
 [![CI](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml/badge.svg)](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-331_passing-brightgreen)](#testing)

@@ -31,26 +31,28 @@ export interface MeaBreakdownInput {
  *
  * Units whose `buildingIndex` falls outside the buildings array are
  * dropped from the per-building rows but counted in the unscoped
- * `total` returned alongside.
+ * `sum` returned alongside (so the running total is honest about
+ * orphan rows even when no card holds them).
  */
 export interface MeaBreakdown {
-  total: number;
+  /** Running sum of every unit's meaShare. NOT the declared total. */
+  sum: number;
   rows: BuildingBreakdownRow[];
 }
 
 export function computeMeaBreakdown({ buildings, units, fallback }: MeaBreakdownInput): MeaBreakdown {
-  const total = units.reduce(
+  const sum = units.reduce(
     (acc, u) => acc + (typeof u.meaShare === 'number' ? u.meaShare : 0),
     0,
   );
   const rows: BuildingBreakdownRow[] = buildings.map((b, idx) => {
-    const sum = units
+    const buildingSum = units
       .filter((u) => u.buildingIndex === idx)
       .reduce((acc, u) => acc + (typeof u.meaShare === 'number' ? u.meaShare : 0), 0);
     const label = b.label?.trim() || b.nickname?.trim() || fallback(idx + 1);
-    return { index: idx, label, sum };
+    return { index: idx, label, sum: buildingSum };
   });
-  return { total, rows };
+  return { sum, rows };
 }
 
 /**

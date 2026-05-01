@@ -47,15 +47,13 @@ export function WizardMeaBar() {
 
   if (managementType !== 'WEG') return null;
 
-  const sum = breakdown.total;
+  const sum = breakdown.sum;
   const tone: MeaTone = classifyMeaTone(sum, totalMea);
   const delta = totalMea !== undefined ? totalMea - sum : 0;
   const ratio = totalMea && totalMea > 0 ? Math.min(sum / totalMea, 1) : 0;
 
   return (
     <div
-      role="status"
-      aria-live="polite"
       data-testid="wizard-mea-bar"
       className={cn(
         'sticky bottom-0 left-0 right-0 z-30 border-t backdrop-blur-sm',
@@ -93,7 +91,12 @@ export function WizardMeaBar() {
               aria-hidden="true"
             />
           </div>
-          <p className="text-xs text-muted-foreground sm:text-right">
+          <p
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="text-xs text-muted-foreground sm:text-right"
+          >
             {messageFor(t, tone, delta, locale)}
           </p>
         </div>

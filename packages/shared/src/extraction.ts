@@ -96,7 +96,9 @@ export const ExtractedPropertySchema = z.object({
   name: z.string(),
   uniqueNumber: z.string().optional(),
   managementType: z.enum(['WEG', 'MV']),
-  totalMea: z.number().positive().optional(),
+  // Cap mirrors the wizard draft (z.number().nonnegative().max(10000))
+  // so an AI-extracted total can't bypass the form-side cap.
+  totalMea: z.number().positive().max(10000).optional(),
   notarialRollNo: z.string().optional(),
   notarizedAt: z.string().optional(),
   grundbuchOffice: z.string().optional(),

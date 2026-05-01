@@ -33,7 +33,7 @@ describe('computeMeaBreakdown', () => {
       units: [unit(0, 200), unit(0, 300), unit(1, 400)],
       fallback,
     });
-    expect(result.total).toBe(900);
+    expect(result.sum).toBe(900);
     expect(result.rows).toEqual([
       { index: 0, label: 'Haus A', sum: 500 },
       { index: 1, label: 'Haus B', sum: 400 },
@@ -46,7 +46,7 @@ describe('computeMeaBreakdown', () => {
       units: [unit(0, 100), unit(0, undefined), unit(0, 200)],
       fallback,
     });
-    expect(result.total).toBe(300);
+    expect(result.sum).toBe(300);
     expect(result.rows[0]?.sum).toBe(300);
   });
 
@@ -69,7 +69,7 @@ describe('computeMeaBreakdown', () => {
       units: [unit(0, 100), unit(99, 50)],
       fallback,
     });
-    expect(result.total).toBe(150);
+    expect(result.sum).toBe(150);
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0]?.sum).toBe(100);
   });
