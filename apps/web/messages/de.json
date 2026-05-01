@@ -24,6 +24,16 @@
     "step2": "Gebäude",
     "step3": "Einheiten"
   },
+  "comingSoon": {
+    "wizard": {
+      "title": "Assistent folgt in Kürze",
+      "description": "Der geführte Anlegevorgang folgt im nächsten Ticket. Zwischengespeicherte Entwürfe werden hier sichtbar sein."
+    },
+    "detail": {
+      "title": "Detailansicht folgt in Kürze",
+      "description": "Die Lese-Ansicht mit Allgemeinen Angaben, Gebäuden und Einheiten folgt im nächsten Ticket."
+    }
+  },
   "units": {
     "addRow": "Einheit hinzufügen",
     "generate": "Einheiten generieren",

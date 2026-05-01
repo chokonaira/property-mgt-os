@@ -24,6 +24,16 @@
     "step2": "Buildings",
     "step3": "Units"
   },
+  "comingSoon": {
+    "wizard": {
+      "title": "Wizard coming soon",
+      "description": "The guided property creation flow lands in the next ticket. Saved drafts will live here."
+    },
+    "detail": {
+      "title": "Property detail coming soon",
+      "description": "Read-only property detail with sections for general info, buildings, and units lands in the next ticket."
+    }
+  },
   "units": {
     "addRow": "Add unit",
     "generate": "Generate units",
