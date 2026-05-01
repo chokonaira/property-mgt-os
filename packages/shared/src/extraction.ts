@@ -107,6 +107,21 @@ export const ExtractedPropertySchema = z.object({
   totalAreaSqm: z.number().positive().optional(),
 });
 
+export const WarningCodeSchema = z.enum([
+  'MEA_MISMATCH',
+  'MISSING_FIELD',
+  'UNRECOGNIZED_TYPE',
+  'AMBIGUOUS_VALUE',
+]);
+export type WarningCode = z.infer<typeof WarningCodeSchema>;
+
+export const WarningSchema = z.object({
+  code: WarningCodeSchema,
+  message: z.string(),
+  fields: z.array(z.string()),
+});
+export type Warning = z.infer<typeof WarningSchema>;
+
 export const ExtractionResultSchema = z.object({
   property: ExtractedPropertySchema,
   buildings: z.array(ExtractedBuildingSchema).min(1),
@@ -114,15 +129,7 @@ export const ExtractionResultSchema = z.object({
   contacts: z.array(ExtractedContactSchema).default([]),
   confidenceByField: z.record(z.string(), z.number().min(0).max(1)).default({}),
   sourceSpansByField: z.record(z.string(), z.string()).default({}),
-  warnings: z
-    .array(
-      z.object({
-        code: z.enum(['MEA_MISMATCH', 'MISSING_FIELD', 'UNRECOGNIZED_TYPE', 'AMBIGUOUS_VALUE']),
-        message: z.string(),
-        fields: z.array(z.string()),
-      }),
-    )
-    .default([]),
+  warnings: z.array(WarningSchema).default([]),
 });
 export type ExtractionResult = z.infer<typeof ExtractionResultSchema>;
 
@@ -139,13 +146,7 @@ export type ExtractionRunRequest = z.infer<typeof ExtractionRunRequestSchema>;
 export const ExtractionRunResponseSchema = z.object({
   runId: z.string().min(1),
   extraction: ExtractionResultSchema,
-  warnings: z.array(
-    z.object({
-      code: z.enum(['MEA_MISMATCH', 'MISSING_FIELD', 'UNRECOGNIZED_TYPE', 'AMBIGUOUS_VALUE']),
-      message: z.string(),
-      fields: z.array(z.string()),
-    }),
-  ),
+  warnings: z.array(WarningSchema),
   confidence: z.number().min(0).max(1),
   durationMs: z.number().int().nonnegative(),
   cached: z.boolean(),

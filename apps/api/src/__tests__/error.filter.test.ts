@@ -2,6 +2,7 @@ import {
   HttpException,
   HttpStatus,
   PayloadTooLargeException,
+  ServiceUnavailableException,
   UnsupportedMediaTypeException,
   type ArgumentsHost,
 } from '@nestjs/common';
@@ -41,6 +42,17 @@ describe('GlobalErrorFilter status → code mapping', () => {
     expect(res.status).toHaveBeenCalledWith(415);
     const body = res.json.mock.calls[0]?.[0];
     expect(body.error.code).toBe('UNSUPPORTED_MEDIA_TYPE');
+  });
+
+  it('maps ServiceUnavailableException (503) to SERVICE_UNAVAILABLE', () => {
+    const { host, res } = makeHost();
+    new GlobalErrorFilter(noopLogger).catch(
+      new ServiceUnavailableException('Storage offline'),
+      host,
+    );
+    expect(res.status).toHaveBeenCalledWith(503);
+    const body = res.json.mock.calls[0]?.[0];
+    expect(body.error.code).toBe('SERVICE_UNAVAILABLE');
   });
 
   it('falls through to INTERNAL for an unmapped HttpException status', () => {

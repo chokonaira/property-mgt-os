@@ -43,11 +43,40 @@ describe('ExtractionController.run', () => {
     expect(run).toHaveBeenCalledWith('doc-1', { force: true });
   });
 
-  it('treats any non-"true" force value as false', async () => {
+  it('accepts case-insensitive "true" (TRUE / True) as force=true', async () => {
     const run = vi.fn(async () => RUN_RESPONSE);
     const controller = makeController(run);
+    await controller.run({ documentId: 'doc-1' }, 'TRUE');
+    await controller.run({ documentId: 'doc-1' }, 'True');
+    expect(run.mock.calls[0]).toEqual(['doc-1', { force: true }]);
+    expect(run.mock.calls[1]).toEqual(['doc-1', { force: true }]);
+  });
+
+  it('treats non-boolean-ish force values as false', async () => {
+    const run = vi.fn<(id: string, opts: { force: boolean }) => Promise<typeof RUN_RESPONSE>>(
+      async () => RUN_RESPONSE,
+    );
+    const controller = makeController(run);
     await controller.run({ documentId: 'doc-1' }, '1');
-    expect(run).toHaveBeenCalledWith('doc-1', { force: false });
+    await controller.run({ documentId: 'doc-1' }, 'yes');
+    await controller.run({ documentId: 'doc-1' }, '');
+    const allFalse = run.mock.calls.every(([, opts]) => opts.force === false);
+    expect(allFalse).toBe(true);
+  });
+
+  it('maps ExtractionError(storage_missing) → 503 SERVICE_UNAVAILABLE', async () => {
+    const run = vi.fn(async () => {
+      throw new ExtractionError('storage_missing', 'pdf bytes gone');
+    });
+    const controller = makeController(run);
+    try {
+      await controller.run({ documentId: 'x' }, undefined);
+      throw new Error('should have thrown');
+    } catch (error) {
+      expect(error).toBeInstanceOf(AppException);
+      expect((error as AppException).getStatus()).toBe(HttpStatus.SERVICE_UNAVAILABLE);
+      expect((error as AppException).code).toBe('SERVICE_UNAVAILABLE');
+    }
   });
 
   it('maps ExtractionError(document_missing) → 404 NOT_FOUND', async () => {

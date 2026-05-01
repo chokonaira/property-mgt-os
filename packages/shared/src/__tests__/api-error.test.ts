@@ -10,10 +10,13 @@ describe('ErrorCodeSchema', () => {
       'VALIDATION_FAILED',
       'NOT_FOUND',
       'CONFLICT',
+      'PAYLOAD_TOO_LARGE',
+      'UNSUPPORTED_MEDIA_TYPE',
       'RATE_LIMITED',
       'EXTRACTION_TIMEOUT',
       'EXTRACTION_PARSE_FAILED',
       'EXTRACTION_TOO_LARGE',
+      'SERVICE_UNAVAILABLE',
       'INTERNAL',
       'UNKNOWN',
     ];

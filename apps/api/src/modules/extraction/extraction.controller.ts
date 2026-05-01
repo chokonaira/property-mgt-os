@@ -35,7 +35,7 @@ export class ExtractionController {
   ): Promise<ExtractionRunResponse> {
     try {
       return await this.extraction.run(body.documentId, {
-        force: force === 'true',
+        force: parseForceFlag(force),
       });
     } catch (error) {
       if (error instanceof ExtractionError) {
@@ -46,12 +46,29 @@ export class ExtractionController {
   }
 }
 
+/**
+ * Accepts case-insensitive `true` (true / TRUE / True). Anything else
+ * — including `1`, `yes`, omitted — leaves the cache enabled. Strict
+ * boolean-ish semantics keep accidental URLs (`?force=1`) from
+ * draining the OpenAI budget.
+ */
+function parseForceFlag(value: string | undefined): boolean {
+  return typeof value === 'string' && value.toLowerCase() === 'true';
+}
+
 function mapExtractionError(error: ExtractionError): AppException {
   switch (error.reason) {
     case 'document_missing':
       return new AppException('NOT_FOUND', error.message, HttpStatus.NOT_FOUND);
     case 'storage_missing':
-      return new AppException('INTERNAL', error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      // Document row exists but the PDF bytes are gone. That's a
+      // storage-tier failure (disk unmounted, blob purged), not a
+      // code bug — 503 SERVICE_UNAVAILABLE is the honest signal.
+      return new AppException(
+        'SERVICE_UNAVAILABLE',
+        error.message,
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     case 'cannot_read_pdf':
       return new AppException('VALIDATION_FAILED', error.message, HttpStatus.UNPROCESSABLE_ENTITY);
     case 'too_large':

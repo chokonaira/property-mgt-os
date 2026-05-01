@@ -13,6 +13,7 @@ export const ErrorCodeSchema = z.enum([
   'EXTRACTION_TIMEOUT',
   'EXTRACTION_PARSE_FAILED',
   'EXTRACTION_TOO_LARGE',
+  'SERVICE_UNAVAILABLE',
   'INTERNAL',
   'UNKNOWN',
 ]);

@@ -94,6 +94,8 @@ export class GlobalErrorFilter implements ExceptionFilter {
         return 'VALIDATION_FAILED';
       case HttpStatus.TOO_MANY_REQUESTS:
         return 'RATE_LIMITED';
+      case HttpStatus.SERVICE_UNAVAILABLE:
+        return 'SERVICE_UNAVAILABLE';
       default:
         return 'INTERNAL';
     }
