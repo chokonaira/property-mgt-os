@@ -20,3 +20,13 @@ export type CreateDocument = z.infer<typeof CreateDocumentSchema>;
 
 export const UpdateDocumentSchema = CreateDocumentSchema.partial();
 export type UpdateDocument = z.infer<typeof UpdateDocumentSchema>;
+
+// Slim wire shape returned by POST /documents. The storageKey lives only
+// server-side so callers never get a path they could probe.
+export const DocumentUploadResponseSchema = z.object({
+  id: z.string().min(1),
+  filename: z.string().min(1),
+  mimeType: z.string().min(1),
+  bytes: z.number().int().nonnegative(),
+});
+export type DocumentUploadResponse = z.infer<typeof DocumentUploadResponseSchema>;
