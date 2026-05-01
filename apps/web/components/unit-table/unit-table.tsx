@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { FieldChip } from '@/components/ai-extraction-review';
 import { useWizard } from '@/components/wizard/wizard-context';
 import { FloorCell } from '@/components/unit-table/floor-cell';
+import { GenerateUnitsDialog } from '@/components/unit-table/generate-units-dialog';
 import { useCellNavigation } from '@/components/unit-table/use-cell-navigation';
 import { parsePastedRows } from '@/lib/parse-tsv';
 import {
@@ -323,10 +324,22 @@ export function UnitTable() {
           </tbody>
         </table>
       </div>
-      <div className="flex justify-start">
+      <div className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="outline" onClick={() => append(EMPTY_UNIT)}>
           + {t('addRow')}
         </Button>
+        <GenerateUnitsDialog
+          onGenerate={(rows) => {
+            // Pristine seed → replace; otherwise append.
+            const pristine =
+              fields.length === 1 &&
+              (fields[0] as unknown as WizardUnitDraft).number === '' &&
+              (fields[0] as unknown as WizardUnitDraft).type === 'APARTMENT';
+            if (pristine) remove(0);
+            for (const row of rows) append(row, { shouldFocus: false });
+            toast.success(t('generate.toast', { count: rows.length }));
+          }}
+        />
       </div>
     </div>
   );

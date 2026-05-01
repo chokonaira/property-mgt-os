@@ -137,6 +137,31 @@
         "successAll": "{count, plural, one {# Einheit eingefügt.} other {# Einheiten eingefügt.}}",
         "successPartial": "{count, plural, one {# Einheit eingefügt.} other {# Einheiten eingefügt.}} {errors, plural, one {# Zeile mit Fehlern.} other {# Zeilen mit Fehlern.}}"
       },
+      "generate": {
+        "cta": "Einheiten generieren",
+        "title": "Einheiten generieren",
+        "description": "Schnellaktion für sich wiederholende Blöcke (Stellplätze, identische Wohnungen). Anschließend kann jede Zelle bearbeitet werden.",
+        "type": "Typ",
+        "building": "Gebäude",
+        "count": "Anzahl",
+        "startAt": "Startnummer",
+        "prefix": "Nummern-Präfix",
+        "prefixHelp": "Standard: \"{defaultPrefix}\". Für eigene Schemata überschreiben.",
+        "sizeSqm": "Fläche (m²) — optional",
+        "meaShare": "MEA je Einheit — optional",
+        "rooms": "Zimmer — optional",
+        "preview": "Erstellt {count, plural, one {# Zeile} other {# Zeilen}} mit Nummern {first}…{last}.",
+        "previewEmpty": "Anzahl angeben für eine Vorschau.",
+        "cancel": "Abbrechen",
+        "generate": "Generieren",
+        "toast": "{count, plural, one {# Einheit erzeugt.} other {# Einheiten erzeugt.}}",
+        "types": {
+          "APARTMENT": "Wohnung",
+          "OFFICE": "Gewerbe",
+          "PARKING": "Stellplatz",
+          "GARDEN": "Garten"
+        }
+      },
       "columns": {
         "type": "Typ",
         "building": "Gebäude",

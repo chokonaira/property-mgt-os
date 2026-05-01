@@ -137,6 +137,31 @@
         "successAll": "{count, plural, one {Pasted # unit.} other {Pasted # units.}}",
         "successPartial": "{count, plural, one {Pasted # unit.} other {Pasted # units.}} {errors, plural, one {# row had errors.} other {# rows had errors.}}"
       },
+      "generate": {
+        "cta": "Generate units",
+        "title": "Generate units",
+        "description": "Quick action for repetitive blocks (parking spots, identical apartments). Edit any cell after.",
+        "type": "Type",
+        "building": "Building",
+        "count": "How many",
+        "startAt": "Start at",
+        "prefix": "Number prefix",
+        "prefixHelp": "Default: \"{defaultPrefix}\". Override for custom schemes.",
+        "sizeSqm": "Size (m²) — optional",
+        "meaShare": "MEA each — optional",
+        "rooms": "Rooms — optional",
+        "preview": "Will create {count, plural, one {# row} other {# rows}} numbered {first}…{last}.",
+        "previewEmpty": "Set the count to preview.",
+        "cancel": "Cancel",
+        "generate": "Generate",
+        "toast": "{count, plural, one {Generated # unit.} other {Generated # units.}}",
+        "types": {
+          "APARTMENT": "Apartment",
+          "OFFICE": "Office",
+          "PARKING": "Parking",
+          "GARDEN": "Garden"
+        }
+      },
       "columns": {
         "type": "Type",
         "building": "Building",
