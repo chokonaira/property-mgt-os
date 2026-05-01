@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import { Copy, Trash2 } from 'lucide-react';
 import { useFormContext, useFieldArray, useWatch } from 'react-hook-form';
@@ -33,6 +33,54 @@ const AREA_METRIC_BY_TYPE: Record<WizardUnitType, 'WOHN' | 'NUTZ' | 'NUTZ' | 'GR
 
 interface RowMeta {
   rowIndex: number;
+}
+
+/**
+ * Selection state lives outside the columns memo so toggling a
+ * checkbox doesn't rebuild every column definition (~13 cols × N
+ * rows of cell renderers). Cell components consume from this
+ * context; the columns array stays referentially stable across
+ * selection changes.
+ */
+interface SelectionContextValue {
+  selectedIds: ReadonlySet<string>;
+  allSelected: boolean;
+  toggleRow: (id: string) => void;
+  toggleAll: () => void;
+}
+
+const SelectionContext = createContext<SelectionContextValue | null>(null);
+
+function useSelection(): SelectionContextValue {
+  const ctx = useContext(SelectionContext);
+  if (!ctx) throw new Error('SelectionContext provider missing');
+  return ctx;
+}
+
+function SelectAllCheckbox({ ariaLabel }: { ariaLabel: string }) {
+  const { allSelected, toggleAll } = useSelection();
+  return (
+    <input
+      type="checkbox"
+      aria-label={ariaLabel}
+      checked={allSelected}
+      onChange={toggleAll}
+      className="h-4 w-4 rounded border border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
+    />
+  );
+}
+
+function RowSelectCheckbox({ rowId, ariaLabel }: { rowId: string; ariaLabel: string }) {
+  const { selectedIds, toggleRow } = useSelection();
+  return (
+    <input
+      type="checkbox"
+      aria-label={ariaLabel}
+      checked={selectedIds.has(rowId)}
+      onChange={() => toggleRow(rowId)}
+      className="h-4 w-4 rounded border border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
+    />
+  );
 }
 
 export function UnitTable() {
@@ -99,26 +147,15 @@ export function UnitTable() {
     () => [
       {
         id: 'select',
-        header: () => (
-          <input
-            type="checkbox"
-            aria-label={t('bulkDelete.selectAll')}
-            checked={allSelected}
-            onChange={toggleAll}
-            className="h-4 w-4 rounded border border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
-          />
-        ),
+        header: () => <SelectAllCheckbox ariaLabel={t('bulkDelete.selectAll')} />,
         size: 32,
         cell: ({ row }) => {
           const id = (row.original as { id?: string }).id;
           if (!id) return null;
           return (
-            <input
-              type="checkbox"
-              aria-label={t('bulkDelete.selectRow', { index: row.index + 1 })}
-              checked={selectedIds.has(id)}
-              onChange={() => toggleRow(id)}
-              className="h-4 w-4 rounded border border-input text-primary focus-visible:ring-2 focus-visible:ring-ring"
+            <RowSelectCheckbox
+              rowId={id}
+              ariaLabel={t('bulkDelete.selectRow', { index: row.index + 1 })}
             />
           );
         },
@@ -318,7 +355,11 @@ export function UnitTable() {
         ),
       },
     ],
-    [t, register, buildings, fields.length, remove, onEdit, allSelected, toggleAll, selectedIds, toggleRow, duplicateRow],
+    // Selection state (selectedIds / toggleRow / allSelected /
+    // toggleAll) lives in SelectionContext now — the cells consume
+    // it via useContext, so toggling a checkbox no longer rebuilds
+    // every column definition.
+    [t, register, buildings, fields.length, remove, onEdit, duplicateRow],
   );
 
   const data = useMemo(
@@ -376,7 +417,13 @@ export function UnitTable() {
     [append, remove, fields, buildings.length, t],
   );
 
+  const selectionContextValue = useMemo<SelectionContextValue>(
+    () => ({ selectedIds, allSelected, toggleRow, toggleAll }),
+    [selectedIds, allSelected, toggleRow, toggleAll],
+  );
+
   return (
+    <SelectionContext.Provider value={selectionContextValue}>
     <div
       ref={containerRef}
       onKeyDown={onKeyDown}
@@ -385,7 +432,7 @@ export function UnitTable() {
       className="flex flex-col gap-3"
     >
       {liveSelectedCount > 0 ? (
-        <div className="flex flex-col-reverse items-stretch gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="sticky top-2 z-30 flex flex-col-reverse items-stretch gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 shadow-sm backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-foreground">
             {t('bulkDelete.selectedCount', { count: liveSelectedCount })}
           </p>
@@ -459,6 +506,7 @@ export function UnitTable() {
         />
       </div>
     </div>
+    </SelectionContext.Provider>
   );
 }
 

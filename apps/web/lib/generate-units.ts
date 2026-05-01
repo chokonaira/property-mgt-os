@@ -32,6 +32,17 @@ export const DEFAULT_PREFIX_BY_TYPE: Record<WizardUnitType, string> = {
 };
 
 export const GENERATE_MAX_COUNT = 200;
+export const DEFAULT_PAD_WIDTH = 2;
+
+/**
+ * Single source of truth for the generated unit number string.
+ * The dialog's live preview ("Will create 5 rows numbered TG-01…TG-05")
+ * and the generator itself both call this so the preview never
+ * diverges from the actual output.
+ */
+export function formatGeneratedNumber(prefix: string, seq: number, padWidth: number): string {
+  return `${prefix}${String(seq).padStart(padWidth, '0')}`;
+}
 
 /**
  * Pure generator. Returns an array of wizard unit drafts ready to push
@@ -43,13 +54,12 @@ export const GENERATE_MAX_COUNT = 200;
 export function generateUnits(config: GenerateUnitsConfig): WizardUnitDraft[] {
   if (config.count <= 0) return [];
   const start = config.startAt ?? 1;
-  const padWidth = config.padWidth ?? 2;
+  const padWidth = config.padWidth ?? DEFAULT_PAD_WIDTH;
   const prefix = config.prefix ?? DEFAULT_PREFIX_BY_TYPE[config.type];
 
   const rows: WizardUnitDraft[] = [];
   for (let i = 0; i < config.count; i += 1) {
-    const seq = String(start + i).padStart(padWidth, '0');
-    const number = `${prefix}${seq}`;
+    const number = formatGeneratedNumber(prefix, start + i, padWidth);
     const draft: Record<string, unknown> = {
       ...EMPTY_UNIT,
       type: config.type,

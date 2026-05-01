@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_PAD_WIDTH,
   DEFAULT_PREFIX_BY_TYPE,
   GENERATE_MAX_COUNT,
+  formatGeneratedNumber,
   generateUnits,
 } from '@/lib/generate-units';
 
@@ -93,5 +95,40 @@ describe('generateUnits', () => {
 
   it('exports a sane upper bound', () => {
     expect(GENERATE_MAX_COUNT).toBeGreaterThanOrEqual(100);
+  });
+});
+
+describe('formatGeneratedNumber', () => {
+  // Single source of truth for the dialog preview + the generator
+  // output. If these ever diverge, both consumers break together
+  // (which is what we want — fail loudly, not silently).
+
+  it('zero-pads the sequence to padWidth', () => {
+    expect(formatGeneratedNumber('', 1, 2)).toBe('01');
+    expect(formatGeneratedNumber('', 9, 2)).toBe('09');
+  });
+
+  it('overflows pad width naturally', () => {
+    expect(formatGeneratedNumber('TG-', 99, 2)).toBe('TG-99');
+    expect(formatGeneratedNumber('TG-', 100, 2)).toBe('TG-100');
+  });
+
+  it('respects padWidth = 3', () => {
+    expect(formatGeneratedNumber('WHG-', 1, 3)).toBe('WHG-001');
+    expect(formatGeneratedNumber('WHG-', 99, 3)).toBe('WHG-099');
+  });
+
+  it('exports the documented default padWidth', () => {
+    expect(DEFAULT_PAD_WIDTH).toBe(2);
+  });
+
+  it('agrees with the generator for the same input', () => {
+    const rows = generateUnits({ type: 'PARKING', buildingIndex: 0, count: 5 });
+    const previewLast = formatGeneratedNumber(
+      DEFAULT_PREFIX_BY_TYPE.PARKING,
+      5,
+      DEFAULT_PAD_WIDTH,
+    );
+    expect(rows[rows.length - 1]?.number).toBe(previewLast);
   });
 });

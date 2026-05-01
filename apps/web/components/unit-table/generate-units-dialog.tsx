@@ -17,8 +17,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  DEFAULT_PAD_WIDTH,
   DEFAULT_PREFIX_BY_TYPE,
   GENERATE_MAX_COUNT,
+  formatGeneratedNumber,
   generateUnits,
 } from '@/lib/generate-units';
 import {
@@ -71,10 +73,16 @@ export function GenerateUnitsDialog({ onGenerate }: GenerateUnitsDialogProps) {
   };
 
   const effectivePrefix = prefixOverride ?? DEFAULT_PREFIX_BY_TYPE[type];
-  const previewLast =
-    count > 0 ? `${effectivePrefix}${String(startAt + count - 1).padStart(2, '0')}` : '';
+  // Preview reads from the same formatter the generator uses so the
+  // pre-submit text never disagrees with the rows that land in the
+  // table. DEFAULT_PAD_WIDTH stays in sync if the generator default
+  // ever changes.
   const previewFirst =
-    count > 0 ? `${effectivePrefix}${String(startAt).padStart(2, '0')}` : '';
+    count > 0 ? formatGeneratedNumber(effectivePrefix, startAt, DEFAULT_PAD_WIDTH) : '';
+  const previewLast =
+    count > 0
+      ? formatGeneratedNumber(effectivePrefix, startAt + count - 1, DEFAULT_PAD_WIDTH)
+      : '';
 
   const reset = () => {
     setType('APARTMENT');
