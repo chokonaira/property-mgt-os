@@ -73,6 +73,9 @@
       "upload": {
         "label": "Teilungserklärung (optional)",
         "help": "Nur PDF. Wir verarbeiten sie noch nicht — die KI-Extraktion folgt in einem späteren Ticket.",
+        "prefillTitle": "Teilungserklärung vorhanden? Hochladen zum Vorausfüllen",
+        "prefillHelp": "KI extrahiert Objekt-, Gebäude- und Einheitsdaten aus dem Dokument. Sie überprüfen jedes Feld vor dem Speichern.",
+        "orManual": "Oder unten manuell ausfüllen",
         "dropzone": "PDF hier ablegen oder klicken zum Auswählen",
         "limits": "Nur PDF, bis zu {mb} MB.",
         "wrongType": "Es werden nur PDF-Dateien akzeptiert.",
@@ -380,6 +383,11 @@
       "hint": "Das kann 10–15 Sekunden dauern. Sobald wir fertig sind, sehen Sie hier die Ergebnisse.",
       "retry": "Erneut versuchen",
       "fillManually": "Manuell ausfüllen",
+      "stages": {
+        "upload": "PDF wird hochgeladen",
+        "extract": "Felder werden mit KI extrahiert",
+        "review": "Bereit zur Überprüfung"
+      },
       "errors": {
         "tooLarge": "Dieses Dokument überschreitet das v1-Größenlimit.",
         "timeout": "Das Lesen des Dokuments hat zu lange gedauert.",

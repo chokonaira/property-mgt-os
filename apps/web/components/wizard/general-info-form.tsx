@@ -285,6 +285,67 @@ export function GeneralInfoForm() {
   return (
     <form className="flex flex-col gap-6" noValidate>
       <div ref={feedbackAnchorRef} aria-hidden="true" className="-mb-6 scroll-mt-32" />
+
+      {/* Upload-to-prefill card. Pinned to the top of step 1 because
+          the Teilungserklärung is the source of truth for ALL three
+          wizard steps (general + buildings + units), not just step 1.
+          Modern resume-parser pattern: dropping the doc here means the
+          user reviews instead of typing — the wedge of the whole flow.
+          Gated to WEG only because MV-managed properties don't have a
+          Teilungserklärung. */}
+      {managementType === 'WEG' && !showLoading && !showPanel ? (
+        <section
+          aria-labelledby="prefill-heading"
+          className="rounded-lg border border-primary/30 bg-primary/5 p-4 shadow-sm sm:p-5"
+        >
+          <header className="flex items-start gap-3">
+            <Sparkles
+              className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+              aria-hidden="true"
+            />
+            <div className="flex flex-col gap-0.5">
+              <h2
+                id="prefill-heading"
+                className="text-sm font-semibold text-foreground"
+              >
+                {t('upload.prefillTitle')}
+              </h2>
+              <p className="text-xs text-muted-foreground">{t('upload.prefillHelp')}</p>
+            </div>
+          </header>
+          <div className="mt-4 flex flex-col gap-3">
+            <PdfUploader value={declarationFile} onChange={setDeclarationFile} />
+            {declarationFile ? (
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  type="button"
+                  onClick={handleUseExtraction}
+                  className="sm:flex-1"
+                  disabled={showLoading || Boolean(extractionResult)}
+                >
+                  {showLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  {t('upload.useAi')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSkipExtraction}
+                  className="sm:flex-1"
+                  disabled={showLoading}
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                  {t('upload.skipManual')}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
       {showLoading ? (
         <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-300">
           <ExtractionLoading stage={isUploading ? 'uploading' : 'extracting'} />
@@ -307,6 +368,14 @@ export function GeneralInfoForm() {
             onDiscard={handleDiscardExtraction}
             droppedUnits={droppedUnits}
           />
+        </div>
+      ) : null}
+
+      {managementType === 'WEG' && !showLoading && !showPanel ? (
+        <div className="flex items-center gap-3 text-[11px] uppercase tracking-wide text-muted-foreground">
+          <div className="h-px flex-1 bg-border" />
+          <span>{t('upload.orManual')}</span>
+          <div className="h-px flex-1 bg-border" />
         </div>
       ) : null}
 
@@ -463,40 +532,6 @@ export function GeneralInfoForm() {
         />
       </Field>
 
-      {managementType === 'WEG' ? (
-        <Field label={t('upload.label')} htmlFor="declaration-pdf" description={t('upload.help')}>
-          <div className="flex flex-col gap-3">
-            <PdfUploader value={declarationFile} onChange={setDeclarationFile} />
-            {declarationFile ? (
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Button
-                  type="button"
-                  onClick={handleUseExtraction}
-                  className="sm:flex-1"
-                  disabled={showLoading || Boolean(extractionResult)}
-                >
-                  {showLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" aria-hidden="true" />
-                  )}
-                  {t('upload.useAi')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleSkipExtraction}
-                  className="sm:flex-1"
-                  disabled={showLoading}
-                >
-                  <X className="h-4 w-4" aria-hidden="true" />
-                  {t('upload.skipManual')}
-                </Button>
-              </div>
-            ) : null}
-          </div>
-        </Field>
-      ) : null}
     </form>
   );
 }

@@ -1,34 +1,94 @@
 'use client';
 
-import { AlertCircle, Loader2, RefreshCcw, X } from 'lucide-react';
+import { AlertCircle, Check, Loader2, RefreshCcw, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { extractionErrorKey } from '@/lib/extraction-error-key';
+import { cn } from '@/lib/utils';
 
 interface ExtractionLoadingProps {
   stage: 'uploading' | 'extracting';
 }
 
+/**
+ * Multi-stage progress card for the AI handoff. Splits the wait into
+ * three visible steps (upload → extract → review) with the active
+ * stage spinning, completed stages checked, and the final "review"
+ * stage muted until the panel takes over. The Stripe-grade pattern:
+ * the user sees motion + concrete progress for the entire 5–10 s
+ * wait instead of a single ambiguous spinner.
+ */
 export function ExtractionLoading({ stage }: ExtractionLoadingProps) {
   const t = useTranslations('extraction.status');
+  const stages: Array<{ key: 'upload' | 'extract' | 'review'; state: 'done' | 'active' | 'pending' }> =
+    stage === 'uploading'
+      ? [
+          { key: 'upload', state: 'active' },
+          { key: 'extract', state: 'pending' },
+          { key: 'review', state: 'pending' },
+        ]
+      : [
+          { key: 'upload', state: 'done' },
+          { key: 'extract', state: 'active' },
+          { key: 'review', state: 'pending' },
+        ];
+
   return (
-    <Card className="border-primary/30 motion-safe:animate-pulse motion-safe:[animation-duration:2s]">
-      <CardContent className="flex items-start gap-3 py-4">
-        <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-primary" aria-hidden="true" />
-        <div className="flex flex-col gap-1">
-          <p
-            className="text-sm font-medium text-foreground"
-            role="status"
-            aria-live="polite"
-            aria-busy="true"
-          >
-            {stage === 'uploading' ? t('uploading') : t('extracting')}
-          </p>
-          <p className="text-xs text-muted-foreground">{t('hint')}</p>
-        </div>
+    <Card
+      className="border-primary/30"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <CardContent className="flex flex-col gap-3 py-4">
+        <ol className="flex flex-col gap-2.5">
+          {stages.map((s) => (
+            <li key={s.key} className="flex items-center gap-3">
+              <StageIcon state={s.state} />
+              <span
+                className={cn(
+                  'text-sm font-medium transition-colors',
+                  s.state === 'done' && 'text-muted-foreground',
+                  s.state === 'active' && 'text-foreground',
+                  s.state === 'pending' && 'text-muted-foreground/60',
+                )}
+              >
+                {t(`stages.${s.key}`)}
+              </span>
+            </li>
+          ))}
+        </ol>
+        <p className="pl-7 text-xs text-muted-foreground">{t('hint')}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function StageIcon({ state }: { state: 'done' | 'active' | 'pending' }) {
+  if (state === 'done') {
+    return (
+      <span
+        aria-hidden="true"
+        className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-success text-success-foreground"
+      >
+        <Check className="h-2.5 w-2.5" />
+      </span>
+    );
+  }
+  if (state === 'active') {
+    return (
+      <Loader2
+        aria-hidden="true"
+        className="h-4 w-4 shrink-0 animate-spin text-primary"
+      />
+    );
+  }
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-block h-4 w-4 shrink-0 rounded-full border border-border"
+    />
   );
 }
 

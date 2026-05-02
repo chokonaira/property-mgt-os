@@ -73,6 +73,9 @@
       "upload": {
         "label": "Teilungserklärung (optional)",
         "help": "PDF only. We won't process it yet — extraction lands in a later ticket.",
+        "prefillTitle": "Have a Teilungserklärung? Upload to prefill",
+        "prefillHelp": "AI extracts property, buildings, and unit data from the document. You'll review every field before saving.",
+        "orManual": "Or fill manually below",
         "dropzone": "Drop a PDF here or click to browse",
         "limits": "PDF only, up to {mb} MB.",
         "wrongType": "Only PDF files are accepted.",
@@ -380,6 +383,11 @@
       "hint": "This can take 10–15 seconds. We'll show what we found as soon as it's ready.",
       "retry": "Try again",
       "fillManually": "Fill manually",
+      "stages": {
+        "upload": "Uploading PDF",
+        "extract": "Extracting fields with AI",
+        "review": "Ready for review"
+      },
       "errors": {
         "tooLarge": "This document is too large for the v1 size limit.",
         "timeout": "Reading the document took too long.",
