@@ -67,7 +67,7 @@ export function extractionToWizardDraft(
       general: {
         managementType: extraction.property.managementType,
         name: extraction.property.name,
-        uniqueNumber: extraction.property.uniqueNumber ?? '',
+        uniqueNumber: sanitizeUniqueNumber(extraction.property.uniqueNumber),
         ...(extraction.property.totalMea !== undefined
           ? { totalMea: extraction.property.totalMea }
           : {}),
@@ -126,4 +126,21 @@ function toUnitDraft(
 
 function emptyApartment(): WizardUnitDraft {
   return { type: 'APARTMENT', buildingIndex: 0, number: '' } as unknown as WizardUnitDraft;
+}
+
+/**
+ * The wizard's `uniqueNumber` regex allows letters, digits, and hyphens
+ * only. AI extractions from German Teilungserklärungen often surface
+ * forms like `10.557PRB` (period as separator) or `10/557 PRB` (slash
+ * + space) — both fail the schema and silently disable Next. Replace
+ * any disallowed character with a hyphen, collapse runs, and trim
+ * leading/trailing hyphens so the value lands valid in the form.
+ */
+export function sanitizeUniqueNumber(raw: string | undefined): string {
+  if (!raw) return '';
+  return raw
+    .trim()
+    .replace(/[^A-Za-z0-9-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }

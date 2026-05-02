@@ -39,6 +39,28 @@ describe('extractionToWizardDraft', () => {
     expect(draft.general.uniqueNumber).toBe('');
   });
 
+  it('sanitizes uniqueNumber so AI-extracted German variants pass the form regex', () => {
+    // Real models have surfaced periods, slashes, and stray spaces
+    // (`10.557PRB`, `10/557 PRB`). The wizard schema only accepts
+    // letters, digits, and hyphens — without normalization the form
+    // silently invalidates and Next stays disabled.
+    const cases: Array<[string, string]> = [
+      ['10.557PRB', '10-557PRB'],
+      ['10/557 PRB', '10-557-PRB'],
+      ['  10-557-PRB  ', '10-557-PRB'],
+      ['10..557..PRB', '10-557-PRB'],
+      ['---10-557---', '10-557'],
+    ];
+    for (const [input, expected] of cases) {
+      const { draft } = extractionToWizardDraft(
+        base({
+          property: { name: 'Test', managementType: 'WEG', uniqueNumber: input },
+        }),
+      );
+      expect(draft.general.uniqueNumber).toBe(expected);
+    }
+  });
+
   it('carries totalMea into the general draft when extracted', () => {
     const { draft } = extractionToWizardDraft(base());
     expect(draft.general.totalMea).toBe(1000);

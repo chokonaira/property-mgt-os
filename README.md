@@ -1,7 +1,7 @@
 # A Buena Case Study
 
 [![CI](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml/badge.svg)](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-422_passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-423_passing-brightgreen)](#testing)
 [![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](./tsconfig.base.json)
 [![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?logo=openapiinitiative&logoColor=white)](https://api-henry-buena.chuka.io/openapi.json)
 [![First Load JS](https://img.shields.io/badge/first_load_JS-≤230_kB-blue)](#performance)
@@ -33,7 +33,7 @@ The MEA invariant runs everywhere it can fail: live in the wizard footer as the 
 - **OpenAPI 3.1** at `/openapi.json` generated from the same Zod schemas the form uses.
 - **Error boundaries** at `app/[locale]/error.tsx`, `not-found.tsx`, `global-error.tsx` — localised copy + Retry / Back-to-dashboard.
 - **i18n** via `next-intl`; default `de` (unprefixed URL), opt-in `/en`. Domain terms stay German.
-- **Dark mode**, **422 tests** across three packages.
+- **Dark mode**, **423 tests** across three packages.
 
 ---
 
@@ -97,7 +97,7 @@ pnpm lint              # ESLint
 pnpm build             # Next + Nest production builds
 ```
 
-Workspace runs **422 tests** across three packages (72 shared schemas, 141 API services, 209 web utilities + components). RTL + jsdom power the panel render tests; the rest run in node for speed. Coverage is intentional rather than complete: discriminated unions, MEA invariant, TSV / CSV parser, AI pipeline (verify-spans, token budget, idempotency cache, response-schema shape per provider, SDK error wrapping for both Anthropic and OpenAI, controller error mapping), and the wizard's accept-translation logic each have dedicated suites.
+Workspace runs **423 tests** across three packages (72 shared schemas, 141 API services, 210 web utilities + components). RTL + jsdom power the panel render tests; the rest run in node for speed. Coverage is intentional rather than complete: discriminated unions, MEA invariant, TSV / CSV parser, AI pipeline (verify-spans, token budget, idempotency cache, response-schema shape per provider, SDK error wrapping for both Anthropic and OpenAI, controller error mapping), and the wizard's accept-translation logic each have dedicated suites.
 
 ## Performance
 

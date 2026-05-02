@@ -183,7 +183,7 @@ export function WizardChrome({ children }: { children: ReactNode }) {
           table. The wrapper is full-bleed so the backdrop reads
           edge-to-edge; the inner div re-applies the page's max width
           + padding so content stays centered. */}
-      <div className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+      <div className="sticky top-0 z-30 border-b border-border/60 bg-white dark:bg-background">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
           <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="flex flex-col gap-0.5">
