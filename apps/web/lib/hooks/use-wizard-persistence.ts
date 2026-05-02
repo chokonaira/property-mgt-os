@@ -52,10 +52,15 @@ export function useWizardPersistence(
     setHydrated(true);
   }, [methods]);
 
-  // Persist on change.
+  // Persist on change. Skip the initial value emission and any reset()
+  // pass — only user edits are worth saving. RHF marks the form dirty
+  // when a registered field's value diverges from its default; we use
+  // that as the gate so an empty form mounting doesn't claim "Draft
+  // saved" before the user has typed anything.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const subscription = methods.watch((value) => {
+      if (!methods.formState.isDirty) return;
       if (writeTimer.current) clearTimeout(writeTimer.current);
       writeTimer.current = setTimeout(() => {
         try {
