@@ -4,6 +4,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 import { PropertiesTable } from '@/components/properties-table';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Link } from '@/i18n/navigation';
 
 interface DashboardPageProps {
@@ -27,7 +28,8 @@ function Dashboard() {
           </h1>
           <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
           <LocaleSwitcher />
           <Button asChild size="default">
             <Link href="/properties/new">

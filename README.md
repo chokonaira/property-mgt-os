@@ -71,7 +71,7 @@ pnpm dev                         # Postgres up → wait → migrate:deploy → s
 - **Prisma Client out of date after pull** — `pnpm db:generate`.
 - **Wipe + reseed** — `pnpm db:reset` (destructive).
 
-Every workspace script + env var documented in [`public/runbook.md`](./public/runbook.md).
+Every workspace script + env var documented in [`public/runbook.md`](./public/runbook.md). Vercel + Railway deploy walkthrough in [`public/deploy.md`](./public/deploy.md).
 
 ---
 

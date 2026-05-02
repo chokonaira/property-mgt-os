@@ -427,5 +427,10 @@
     "ask": "Ask Buena",
     "placeholder": "Ask about your properties…",
     "clear": "Clear conversation"
+  },
+  "theme": {
+    "toggle": "Toggle theme",
+    "switchToDark": "Switch to dark mode",
+    "switchToLight": "Switch to light mode"
   }
 }

@@ -427,5 +427,10 @@
     "ask": "Buena fragen",
     "placeholder": "Fragen Sie zu Ihren Immobilien…",
     "clear": "Verlauf löschen"
+  },
+  "theme": {
+    "toggle": "Farbschema umschalten",
+    "switchToDark": "Auf dunkles Schema umschalten",
+    "switchToLight": "Auf helles Schema umschalten"
   }
 }
