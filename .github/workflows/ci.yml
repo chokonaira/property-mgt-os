@@ -50,3 +50,48 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  e2e-responsive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.0.0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4.0.4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright (chromium only)
+        run: pnpm --filter @buena/web exec playwright install --with-deps chromium
+
+      - name: Build shared + web
+        run: pnpm --filter @buena/shared build && pnpm --filter @buena/web build
+
+      - name: Start web in background
+        run: pnpm --filter @buena/web start -- -p 3000 &
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+
+      - name: Wait for web
+        run: npx -y wait-on http://localhost:3000 -t 60000
+
+      - name: Run responsive e2e
+        run: pnpm --filter @buena/web exec playwright test e2e/responsive.spec.ts --reporter=list
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-responsive-report
+          path: apps/web/playwright-report/
+          retention-days: 7
