@@ -1,8 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ExtractionResultSchema, type ExtractionResult } from '@buena/shared';
 import { ExtractionError } from './extraction-error';
 import { EXTRACTION_PROMPT_VERSION, EXTRACTION_SYSTEM_PROMPT } from './fixtures/system-prompt';
 import { FEW_SHOT_ASSISTANT_RESULT, FEW_SHOT_USER_TEXT } from './fixtures/few-shot';
+import {
+  parseExtraction,
+  type AiExtractionClient,
+  type ExtractionCallResult,
+} from './ai-extraction.client';
+import type { ExtractionResult } from '@buena/shared';
 
 /**
  * Thin OpenAI client wrapper. The interesting bits live here:
@@ -61,16 +66,10 @@ export interface OpenAIServiceConfig {
   temperature?: number;
 }
 
-export interface ExtractionCallResult {
-  parsed: ExtractionResult;
-  rawResponse: string;
-  durationMs: number;
-  promptVersion: string;
-  model: string;
-}
+export type { ExtractionCallResult };
 
 @Injectable()
-export class OpenAIService {
+export class OpenAIService implements AiExtractionClient {
   private readonly logger = new Logger(OpenAIService.name);
 
   constructor(
@@ -173,34 +172,3 @@ export class OpenAIService {
   }
 }
 
-// Inlined ExtractionResultSchema.safeParse — using a generic helper
-// would have collapsed Zod's distinct input / output types (the
-// schema has .default() on contacts / confidenceByField /
-// sourceSpansByField / warnings, so input ≠ output) and the parsed
-// `data` would surface as the input shape (optional) instead of the
-// output shape (required, defaults applied).
-function parseExtraction(
-  raw: string,
-): { success: true; data: ExtractionResult } | { success: false; error: string } {
-  if (!raw) return { success: false, error: 'empty model response' };
-  let json: unknown;
-  try {
-    json = JSON.parse(raw);
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'JSON parse failed',
-    };
-  }
-  const result = ExtractionResultSchema.safeParse(json);
-  if (!result.success) {
-    const message = result.error.issues
-      .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-      .join('; ');
-    return { success: false, error: message };
-  }
-  // Cast to the output shape: defaults() means safeParse's data type
-  // is the schema's output (required fields), but TS sometimes
-  // collapses it to the input variant when defaults change shape.
-  return { success: true, data: result.data as ExtractionResult };
-}

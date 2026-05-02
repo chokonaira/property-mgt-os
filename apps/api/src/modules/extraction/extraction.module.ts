@@ -1,11 +1,17 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { OpenAI } from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { encode } from 'gpt-tokenizer';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { ExtractionResultSchema } from '@buena/shared';
 import { PrismaService } from '../../shared/prisma.service';
 import { RATE_LIMIT_BUCKET, rateLimitBucket } from '../../shared/rate-limit';
 import { RateLimitGuard } from '../../shared/rate-limit.guard';
+import {
+  AI_EXTRACTION_CLIENT,
+  type AiExtractionClient,
+} from './ai-extraction.client';
+import { AnthropicService, type AnthropicMessagesClient } from './anthropic.service';
 import { ExtractionController } from './extraction.controller';
 import { ExtractionService } from './extraction.service';
 import { OpenAIService, type OpenAIChatClient } from './openai.service';
@@ -16,12 +22,74 @@ const EXTRACTION_CONFIG = {
   uploadDir: process.env.UPLOAD_DIR ?? './uploads',
 };
 
-const OPENAI_CONFIG = {
-  model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
-  timeoutMs: Number(process.env.OPENAI_TIMEOUT_MS ?? 15_000),
-};
-
 const TOKEN_BUDGET = Number(process.env.EXTRACTION_MAX_TOKENS ?? 25_000);
+
+const moduleLogger = new Logger('ExtractionModule');
+
+/**
+ * Build the active AI extraction client. Selection rule:
+ *
+ *   AI_PROVIDER=anthropic  → AnthropicService (claude-haiku-4-5 default)
+ *   AI_PROVIDER=openai     → OpenAIService    (gpt-4o-mini default)
+ *   unset                  → 'anthropic' if ANTHROPIC_API_KEY present,
+ *                            otherwise 'openai'.
+ *
+ * Both implementations satisfy AiExtractionClient — the orchestrator
+ * never knows which one is wired in. The vendor SDK is constructed
+ * with a placeholder API key when the real one is absent so the
+ * module wires up cleanly in dev / test; live calls fail at the API
+ * boundary, where ExtractionService persists a failed run row.
+ */
+function buildAiExtractionClient(): AiExtractionClient {
+  // gpt-4o-mini's structured-output JSON Schema dialect is also valid
+  // input for Anthropic's tool input_schema (both consume vanilla
+  // JSON Schema 2020-12), so we generate it once and reuse for either
+  // provider.
+  const responseSchema = zodToJsonSchema(
+    ExtractionResultSchema as unknown as Parameters<typeof zodToJsonSchema>[0],
+    {
+      target: 'openAi',
+      name: 'ExtractionResult',
+    },
+  );
+
+  const provider = resolveProvider();
+  if (provider === 'anthropic') {
+    moduleLogger.log({ provider: 'anthropic' }, 'extraction.provider_selected');
+    if (!process.env.ANTHROPIC_API_KEY) {
+      moduleLogger.warn('ANTHROPIC_API_KEY missing — extraction calls will 401 at the API boundary.');
+    }
+    const client = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY ?? 'placeholder',
+    });
+    return new AnthropicService(client as unknown as AnthropicMessagesClient, {
+      model: process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001',
+      timeoutMs: Number(process.env.ANTHROPIC_TIMEOUT_MS ?? 15_000),
+      maxOutputTokens: Number(process.env.ANTHROPIC_MAX_OUTPUT_TOKENS ?? 4_096),
+      responseSchema,
+    });
+  }
+
+  moduleLogger.log({ provider: 'openai' }, 'extraction.provider_selected');
+  if (!process.env.OPENAI_API_KEY) {
+    moduleLogger.warn('OPENAI_API_KEY missing — extraction calls will 401 at the API boundary.');
+  }
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY ?? 'placeholder' });
+  return new OpenAIService(client as unknown as OpenAIChatClient, {
+    model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+    timeoutMs: Number(process.env.OPENAI_TIMEOUT_MS ?? 15_000),
+    responseSchema,
+  });
+}
+
+function resolveProvider(): 'anthropic' | 'openai' {
+  const explicit = process.env.AI_PROVIDER?.toLowerCase().trim();
+  if (explicit === 'anthropic' || explicit === 'openai') return explicit;
+  // No explicit pick: prefer Anthropic when its key exists, fall back
+  // to OpenAI otherwise. Matches "default to Claude" guidance for
+  // greenfield AI work while keeping the legacy OpenAI path live.
+  return process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'openai';
+}
 
 @Module({
   controllers: [ExtractionController],
@@ -43,44 +111,26 @@ const TOKEN_BUDGET = Number(process.env.EXTRACTION_MAX_TOKENS ?? 25_000);
       inject: [PrismaService],
     },
     {
-      provide: OpenAIService,
-      useFactory: () => {
-        // The OpenAI SDK lazy-loads its API key; we inject a
-        // placeholder when none is set so the module wires up
-        // cleanly in dev / test environments. Live calls will fail
-        // with a 401 from OpenAI, which the orchestrator persists
-        // as a failed ExtractionRun.
-        const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY ?? 'placeholder' });
-        // zodToJsonSchema can't infer the deeply-nested shape — we
-        // pass the schema as `unknown` because OpenAIService takes
-        // its `responseSchema` as opaque JSON anyway.
-        const responseSchema = zodToJsonSchema(
-          ExtractionResultSchema as unknown as Parameters<typeof zodToJsonSchema>[0],
-          {
-            target: 'openAi',
-            name: 'ExtractionResult',
-          },
-        );
-        return new OpenAIService(client as unknown as OpenAIChatClient, {
-          model: OPENAI_CONFIG.model,
-          timeoutMs: OPENAI_CONFIG.timeoutMs,
-          responseSchema,
-        });
-      },
+      provide: AI_EXTRACTION_CLIENT,
+      useFactory: () => buildAiExtractionClient(),
     },
     {
       provide: ExtractionService,
-      useFactory: (prisma: PrismaService, pdfText: PdfTextService, openai: OpenAIService) =>
-        new ExtractionService(prisma, pdfText, openai, {
+      useFactory: (
+        prisma: PrismaService,
+        pdfText: PdfTextService,
+        ai: AiExtractionClient,
+      ) =>
+        new ExtractionService(prisma, pdfText, ai, {
           maxTokens: TOKEN_BUDGET,
           // gpt-tokenizer is the BPE-faithful counter for production;
           // unit tests pass a char/4 stub via the helper's optional
           // encode argument.
           encode: (text: string) => ({ length: encode(text).length }),
         }),
-      inject: [PrismaService, PdfTextService, OpenAIService],
+      inject: [PrismaService, PdfTextService, AI_EXTRACTION_CLIENT],
     },
   ],
-  exports: [PdfTextService, OpenAIService, ExtractionService],
+  exports: [PdfTextService, AI_EXTRACTION_CLIENT, ExtractionService],
 })
 export class ExtractionModule {}

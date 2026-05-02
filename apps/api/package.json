@@ -11,6 +11,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.92.0",
     "@asteasolutions/zod-to-openapi": "^7.3.4",
     "@buena/shared": "workspace:*",
     "@nestjs/common": "^10.4.0",

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { ExtractionResult } from '@buena/shared';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- runtime value: Nest DI reads constructor param metadata
@@ -8,8 +8,11 @@ import { findCachedExtractionRun, type CachedExtractionRun } from './lib/extract
 import { ensureMeaWarning } from './lib/mea-invariant';
 import { checkTokenBudget, type Encoder } from './lib/token-budget';
 import { verifySpans } from './lib/verify-spans';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- runtime value: Nest DI reads constructor param metadata
-import { OpenAIService, type ExtractionCallResult } from './openai.service';
+import {
+  AI_EXTRACTION_CLIENT,
+  type AiExtractionClient,
+  type ExtractionCallResult,
+} from './ai-extraction.client';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- runtime value: Nest DI reads constructor param metadata
 import { PdfTextService } from './pdf-text.service';
 
@@ -36,7 +39,7 @@ export class ExtractionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pdfText: PdfTextService,
-    private readonly openai: OpenAIService,
+    @Inject(AI_EXTRACTION_CLIENT) private readonly openai: AiExtractionClient,
     private readonly config: ExtractionConfig,
   ) {}
 
