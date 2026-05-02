@@ -57,7 +57,8 @@ Open **http://localhost:3000**. You should see the **Parkview Residences Berlin*
 ```bash
 pnpm install
 cp .env.example .env
-pnpm dev                         # Postgres up → wait → migrate:deploy → seed → web + api in parallel
+pnpm dev                         # Postgres up → wait → generate → migrate:deploy → web + api in parallel
+pnpm db:seed                     # optional: load the demo property (idempotent; safe to re-run)
 ```
 
 `pnpm dev` is end-to-end and fails fast if Docker isn't running.
@@ -74,17 +75,17 @@ pnpm dev                         # Postgres up → wait → migrate:deploy → s
 - **Prisma Client out of date after pull** — `pnpm db:generate`.
 - **Wipe + reseed** — `pnpm db:reset` (destructive).
 
-Every workspace script + env var documented in [`public/runbook.md`](./public/runbook.md). Vercel + Railway deploy walkthrough in [`public/deploy.md`](./public/deploy.md).
+Every workspace script + env var documented in [`docs/runbook.md`](./docs/runbook.md). Vercel + Railway deploy walkthrough in [`docs/deploy.md`](./docs/deploy.md).
 
 ---
 
 ## Repo layout
 
 ```
-apps/{web,api}    packages/shared    prisma/    public/    docker-compose.yml    .env.example
+apps/{web,api}    packages/shared    prisma/    docs/    docker-compose.yml    .env.example
 ```
 
-`apps/web` (Next.js 15) + `apps/api` (NestJS) + `packages/shared` (Zod schemas — single source of truth for client, server, AI). Reviewer docs + ADRs in [`public/`](./public/).
+`apps/web` (Next.js 15) + `apps/api` (NestJS) + `packages/shared` (Zod schemas — single source of truth for client, server, AI). Reviewer docs + ADRs in [`docs/`](./docs/).
 
 ---
 
@@ -120,7 +121,7 @@ Generated from the same Zod schemas in `packages/shared` via `@asteasolutions/zo
 
 **Next.js 15** (App Router) · **NestJS** · **Prisma** · **Postgres 16** · **Tailwind + shadcn/ui + Radix** · **React Hook Form + Zod resolver** · **TanStack Table + Virtual + Query** · **Anthropic Claude (default) or OpenAI**, swappable via `AI_PROVIDER` behind a provider-agnostic `AiExtractionClient` interface · **unpdf** primary + `pdfjs-dist` fallback · **`@asteasolutions/zod-to-openapi`** · **Vitest + RTL + jsdom** · **GitHub Actions**.
 
-ADRs cover the consequential calls: [`stack`](./public/adr-01-stack.md), [`AI extraction`](./public/adr-02-ai-extraction.md), [`bulk entry`](./public/adr-03-bulk-entry.md), [`data model`](./public/adr-04-data-model.md), [`AI handoff`](./public/adr-05-ai-handoff.md). Architecture diagram + data flow in [`public/architecture.md`](./public/architecture.md). German real-estate primer in [`public/domain.md`](./public/domain.md).
+ADRs cover the consequential calls: [`stack`](./docs/adr-01-stack.md), [`AI extraction`](./docs/adr-02-ai-extraction.md), [`bulk entry`](./docs/adr-03-bulk-entry.md), [`data model`](./docs/adr-04-data-model.md), [`AI handoff`](./docs/adr-05-ai-handoff.md). Architecture diagram + data flow in [`docs/architecture.md`](./docs/architecture.md). German real-estate primer in [`docs/domain.md`](./docs/domain.md).
 
 ---
 
@@ -191,4 +192,4 @@ Scope cuts, not architectural debt. Each item lists what exists today, what woul
 
 ---
 
-Edge-case matrix in [`public/edge-cases.md`](./public/edge-cases.md). Design tokens in [`public/design-system.md`](./public/design-system.md). ADRs (Context → Decision → Consequences) in [`public/adr-01..05.md`](./public/) — that's where the trade-offs for decisions we DID make live; this section is what we deliberately didn't build.
+Edge-case matrix in [`docs/edge-cases.md`](./docs/edge-cases.md). Design tokens in [`docs/design-system.md`](./docs/design-system.md). ADRs (Context → Decision → Consequences) in [`docs/adr-01..05.md`](./docs/) — that's where the trade-offs for decisions we DID make live; this section is what we deliberately didn't build.
