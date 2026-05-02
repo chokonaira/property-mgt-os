@@ -53,6 +53,13 @@ COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
+# pnpm symlinks each workspace's deps into ITS OWN node_modules tree.
+# Shared/dist's compiled JS does require('zod') / require('@buena/...');
+# without copying shared's node_modules, the Node resolver walks up to
+# root/node_modules and zod isn't hoisted there in pnpm's strict layout,
+# so the api boots and crashes on first import. Web's Dockerfile copies
+# the whole packages/shared/ tree (incl. node_modules) and dodges this.
+COPY --from=builder /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=builder /app/prisma ./prisma
 EXPOSE 3001
 CMD ["node", "apps/api/dist/apps/api/src/main.js"]
