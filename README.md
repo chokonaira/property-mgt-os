@@ -3,13 +3,13 @@
 [![CI](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml/badge.svg)](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-400_passing-brightgreen)](#testing)
 [![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](./tsconfig.base.json)
-[![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?logo=openapiinitiative&logoColor=white)](https://api.henry-buena.chuka.io/openapi.json)
+[![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?logo=openapiinitiative&logoColor=white)](https://property-mgt-os-production.up.railway.app/openapi.json)
 [![First Load JS](https://img.shields.io/badge/first_load_JS-≤230_kB-blue)](#performance)
 
 > Property dashboard with a guided creation flow + AI-powered Teilungserklärung extraction.
 > Senior product engineer take-home for Buena Tech.
 
-**Live:** [henry-buena.chuka.io](https://henry-buena.chuka.io) · API: [`api.henry-buena.chuka.io`](https://api.henry-buena.chuka.io/healthz)
+**Live:** [henry-buena.chuka.io](https://henry-buena.chuka.io) · API: [`property-mgt-os-production.up.railway.app`](https://property-mgt-os-production.up.railway.app/healthz)
 **Loom:** _placeholder — replace before submission._
 
 ---
@@ -103,7 +103,7 @@ First-load JS from `pnpm build`: shared chunks **101 kB** · property detail **1
 
 ## OpenAPI
 
-Live: [`https://api.henry-buena.chuka.io/openapi.json`](https://api.henry-buena.chuka.io/openapi.json). Locally:
+Live: [`https://property-mgt-os-production.up.railway.app/openapi.json`](https://property-mgt-os-production.up.railway.app/openapi.json). Locally:
 
 ```bash
 pnpm dev:apps          # api boots on :3001
