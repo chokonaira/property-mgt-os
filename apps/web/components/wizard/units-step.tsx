@@ -29,11 +29,21 @@ export function UnitsStep() {
     };
   }, [unitsKey, trigger, setStepValid]);
 
+  const unitCount = Array.isArray(units) ? units.length : 0;
+
   return (
     <div className="flex flex-col gap-4 pb-24">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold text-foreground">{t('title')}</h2>
-        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-semibold text-foreground">{t('title')}</h2>
+          <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
+        </div>
+        <span
+          className="text-xs font-medium text-muted-foreground sm:text-sm"
+          aria-label={t('totalCount', { count: unitCount })}
+        >
+          {t('totalCount', { count: unitCount })}
+        </span>
       </div>
       <UnitTable />
       <WizardMeaBar />

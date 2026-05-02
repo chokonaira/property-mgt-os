@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Copy, Trash2 } from 'lucide-react';
@@ -100,6 +100,32 @@ export function UnitTable() {
   // Selection state keyed on the field array's stable RHF id (not
   // the row index — index shifts when rows are removed).
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
+
+  // Soft-highlight a range of newly inserted rows so the user can
+  // spot where their generated rows landed in a long table. Cleared
+  // after 1500 ms via setTimeout; range stored as { from, count } so
+  // the comparison stays cheap inside the per-row render loop.
+  const [highlightedRange, setHighlightedRange] = useState<{ from: number; count: number } | null>(
+    null,
+  );
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flashRange = useCallback((from: number, count: number) => {
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    setHighlightedRange({ from, count });
+    highlightTimerRef.current = setTimeout(() => setHighlightedRange(null), 1500);
+  }, []);
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    };
+  }, []);
+  const isHighlighted = useCallback(
+    (rowIndex: number): boolean => {
+      if (!highlightedRange) return false;
+      return rowIndex >= highlightedRange.from && rowIndex < highlightedRange.from + highlightedRange.count;
+    },
+    [highlightedRange],
+  );
   const toggleRow = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -551,7 +577,14 @@ export function UnitTable() {
               </>
             ) : (
               rowModel.rows.map((row) => (
-                <tr key={row.id} className="border-b border-border last:border-0">
+                <tr
+                  key={row.id}
+                  data-recently-added={isHighlighted(row.index) ? 'true' : undefined}
+                  className={cn(
+                    'border-b border-border last:border-0 transition-colors duration-1000',
+                    isHighlighted(row.index) && 'bg-primary/10',
+                  )}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
@@ -579,7 +612,9 @@ export function UnitTable() {
               (fields[0] as unknown as WizardUnitDraft).number === '' &&
               (fields[0] as unknown as WizardUnitDraft).type === 'APARTMENT';
             if (pristine) remove(0);
+            const startIndex = pristine ? 0 : fields.length;
             for (const row of rows) append(row, { shouldFocus: false });
+            flashRange(startIndex, rows.length);
             toast.success(t('generate.toast', { count: rows.length }));
           }}
         />

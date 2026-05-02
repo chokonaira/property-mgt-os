@@ -1,8 +1,7 @@
 'use client';
 
-import { ArrowLeft, FileSearch, Pencil, RefreshCw } from 'lucide-react';
+import { ArrowLeft, FileSearch, RefreshCw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import { usePropertyDetail } from '@/lib/hooks/use-property-detail';
 import { Button } from '@/components/ui/button';
@@ -76,16 +75,6 @@ export function PropertyDetailView({ id }: DetailViewProps) {
             </h1>
             <p className="font-mono text-[11px] text-muted-foreground">{property.uniqueNumber}</p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => toast.info(t('editStubMessage'))}
-            aria-label={t('edit')}
-            className="self-start sm:self-auto"
-          >
-            <Pencil className="h-4 w-4" aria-hidden="true" />
-            {t('edit')}
-          </Button>
         </div>
       </header>
       <div className="flex flex-col gap-8 pt-6">

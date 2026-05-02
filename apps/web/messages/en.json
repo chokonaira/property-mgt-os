@@ -143,6 +143,7 @@
     "units": {
       "title": "Units",
       "subtitle": "Add the units in each building. Type drives metric and which fields are required.",
+      "totalCount": "{count, plural, =0 {no units} one {# unit} other {# units}}",
       "addRow": "Add unit",
       "removeRow": "Remove row {index}",
       "duplicateRow": "Duplicate row {index}",

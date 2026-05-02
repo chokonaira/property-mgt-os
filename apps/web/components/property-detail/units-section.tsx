@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import type { Building, Unit } from '@buena/shared';
 import {
@@ -28,8 +29,23 @@ export function UnitsSection({ buildings, totalMea }: UnitsSectionProps) {
   // units across 3 buildings, rendering them all sequentially makes
   // the user scroll past Haus A to find Haus B. Tab strip swaps the
   // table in place — building stays one click away.
-  const [activeId, setActiveId] = useState<string | null>(buildings[0]?.id ?? null);
-  const active = buildings.find((b) => b.id === activeId) ?? buildings[0];
+  // Active building lives in the URL (`?building=<id>`) so refresh,
+  // back/forward, and link-sharing all preserve the user's view.
+  // Falls back to the first building when the param is absent or
+  // points at a building that no longer exists.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const requestedId = searchParams.get('building');
+  const active = buildings.find((b) => b.id === requestedId) ?? buildings[0];
+  const setActiveId = useCallback(
+    (nextId: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('building', nextId);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
 
   return (
     <section aria-labelledby="units-heading" className="flex flex-col gap-4">
