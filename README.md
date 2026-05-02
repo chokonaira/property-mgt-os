@@ -1,7 +1,7 @@
 # A Buena Case Study
 
 [![CI](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml/badge.svg)](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-340_passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-419_passing-brightgreen)](#testing)
 [![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](./tsconfig.base.json)
 [![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?logo=openapiinitiative&logoColor=white)](https://api-henry-buena.chuka.io/openapi.json)
 [![First Load JS](https://img.shields.io/badge/first_load_JS-≤230_kB-blue)](#performance)
@@ -31,7 +31,7 @@ This submission keeps the manual path bullet-proof and adds an AI assist on top:
 - **OpenAPI 3.1** at `/openapi.json` generated from the same Zod schemas the form uses.
 - **Error boundaries** at `app/[locale]/error.tsx`, `not-found.tsx`, `global-error.tsx` — localised copy + Retry / Back-to-dashboard.
 - **i18n** via `next-intl`; default `de` (unprefixed URL), opt-in `/en`. Domain terms stay German.
-- **Dark mode**, **400 tests** across three packages.
+- **Dark mode**, **419 tests** across three packages.
 
 ---
 
@@ -95,7 +95,7 @@ pnpm lint              # ESLint
 pnpm build             # Next + Nest production builds
 ```
 
-Workspace runs **400 tests** across three packages (72 shared schemas, 123 API services, 205 web utilities + components). RTL + jsdom power the panel render tests; the rest run in node for speed. Coverage is intentional rather than complete: discriminated unions, MEA invariant, TSV / CSV parser, AI pipeline (verify-spans, token budget, idempotency cache, controller error mapping), and the wizard's accept-translation logic each have dedicated suites.
+Workspace runs **419 tests** across three packages (72 shared schemas, 139 API services, 208 web utilities + components). RTL + jsdom power the panel render tests; the rest run in node for speed. Coverage is intentional rather than complete: discriminated unions, MEA invariant, TSV / CSV parser, AI pipeline (verify-spans, token budget, idempotency cache, response-schema shape per provider, SDK error wrapping for both Anthropic and OpenAI, controller error mapping), and the wizard's accept-translation logic each have dedicated suites.
 
 ## Performance
 
@@ -116,7 +116,7 @@ Generated from the same Zod schemas in `packages/shared` via `@asteasolutions/zo
 
 ## Tech stack
 
-**Next.js 15** (App Router) · **NestJS** · **Prisma** · **Postgres 16** · **Tailwind + shadcn/ui + Radix** · **React Hook Form + Zod resolver** · **TanStack Table + Virtual + Query** · **Anthropic Claude (default) / OpenAI (fallback)** behind a provider-agnostic `AiExtractionClient` interface · **unpdf** primary + `pdfjs-dist` fallback · **`@asteasolutions/zod-to-openapi`** · **Vitest + RTL + jsdom** · **GitHub Actions**.
+**Next.js 15** (App Router) · **NestJS** · **Prisma** · **Postgres 16** · **Tailwind + shadcn/ui + Radix** · **React Hook Form + Zod resolver** · **TanStack Table + Virtual + Query** · **Anthropic Claude (default) or OpenAI**, swappable via `AI_PROVIDER` behind a provider-agnostic `AiExtractionClient` interface · **unpdf** primary + `pdfjs-dist` fallback · **`@asteasolutions/zod-to-openapi`** · **Vitest + RTL + jsdom** · **GitHub Actions**.
 
 ADRs cover the consequential calls: [`stack`](./public/adr-01-stack.md), [`AI extraction`](./public/adr-02-ai-extraction.md), [`bulk entry`](./public/adr-03-bulk-entry.md), [`data model`](./public/adr-04-data-model.md), [`AI handoff`](./public/adr-05-ai-handoff.md). Architecture diagram + data flow in [`public/architecture.md`](./public/architecture.md). German real-estate primer in [`public/domain.md`](./public/domain.md).
 

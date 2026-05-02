@@ -35,12 +35,12 @@ Match Buena's stack as closely as possible:
 | CI | GitHub Actions: lint / typecheck / test / build on every push |
 | Bundle | Docker Compose; one-command spin-up |
 
-Hosted demo and managed Postgres are deliberately **out** — the reviewer runs the actual code, not a pinned screenshot.
+Hosted demo and managed Postgres are deliberately **out** — the project runs locally so the actual code can be exercised.
 
 ## Consequences
 
-**Positive.** Reviewer can clone and `docker compose up` in <5 min. The shared Zod schema kills three drift surfaces in one (form ↔ wire ↔ AI output). Strict TypeScript across all three packages catches the bulk of integration regressions before tests run. Matching Buena's stack means the take-home reads as a junior pull request, not a foreign-language sample.
+**Positive.** A new contributor can clone and `docker compose up` in <5 min. The shared Zod schema kills three drift surfaces in one (form ↔ wire ↔ AI output). Strict TypeScript across all three packages catches the bulk of integration regressions before tests run. Aligning on Buena's existing stack lets this codebase land as a normal pull request inside the production repo, not a parallel re-platform.
 
-**Negative.** No auth, no multi-tenant enforcement, no S3, no audit log. Documented in the README's "What's deferred" section. The bundle on the wizard's units step (TanStack Table + Virtual + AI Review Panel) sits at 222 kB first-load; lazy-loading the panel + virtualizer via `next/dynamic` is queued as v1.1.
+**Negative.** No auth, no multi-tenant enforcement, no S3, no audit log. Documented in the README's "What's deferred" section. The wizard's units step (TanStack Table + Virtual) sits at 223 kB first-load; lazy-loading the virtualizer via `next/dynamic` is queued as v1.1. The AI Review Panel is already lazy-loaded.
 
 **Neutral.** No state-management library beyond TanStack Query — wizard state lives in RHF + a small WizardContext, persisted to localStorage.
