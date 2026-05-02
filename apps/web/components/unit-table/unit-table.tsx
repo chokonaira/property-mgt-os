@@ -3,7 +3,23 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Copy, Trash2 } from 'lucide-react';
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { CopyPlus, GripVertical, Trash2 } from 'lucide-react';
 import { useFormContext, useFieldArray, useWatch } from 'react-hook-form';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -87,7 +103,7 @@ function RowSelectCheckbox({ rowId, ariaLabel }: { rowId: string; ariaLabel: str
 export function UnitTable() {
   const t = useTranslations('wizard.units');
   const { control, register, getValues } = useFormContext<WizardDraftInput>();
-  const { fields, append, remove, insert } = useFieldArray({ control, name: 'units' });
+  const { fields, append, remove, insert, move } = useFieldArray({ control, name: 'units' });
   const buildingsWatch = useWatch({ control, name: 'buildings' });
   const buildings = useMemo(() => buildingsWatch ?? [], [buildingsWatch]);
   const { containerRef, onKeyDown, onFocus } = useCellNavigation();
@@ -125,6 +141,30 @@ export function UnitTable() {
       return rowIndex >= highlightedRange.from && rowIndex < highlightedRange.from + highlightedRange.count;
     },
     [highlightedRange],
+  );
+
+  // Drag-to-reorder. PointerSensor.activationConstraint.distance keeps a
+  // stray click on the handle from being interpreted as a drag — a small
+  // movement threshold (5 px) lets users still focus the row without
+  // accidentally rearranging the list. KeyboardSensor + sortableKeyboard
+  // coordinates makes the same gesture available to keyboard-only users
+  // (Tab to handle, Space to lift, arrows to move, Space to drop).
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+      const fromIndex = fields.findIndex((f) => f.id === active.id);
+      const toIndex = fields.findIndex((f) => f.id === over.id);
+      if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+      move(fromIndex, toIndex);
+      flashRange(toIndex, 1);
+    },
+    [fields, move, flashRange],
   );
   const toggleRow = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -177,6 +217,15 @@ export function UnitTable() {
 
   const columns = useMemo<Array<ColumnDef<WizardUnitDraft & { _id: string }, RowMeta>>>(
     () => [
+      {
+        id: 'dragHandle',
+        header: '',
+        size: 32,
+        // Cell content lives on the SortableRow itself so the listener
+        // sits on the actual <tr> child. Render an empty placeholder
+        // here just to reserve column width.
+        cell: () => null,
+      },
       {
         id: 'select',
         header: () => <SelectAllCheckbox ariaLabel={t('bulkDelete.selectAll')} />,
@@ -361,9 +410,9 @@ export function UnitTable() {
               onClick={() => duplicateRow(row.index)}
               aria-label={t('duplicateRow', { index: row.index + 1 })}
               title={t('duplicateTooltip')}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:bg-success/10 hover:text-success"
             >
-              <Copy className="h-4 w-4" aria-hidden="true" />
+              <CopyPlus className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
               type="button"
@@ -376,7 +425,7 @@ export function UnitTable() {
               disabled={fields.length === 1}
               aria-label={t('removeRow', { index: row.index + 1 })}
               title={t('removeTooltip')}
-              className="text-muted-foreground hover:text-destructive"
+              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
             </Button>
@@ -588,26 +637,34 @@ export function UnitTable() {
                 ) : null}
               </>
             ) : (
-              rowModel.rows.map((row) => (
-                <tr
-                  key={row.id}
-                  data-recently-added={isHighlighted(row.index) ? 'true' : undefined}
-                  className={cn(
-                    'border-b border-border last:border-0 transition-colors duration-1000',
-                    isHighlighted(row.index) && 'bg-primary/10',
-                  )}
+              <DndContext
+                sensors={dndSensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={fields.map((f) => f.id)}
+                  strategy={verticalListSortingStrategy}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      style={{ width: cell.column.getSize() }}
-                      className="px-3 py-2 align-middle"
+                  {rowModel.rows.map((row) => (
+                    <SortableRow
+                      key={row.id}
+                      rowId={(row.original as { id?: string }).id ?? row.id}
+                      highlighted={isHighlighted(row.index)}
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
+                      {row.getVisibleCells().map((cell) => (
+                        <td
+                          key={cell.id}
+                          style={{ width: cell.column.getSize() }}
+                          className="px-3 py-2 align-middle"
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </SortableRow>
                   ))}
-                </tr>
-              ))
+                </SortableContext>
+              </DndContext>
             )}
           </tbody>
         </table>
@@ -642,6 +699,71 @@ const cellInputClass = cn(
   'aria-[invalid=true]:border-destructive aria-[invalid=true]:focus-visible:ring-destructive',
   'disabled:cursor-not-allowed disabled:bg-muted/50 disabled:text-muted-foreground',
 );
+
+/**
+ * Sortable wrapper around a single body row. Renders the GripVertical
+ * drag handle in the first cell of the row (the dragHandle column
+ * reserves the width but emits no content), wires the dnd-kit
+ * `setNodeRef` + `attributes` + `listeners` so a pointer drag on the
+ * handle (or keyboard Space-to-lift) reorders the field array. The
+ * handle uses `cursor-grab` / `cursor-grabbing` for affordance and
+ * `touch-none` so mobile drags don't accidentally scroll the page.
+ * `isDragging` lifts the row above siblings + dims it so the user
+ * can see what they're moving.
+ */
+function SortableRow({
+  rowId,
+  highlighted,
+  children,
+}: {
+  rowId: string;
+  highlighted: boolean;
+  children: React.ReactNode;
+}) {
+  const t = useTranslations('wizard.units');
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: rowId,
+  });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+  // The dragHandle column reserves a <td> as the row's first cell
+  // (its column def renders null content). We REPLACE that empty cell
+  // with the actual handle so the column count stays in sync with the
+  // header. Subsequent cells render as-is.
+  const childArray = Array.isArray(children) ? children : [children];
+  const [, ...rest] = childArray as React.ReactElement[];
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      data-recently-added={highlighted ? 'true' : undefined}
+      className={cn(
+        'border-b border-border last:border-0 transition-colors duration-1000',
+        highlighted && 'bg-success/10',
+        isDragging && 'relative z-10 opacity-80 shadow-md',
+      )}
+    >
+      <td
+        style={{ width: 32 }}
+        className="px-1 py-2 align-middle"
+        {...attributes}
+        {...listeners}
+      >
+        <button
+          type="button"
+          aria-label={t('dragRow')}
+          title={t('dragTooltip')}
+          className="flex h-7 w-full cursor-grab items-center justify-center rounded text-muted-foreground touch-none hover:bg-accent hover:text-foreground active:cursor-grabbing"
+        >
+          <GripVertical className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </td>
+      {rest}
+    </tr>
+  );
+}
 
 /**
  * Wraps an editable cell so a tiny `<FieldChip />` renders below the

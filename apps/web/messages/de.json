@@ -150,8 +150,10 @@
       "removeTooltip": "Zeile löschen",
       "removeToast": "Zeile {index} gelöscht.",
       "duplicateRow": "Zeile {index} duplizieren",
-      "duplicateTooltip": "Zeile duplizieren (Nummer wird automatisch hochgezählt)",
+      "duplicateTooltip": "Zeile duplizieren",
       "duplicateToast": "Zeile {index} unten dupliziert.",
+      "dragRow": "Zum Neuordnen ziehen",
+      "dragTooltip": "Zum Neuordnen ziehen",
       "bulkDelete": {
         "selectAll": "Alle Zeilen auswählen",
         "selectRow": "Zeile {index} auswählen",
