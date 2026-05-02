@@ -108,6 +108,7 @@ export function PdfUploader({ value, onChange, ariaDescribedBy, ariaInvalid }: P
         id={inputId}
         type="file"
         accept="application/pdf"
+        aria-label={t('label')}
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) accept(file);

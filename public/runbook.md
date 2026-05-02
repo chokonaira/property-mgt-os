@@ -106,6 +106,55 @@ Domain terms stay German in both catalogs: `WEG`, `MV`, `MEA`, `Teilungserkläru
 
 ---
 
+## Pre-submit verifications
+
+These are manual / reviewer-time checks; commands documented for repeatability.
+
+### T-705 Responsive breakpoints
+
+Open Chrome DevTools → Toggle device toolbar → run through each route at:
+
+- **375 px** (iPhone SE)
+- **768 px** (iPad portrait)
+- **1024 px** (iPad landscape / small laptop)
+- **1440 px** (desktop)
+
+Routes to walk: `/`, `/properties/:id`, `/properties/new`, `/properties/new/buildings`, `/properties/new/units`. The MEA bar stays sticky at the bottom on all four sizes; the unit table's `min-w-[1000px]` engages horizontal scroll on the two narrow viewports.
+
+### T-706 axe-core (automated)
+
+```bash
+pnpm dev                                        # in one shell
+pnpm --filter @buena/web test:e2e e2e/a11y.spec.ts   # in another
+```
+
+Asserts zero `serious` / `critical` WCAG 2.1 AA violations on the dashboard + wizard step 1. Steps 2 + 3 covered by component-level tests (`__tests__/wizard-mea-bar.test.tsx`, `field-chip.test.tsx`, `ai-review-panel.test.tsx`).
+
+### T-707 Lighthouse
+
+```bash
+pnpm dev                                        # in one shell
+pnpm dlx lighthouse http://localhost:3000/en --view --preset=desktop
+pnpm dlx lighthouse http://localhost:3000/en/properties/new --view --preset=desktop
+pnpm dlx lighthouse http://localhost:3000/en/properties/new/units --view --preset=desktop
+```
+
+Targets: Performance ≥ 85, Accessibility ≥ 95, Best practices ≥ 95, SEO ≥ 90. The first run downloads the chrome binary; subsequent runs are seconds.
+
+### T-607 Sanity clone
+
+```bash
+cd /tmp
+git clone git@github.com:chokonaira/property-mgt-os.git sanity
+cd sanity
+cp .env.example .env             # paste OPENAI_API_KEY
+docker compose up                # builds web + api images, applies migrations, seeds
+```
+
+Open `http://localhost:3000`; verify Parkview Residences row + the wizard launches. Anything that breaks here, breaks for the reviewer.
+
+---
+
 ## Where to read next
 
 - [`./architecture.md`](./architecture.md) — module-level data flow, request lifecycle, deployment shape.
