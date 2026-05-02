@@ -10,7 +10,33 @@
 > Senior product engineer take-home for Buena Tech.
 
 **Live:** [henry-buena.chuka.io](https://henry-buena.chuka.io) · API: [`api-henry-buena.chuka.io`](https://api-henry-buena.chuka.io/healthz)
-**Loom:** _placeholder — replace before submission._
+
+## Demos
+
+Three short Loom walkthroughs — click any thumbnail to open the recording on Loom.
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="https://www.loom.com/share/2d72f3306f1b47bc813caeab5a936ebe">
+        <img src="https://cdn.loom.com/sessions/thumbnails/2d72f3306f1b47bc813caeab5a936ebe-with-play.gif" alt="Demo 1 — product walkthrough" />
+      </a>
+      <br/><strong>Demo 1</strong>
+    </td>
+    <td align="center" width="33%">
+      <a href="https://www.loom.com/share/7358051c3f1f4565bead8114f181653e">
+        <img src="https://cdn.loom.com/sessions/thumbnails/7358051c3f1f4565bead8114f181653e-with-play.gif" alt="Demo 2 — AI extraction flow" />
+      </a>
+      <br/><strong>Demo 2</strong>
+    </td>
+    <td align="center" width="33%">
+      <a href="https://www.loom.com/share/6f82947e2e25429e95d33b7bbe04c852">
+        <img src="https://cdn.loom.com/sessions/thumbnails/6f82947e2e25429e95d33b7bbe04c852-with-play.gif" alt="Demo 3 — bulk unit table + tradeoffs" />
+      </a>
+      <br/><strong>Demo 3</strong>
+    </td>
+  </tr>
+</table>
 
 ---
 
