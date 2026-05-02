@@ -170,6 +170,9 @@
         "toast": "{count, plural, one {# Zeile dupliziert.} other {# Zeilen dupliziert.}}"
       },
       "buildingFallback": "Gebäude {index}",
+      "errors": {
+        "duplicateNumber": "Duplikat von Zeile {row} in {building}. Innerhalb eines Gebäudes muss jede Einheitsnummer eindeutig sein."
+      },
       "paste": {
         "successAll": "{count, plural, one {# Einheit eingefügt.} other {# Einheiten eingefügt.}}",
         "successPartial": "{count, plural, one {# Einheit eingefügt.} other {# Einheiten eingefügt.}} {errors, plural, one {# Zeile mit Fehlern.} other {# Zeilen mit Fehlern.}}"

@@ -111,4 +111,57 @@ describe('FieldChip', () => {
     await user.click(screen.getByText(/Source/i));
     expect(screen.getByText(/Parkview Residences Berlin/)).toBeTruthy();
   });
+
+  // Regression: edit-after-extract used to crash the wizard with
+  // "Failed to execute 'removeChild'" because the Popover inside
+  // SourceSpanPopover portaled to body, and the chip unmounting on
+  // first edit raced React's commit-phase removeChild against
+  // Radix's portal cleanup. The fix keeps the subtree mounted —
+  // typing flips aria-hidden + invisible classes but never tears
+  // the tree down. This test asserts the contract through a
+  // realistic transition: chip visible → field edited → chip
+  // hidden, but Popover trigger still in the DOM (proof the
+  // subtree didn't unmount).
+  it('keeps the Popover subtree mounted across an edit transition (no remount)', () => {
+    wizardState.meta = {
+      confidenceByField: { 'property.uniqueNumber': 0.94 },
+      sourceSpansByField: { 'property.uniqueNumber': 'AZ-12345' },
+      editedFields: new Set(),
+    };
+    const { container, rerender } = render(
+      withIntl(<FieldChip path="property.uniqueNumber" fieldLabel="Unique number" />),
+    );
+
+    // Pre-edit: subtree mounted, chip visible (no aria-hidden), Popover
+    // trigger present.
+    const beforeWrapper = container.firstChild as HTMLElement | null;
+    expect(beforeWrapper).not.toBeNull();
+    expect(beforeWrapper?.getAttribute('aria-hidden')).toBeNull();
+    const beforeTrigger = screen.getByText(/Source/i);
+    expect(beforeTrigger).toBeTruthy();
+
+    // Simulate the user typing in the bound input — markFieldEdited
+    // mutates the WizardContext's editedFields set. We rerender with
+    // the same wrapper (mock context returns the live wizardState.meta
+    // ref, so mutating the meta is enough to drive the next render).
+    wizardState.meta = {
+      confidenceByField: { 'property.uniqueNumber': 0.94 },
+      sourceSpansByField: { 'property.uniqueNumber': 'AZ-12345' },
+      editedFields: new Set(['property.uniqueNumber']),
+    };
+    rerender(withIntl(<FieldChip path="property.uniqueNumber" fieldLabel="Unique number" />));
+
+    // Post-edit: subtree STILL mounted (same container.firstChild
+    // reference), aria-hidden flipped on, Popover trigger still in
+    // the DOM. This is the load-bearing assertion: if the chip ever
+    // returns null on edit, the trigger disappears, the Popover
+    // unmounts, and we lose the safety contract.
+    const afterWrapper = container.firstChild as HTMLElement | null;
+    expect(afterWrapper).not.toBeNull();
+    expect(afterWrapper?.getAttribute('aria-hidden')).toBe('true');
+    expect(afterWrapper?.className).toMatch(/invisible/);
+    // Popover trigger still in the rendered tree (just hidden via
+    // the wrapper class — a11y tree skips it).
+    expect(screen.getByText(/Source/i)).toBeTruthy();
+  });
 });

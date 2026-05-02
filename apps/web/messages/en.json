@@ -170,6 +170,9 @@
         "toast": "{count, plural, one {Duplicated # row.} other {Duplicated # rows.}}"
       },
       "buildingFallback": "Building {index}",
+      "errors": {
+        "duplicateNumber": "Duplicate of row {row} in {building}. Each unit number must be unique within a building."
+      },
       "paste": {
         "successAll": "{count, plural, one {Pasted # unit.} other {Pasted # units.}}",
         "successPartial": "{count, plural, one {Pasted # unit.} other {Pasted # units.}} {errors, plural, one {# row had errors.} other {# rows had errors.}}"

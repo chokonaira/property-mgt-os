@@ -26,12 +26,13 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FieldChip } from '@/components/ai-extraction-review';
-import { useWizard } from '@/components/wizard/wizard-context';
+import { useStepValidator, useWizard } from '@/components/wizard/wizard-context';
 import { FloorCell } from '@/components/unit-table/floor-cell';
 import { GenerateUnitsDialog } from '@/components/unit-table/generate-units-dialog';
 import { useCellNavigation } from '@/components/unit-table/use-cell-navigation';
 import { parsePastedRows, shouldHandleAsBulkPaste } from '@/lib/parse-tsv';
 import { nextNumber } from '@/lib/duplicate-unit-number';
+import { findAllDuplicateUnitRows, type DuplicateRowInfo } from '@/lib/duplicate-units';
 import {
   EMPTY_UNIT,
   WIZARD_UNIT_TYPES,
@@ -74,6 +75,21 @@ function useSelection(): SelectionContextValue {
   return ctx;
 }
 
+/**
+ * Per-row duplicate-unit-number context. Lives separately from
+ * SelectionContext so a typing keystroke doesn't have to invalidate
+ * the selection memo. NumberCell consumes via useDuplicateRowInfo
+ * to apply red border + tooltip without the column definitions
+ * needing to know about duplicate state at memo time.
+ */
+const DuplicateRowsContext = createContext<ReadonlyMap<number, DuplicateRowInfo>>(
+  new Map<number, DuplicateRowInfo>(),
+);
+
+function useDuplicateRowInfo(rowIndex: number): DuplicateRowInfo | undefined {
+  return useContext(DuplicateRowsContext).get(rowIndex);
+}
+
 function SelectAllCheckbox({ ariaLabel }: { ariaLabel: string }) {
   const { allSelected, toggleAll } = useSelection();
   return (
@@ -102,10 +118,21 @@ function RowSelectCheckbox({ rowId, ariaLabel }: { rowId: string; ariaLabel: str
 
 export function UnitTable() {
   const t = useTranslations('wizard.units');
-  const { control, register, getValues } = useFormContext<WizardDraftInput>();
+  const { control, register, getValues, trigger } = useFormContext<WizardDraftInput>();
   const { fields, append, remove, insert, move } = useFieldArray({ control, name: 'units' });
   const buildingsWatch = useWatch({ control, name: 'buildings' });
   const buildings = useMemo(() => buildingsWatch ?? [], [buildingsWatch]);
+  const unitsWatch = useWatch({ control, name: 'units' });
+  // Live duplicate-unit-number detection. The DB enforces
+  // @@unique([buildingId, number]) on Unit; surfacing the violation
+  // client-side as the user types means red borders + tooltips
+  // appear immediately instead of silently failing on Save with a
+  // 409. Recomputed on every keystroke (cheap — single linear pass
+  // over the units array, scales fine into the hundreds).
+  const duplicateRows = useMemo(
+    () => findAllDuplicateUnitRows(unitsWatch, buildingsWatch),
+    [unitsWatch, buildingsWatch],
+  );
   const { containerRef, onKeyDown, onFocus } = useCellNavigation();
   const { markFieldEdited } = useWizard();
   const onEdit = useCallback(
@@ -214,6 +241,19 @@ export function UnitTable() {
     setSelectedIds(new Set());
     toast.error(t('bulkDelete.toast', { count: indices.length }));
   }, [fields, remove, selectedIds, liveSelectedCount, t]);
+
+  // Step-3 validator. Combines the schema check (every row passes
+  // WizardUnitDraftSchema) with the cross-row uniqueness invariant.
+  // RHF's default schema trigger walks each row in isolation and
+  // can't see "this row's number duplicates that row's number"
+  // because that's a graph-level property. Registering a custom
+  // validator on step 'units' is the documented hook in
+  // wizard-context — it takes precedence over the default trigger.
+  const stepValidator = useCallback(async () => {
+    const schemaOk = await trigger('units');
+    return schemaOk && duplicateRows.size === 0;
+  }, [trigger, duplicateRows]);
+  useStepValidator('units', stepValidator);
 
   const duplicateSelected = useCallback(() => {
     if (liveSelectedCount === 0) return;
@@ -558,6 +598,7 @@ export function UnitTable() {
 
   return (
     <SelectionContext.Provider value={selectionContextValue}>
+    <DuplicateRowsContext.Provider value={duplicateRows}>
     <div
       ref={containerRef}
       onKeyDown={onKeyDown}
@@ -726,6 +767,7 @@ export function UnitTable() {
         />
       </div>
     </div>
+    </DuplicateRowsContext.Provider>
     </SelectionContext.Provider>
   );
 }
@@ -1028,6 +1070,7 @@ function SizeCell({ rowIndex, onEdit }: { rowIndex: number; onEdit: () => void }
 }
 
 function NumberCell({ rowIndex, onEdit }: { rowIndex: number; onEdit: () => void }) {
+  const t = useTranslations('wizard.units');
   const {
     register,
     formState: { errors },
@@ -1035,17 +1078,30 @@ function NumberCell({ rowIndex, onEdit }: { rowIndex: number; onEdit: () => void
   const rawError = (errors.units?.[rowIndex] as { number?: { message?: string } } | undefined)?.number
     ?.message;
   const showError = useUnitCellErrorGate(rowIndex, 'number');
-  const error = showError ? rawError : undefined;
+  const schemaError = showError ? rawError : undefined;
+  // Cross-row uniqueness — paint red border + tooltip immediately,
+  // gated on errorsVisible OR a dirty row (same gate as schema
+  // errors) so a freshly-pasted block doesn't flash red before the
+  // user has a chance to read what they pasted.
+  const dup = useDuplicateRowInfo(rowIndex);
+  const dupMessage =
+    dup && showError
+      ? t('errors.duplicateNumber', {
+          row: dup.duplicateOf + 1,
+          building: dup.buildingLabel,
+        })
+      : undefined;
+  const errorMessage = schemaError ?? dupMessage;
   return (
     <input
       type="text"
       maxLength={20}
       data-cell-row={rowIndex}
       data-cell-col="number"
-      aria-invalid={Boolean(error) || undefined}
-      title={error}
+      aria-invalid={Boolean(errorMessage) || undefined}
+      title={errorMessage}
       {...register(`units.${rowIndex}.number`, { onChange: onEdit })}
-      className={cn(cellInputClass, error && 'border-destructive')}
+      className={cn(cellInputClass, errorMessage && 'border-destructive')}
     />
   );
 }
