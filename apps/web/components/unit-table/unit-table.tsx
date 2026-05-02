@@ -175,7 +175,7 @@ export function UnitTable() {
       {
         id: 'select',
         header: () => <SelectAllCheckbox ariaLabel={t('bulkDelete.selectAll')} />,
-        size: 32,
+        size: 40,
         cell: ({ row }) => {
           const id = (row.original as { id?: string }).id;
           if (!id) return null;
@@ -186,14 +186,6 @@ export function UnitTable() {
             />
           );
         },
-      },
-      {
-        id: 'rowIndex',
-        header: '',
-        size: 32,
-        cell: ({ row }) => (
-          <span className="font-mono text-[10px] text-muted-foreground">{row.index + 1}</span>
-        ),
       },
       {
         id: 'number',
@@ -208,7 +200,7 @@ export function UnitTable() {
       {
         id: 'type',
         header: t('columns.type'),
-        size: 150,
+        size: 180,
         cell: ({ row }) => (
           <CellWithChip path={`units[${row.index}].type`} label={t('columns.type')}>
             <TypeCell rowIndex={row.index} onEdit={onEdit(row.index, 'type')} />
@@ -276,7 +268,7 @@ export function UnitTable() {
       {
         id: 'sizeSqm',
         header: t('columns.size'),
-        size: 120,
+        size: 140,
         cell: ({ row }) => (
           <CellWithChip path={`units[${row.index}].sizeSqm`} label={t('columns.size')}>
             <SizeCell rowIndex={row.index} onEdit={onEdit(row.index, 'sizeSqm')} />
@@ -302,7 +294,7 @@ export function UnitTable() {
       {
         id: 'meaShare',
         header: t('columns.mea'),
-        size: 130,
+        size: 140,
         cell: ({ row }) => (
           <CellWithChip path={`units[${row.index}].meaShare`} label={t('columns.mea')}>
             <MeaCell rowIndex={row.index} onEdit={onEdit(row.index, 'meaShare')} />
@@ -312,7 +304,7 @@ export function UnitTable() {
       {
         id: 'yearBuilt',
         header: t('columns.year'),
-        size: 110,
+        size: 130,
         cell: ({ row }) => (
           <CellWithChip path={`units[${row.index}].yearBuilt`} label={t('columns.year')}>
             <input
@@ -521,7 +513,7 @@ export function UnitTable() {
           isVirtualized && 'overflow-y-auto max-h-[640px]',
         )}
       >
-        <table className="w-full min-w-[1000px] caption-bottom text-sm">
+        <table className="w-full min-w-[1200px] table-fixed caption-bottom text-sm">
           <thead className="sticky top-0 z-10 border-b border-border bg-muted/30">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
