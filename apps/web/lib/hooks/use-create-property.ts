@@ -72,8 +72,14 @@ export function useCreateProperty() {
     onError: (_err, _variables, context) => {
       if (!context) return;
       // Restore the pre-mutation snapshot — temp row vanishes,
-      // existing list intact.
-      queryClient.setQueryData(PROPERTIES_LIST_KEY, context.previous);
+      // existing list intact. Skip the write when previous is
+      // undefined (first-ever create against an empty cache);
+      // setQueryData(KEY, undefined) would clear the cache and
+      // produce a brief two-step flicker between the rolled-back
+      // state and the onSettled refetch.
+      if (context.previous !== undefined) {
+        queryClient.setQueryData(PROPERTIES_LIST_KEY, context.previous);
+      }
     },
     onSettled: () => {
       // Reconcile with the server: success → real row replaces

@@ -435,7 +435,12 @@ export function UnitTable() {
   const virtualizer = useVirtualizer({
     count: isVirtualized ? rowModel.rows.length : 0,
     getScrollElement: () => tableScrollRef.current,
-    estimateSize: () => 56,
+    // CellWithChip stacks input + chip vertically (gap-1, ~14 px
+    // chip line) so a real row is closer to ~70 px than the
+    // 56 px input height. TanStack Virtual measures + corrects,
+    // but a closer estimate avoids a brief jumpy first scroll
+    // on a 200-row paste.
+    estimateSize: () => 70,
     overscan: 8,
   });
   const virtualRows = isVirtualized ? virtualizer.getVirtualItems() : [];
@@ -509,6 +514,9 @@ export function UnitTable() {
           <tbody>
             {isVirtualized ? (
               <>
+                {/* Inline `style={{ height }}` is unavoidable here:
+                    the spacer height is dynamic per scroll position,
+                    so a Tailwind utility class can't express it. */}
                 {paddingTop > 0 ? (
                   <tr aria-hidden="true">
                     <td colSpan={columns.length} style={{ height: paddingTop, padding: 0 }} />
