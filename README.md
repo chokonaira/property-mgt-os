@@ -37,14 +37,14 @@ This submission keeps the manual path bullet-proof and adds an AI assist on top:
 
 ## Quick start
 
-**Prerequisites:** Docker Desktop running · Node 20+ · pnpm 9+ · OpenAI API key (for the AI extraction surface; the rest of the app boots without it).
+**Prerequisites:** Docker Desktop running · Node 20+ · pnpm 9+ · an AI provider key — Anthropic (default, `ANTHROPIC_API_KEY`) or OpenAI (legacy, `OPENAI_API_KEY`). Only the extraction surface needs it; the rest of the app boots either way.
 
 **Reviewer path — one command boots everything:**
 
 ```bash
 git clone git@github.com:chokonaira/property-mgt-os.git
 cd property-mgt-os
-cp .env.example .env             # paste your OPENAI_API_KEY
+cp .env.example .env             # paste your ANTHROPIC_API_KEY (or OPENAI_API_KEY)
 docker compose up                # builds web + api images, runs Postgres, applies migrations, seeds the demo property
 ```
 
@@ -116,7 +116,7 @@ Generated from the same Zod schemas in `packages/shared` via `@asteasolutions/zo
 
 ## Tech stack
 
-**Next.js 15** (App Router) · **NestJS** · **Prisma** · **Postgres 16** · **Tailwind + shadcn/ui + Radix** · **React Hook Form + Zod resolver** · **TanStack Table + Virtual + Query** · **OpenAI gpt-4o-mini** with JSON Schema mode · **unpdf** primary + `pdfjs-dist` fallback · **`@asteasolutions/zod-to-openapi`** · **Vitest + RTL + jsdom** · **GitHub Actions**.
+**Next.js 15** (App Router) · **NestJS** · **Prisma** · **Postgres 16** · **Tailwind + shadcn/ui + Radix** · **React Hook Form + Zod resolver** · **TanStack Table + Virtual + Query** · **Anthropic Claude (default) / OpenAI (fallback)** behind a provider-agnostic `AiExtractionClient` interface · **unpdf** primary + `pdfjs-dist` fallback · **`@asteasolutions/zod-to-openapi`** · **Vitest + RTL + jsdom** · **GitHub Actions**.
 
 ADRs cover the consequential calls: [`stack`](./public/adr-01-stack.md), [`AI extraction`](./public/adr-02-ai-extraction.md), [`bulk entry`](./public/adr-03-bulk-entry.md), [`data model`](./public/adr-04-data-model.md), [`AI handoff`](./public/adr-05-ai-handoff.md). Architecture diagram + data flow in [`public/architecture.md`](./public/architecture.md). German real-estate primer in [`public/domain.md`](./public/domain.md).
 

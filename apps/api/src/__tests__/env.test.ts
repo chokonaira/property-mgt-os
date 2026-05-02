@@ -35,7 +35,50 @@ describe('loadEnv', () => {
   it('throws with grouped messages when required vars missing', () => {
     expect(() => loadEnv({} as NodeJS.ProcessEnv)).toThrowError(/env_validation_failed/);
     expect(() => loadEnv({} as NodeJS.ProcessEnv)).toThrowError(/DATABASE_URL/);
-    expect(() => loadEnv({} as NodeJS.ProcessEnv)).toThrowError(/OPENAI_API_KEY/);
+  });
+
+  it('throws when no AI provider key is set (refinement runs after base passes)', () => {
+    // superRefine only fires after the base object passes — so we have
+    // to satisfy DATABASE_URL + CORS_ORIGINS before the AI-key check
+    // surfaces. The error names ANTHROPIC_API_KEY because that's the
+    // default-preferred provider.
+    expect(() =>
+      loadEnv({
+        DATABASE_URL: validEnv.DATABASE_URL,
+        CORS_ORIGINS: validEnv.CORS_ORIGINS,
+      } as NodeJS.ProcessEnv),
+    ).toThrowError(/ANTHROPIC_API_KEY/);
+  });
+
+  it('accepts ANTHROPIC_API_KEY alone (no OPENAI_API_KEY required)', () => {
+    const env = loadEnv({
+      DATABASE_URL: validEnv.DATABASE_URL,
+      CORS_ORIGINS: validEnv.CORS_ORIGINS,
+      ANTHROPIC_API_KEY: 'sk-ant-test',
+    } as NodeJS.ProcessEnv);
+    expect(env.ANTHROPIC_API_KEY).toBe('sk-ant-test');
+    expect(env.OPENAI_API_KEY).toBeUndefined();
+    expect(env.ANTHROPIC_MODEL).toBe('claude-haiku-4-5-20251001');
+  });
+
+  it('rejects when AI_PROVIDER=anthropic but ANTHROPIC_API_KEY is missing', () => {
+    expect(() =>
+      loadEnv({
+        ...validEnv,
+        AI_PROVIDER: 'anthropic',
+      } as NodeJS.ProcessEnv),
+    ).toThrowError(/AI_PROVIDER=anthropic requires ANTHROPIC_API_KEY/);
+  });
+
+  it('rejects when AI_PROVIDER=openai but OPENAI_API_KEY is missing', () => {
+    expect(() =>
+      loadEnv({
+        DATABASE_URL: validEnv.DATABASE_URL,
+        CORS_ORIGINS: validEnv.CORS_ORIGINS,
+        ANTHROPIC_API_KEY: 'sk-ant-test',
+        AI_PROVIDER: 'openai',
+      } as NodeJS.ProcessEnv),
+    ).toThrowError(/AI_PROVIDER=openai requires OPENAI_API_KEY/);
   });
 
   it('rejects an invalid DATABASE_URL', () => {

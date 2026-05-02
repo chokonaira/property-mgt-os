@@ -33,7 +33,12 @@ Add a service from this repo:
   | Var | Value |
   | --- | --- |
   | `DATABASE_URL` | reference the Postgres plugin |
-  | `OPENAI_API_KEY` | your key |
+  | `AI_PROVIDER` | `anthropic` (default) or `openai` |
+  | `ANTHROPIC_API_KEY` | your Anthropic key (required when `AI_PROVIDER=anthropic`) |
+  | `ANTHROPIC_MODEL` | `claude-haiku-4-5-20251001` |
+  | `ANTHROPIC_TIMEOUT_MS` | `15000` |
+  | `ANTHROPIC_MAX_OUTPUT_TOKENS` | `4096` |
+  | `OPENAI_API_KEY` | your OpenAI key (only required when `AI_PROVIDER=openai`) |
   | `OPENAI_MODEL` | `gpt-4o-mini` |
   | `OPENAI_TIMEOUT_MS` | `15000` |
   | `EXTRACTION_MAX_TOKENS` | `25000` |
@@ -44,6 +49,9 @@ Add a service from this repo:
   | `TENANT_DEFAULT_ID` | `demo` |
   | `LOG_LEVEL` | `info` |
   | `NODE_ENV` | `production` |
+
+  The api accepts either provider — at least one of `ANTHROPIC_API_KEY` /
+  `OPENAI_API_KEY` must be set or the service refuses to boot.
 
 Once the service is healthy, copy the Railway-generated public URL (e.g. `https://buena-api-production.up.railway.app`) — Vercel needs it.
 
@@ -86,7 +94,7 @@ Same as above but skip Vercel — Railway runs the Next.js service too. Less opt
 
 ## Production checklist
 
-- [ ] `OPENAI_API_KEY` set on the api service (only).
+- [ ] `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY` if `AI_PROVIDER=openai`) set on the api service (only).
 - [ ] `CORS_ORIGINS` on the api includes the Vercel domain.
 - [ ] `NEXT_PUBLIC_API_URL` on Vercel points at the public Railway api URL.
 - [ ] Railway volume mounted at `UPLOAD_DIR` (else `/uploads` writes to ephemeral disk).
