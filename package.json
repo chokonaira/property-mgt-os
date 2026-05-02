@@ -9,7 +9,8 @@
   },
   "scripts": {
     "dev": "pnpm db:up && pnpm db:wait && pnpm db:generate && pnpm db:migrate:deploy && pnpm --filter @buena/shared build && pnpm dev:apps",
-    "dev:apps": "pnpm -r --parallel --stream --if-present dev",
+    "dev:apps": "pnpm dev:free-ports && pnpm -r --parallel --stream --if-present dev",
+    "dev:free-ports": "lsof -ti:3000,3001 | xargs kill -9 2>/dev/null || true",
     "build": "pnpm --filter @buena/shared build && pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",
     "format": "prettier --write .",
