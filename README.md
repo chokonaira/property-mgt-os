@@ -3,13 +3,14 @@
 [![CI](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml/badge.svg)](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-400_passing-brightgreen)](#testing)
 [![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](./tsconfig.base.json)
-[![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?logo=openapiinitiative&logoColor=white)](http://localhost:3001/openapi.json)
+[![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?logo=openapiinitiative&logoColor=white)](https://api.henry-buena.chuka.io/openapi.json)
 [![First Load JS](https://img.shields.io/badge/first_load_JS-≤230_kB-blue)](#performance)
 
 > Property dashboard with a guided creation flow + AI-powered Teilungserklärung extraction.
 > Senior product engineer take-home for Buena Tech.
 
-**Loom:** _placeholder — replace before submission (T-605)._
+**Live:** [henry-buena.chuka.io](https://henry-buena.chuka.io) · API: [`api.henry-buena.chuka.io`](https://api.henry-buena.chuka.io/healthz)
+**Loom:** _placeholder — replace before submission._
 
 ---
 
@@ -101,6 +102,8 @@ Workspace runs **400 tests** across three packages (72 shared schemas, 123 API s
 First-load JS from `pnpm build`: shared chunks **101 kB** · property detail **163 kB** · wizard step 2 **186 kB** · wizard step 1 **213 kB** (carries the AI Review Panel inline) · wizard step 3 **222 kB** (carries TanStack Virtual, engages past 50 rows). Badge cap **230 kB** with reviewer-visible headroom; lazy-loading the panel + virtualizer via `next/dynamic` is queued as a v1.1 cut.
 
 ## OpenAPI
+
+Live: [`https://api.henry-buena.chuka.io/openapi.json`](https://api.henry-buena.chuka.io/openapi.json). Locally:
 
 ```bash
 pnpm dev:apps          # api boots on :3001
