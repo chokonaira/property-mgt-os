@@ -126,6 +126,8 @@ ADRs cover the consequential calls: [`stack`](./public/adr-01-stack.md), [`AI ex
 
 ## What's deferred
 
+- **Edit flow for saved properties / buildings / units** — only Create + Delete are wired. The brief calls out the dashboard and the creation flow; editing is a separate surface that would reuse the wizard's RHF + Zod schemas in an edit mode against PATCH endpoints, with field-level diffing and an audit log alongside. ~half-day on top of the existing schemas.
+- **Contact (Property Manager / Accountant) edit + delete** — Create is wired (inline modal in the wizard's combobox); full CRUD belongs on a dedicated `/contacts` page with a "block delete when referenced by N properties" guard.
 - **Auth / multi-tenant** — schema has `tenantId` columns; enforcement is a service-layer flip.
 - **OCR for scanned PDFs** — `tesseract.js` server-side would slot in as a 3rd extraction fallback.
 - **Real S3 storage** — local disk under `./uploads/{tenantId}/`; one swap away from `@aws-sdk/client-s3`.
