@@ -40,4 +40,4 @@ Hard requirements:
 
 **Negative.** No OCR for scanned-only PDFs (unpdf only reads embedded text). `tesseract.js` server-side as a 3rd fallback is queued for v1.1. The 25 K-token cap is conservative; documents past that hit the manual-entry banner.
 
-**Neutral.** Per-document Prompt versioning lives in `promptVersion: 'extract.v1'` — when the prompt iterates, the eval harness (T-507, deferred) runs against ground-truth pairs to gate regressions.
+**Neutral.** Per-document prompt versioning lives in `promptVersion: 'extract.v1'`; a future eval harness with ground-truth `{pdfText, expected}` pairs would gate prompt regressions when the prompt iterates.

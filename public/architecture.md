@@ -19,14 +19,12 @@ flowchart LR
         WizardUI[Create Wizard]
         UnitTable[Unit Table]
         ReviewPanel[AI Review Panel]
-        Chatbot[AI Assistant]
     end
 
     subgraph API["NestJS (apps/api)"]
         PropertyMod[Properties]
         DocMod[Documents]
         ExtractionMod[Extraction]
-        ChatMod[Chat]
     end
 
     Postgres[(PostgreSQL 16)]
@@ -34,15 +32,13 @@ flowchart LR
     OpenAI[(OpenAI)]
 
     Browser --> Web
-    Web -->|REST + SSE| API
+    Web -->|REST| API
     PropertyMod --> Postgres
     DocMod --> Disk
     DocMod --> Postgres
     ExtractionMod --> DocMod
     ExtractionMod --> OpenAI
     ExtractionMod --> Postgres
-    ChatMod --> Postgres
-    ChatMod --> OpenAI
     Web -.shared Zod schemas.-> API
 ```
 

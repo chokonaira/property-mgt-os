@@ -129,23 +129,6 @@ How the system behaves when things go sideways. Each entry: trigger → handling
 
 ---
 
-## AI Assistant (chatbot)
-
-| Trigger                                            | Handling                                                                             | Layer          |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------- |
-| Question outside the data scope                    | Polite refusal: "I can only help with your property data."                           | System prompt. |
-| Question requiring multiple tool calls             | Native tool-calling loop, max 5 iterations.                                          | Chat service.  |
-| Tool returns error                                 | Assistant reports the issue and asks user to rephrase.                               | Chat service.  |
-| Tool returns very large dataset                    | Truncated to first 50 items; assistant summarizes.                                   | Tool.          |
-| Streaming connection drops                         | UI shows "Connection lost. Retry?"                                                   | UI.            |
-| Rapid messages                                     | Rate limit 30/min per session; soft-throttle with polite message.                    | Rate limit.    |
-| Prompt injection ("Ignore previous instructions…") | System prompt has anti-injection guidance; tools never run untrusted input verbatim. | Prompt design. |
-| Empty message                                      | UI prevents send.                                                                    | UI.            |
-| Very long message (>5000 chars)                    | UI truncates with warning.                                                           | UI.            |
-| Question about a property that doesn't exist       | Tool returns empty; assistant says so.                                               | Tool.          |
-
----
-
 ## Domain quirks
 
 | Trigger                                                       | Handling                                                                           | Layer             |
@@ -175,7 +158,7 @@ How the system behaves when things go sideways. Each entry: trigger → handling
 | Logs include sensitive data                      | `pino` redaction list strips `authorization`, `cookie`, `OPENAI_API_KEY`, and `POST /documents` bodies. Logs carry requestIds and lifecycle events, not request bodies. | Pino config.               |
 | HTTP headers                                     | `helmet` configures CSP, HSTS (prod), `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`.                                                    | Middleware.                |
 | CORS                                             | Explicit origin allowlist via `CORS_ORIGINS` env; credentials disabled.                                                                                                 | Middleware.                |
-| Rate-limit abuse on AI endpoints                 | `POST /extraction/runs`: 5/min/IP. `POST /chat/messages`: 30/min/session. 429 with `Retry-After` header.                                                                | Throttler.                 |
+| Rate-limit abuse on AI endpoints                 | `POST /extraction/runs`: 5/min/IP. 429 with `Retry-After` header.                                                                                                       | Throttler.                 |
 | Repeated extraction of same PDF                  | Per-document idempotency cache (always-on, independent of rate limit) returns cached run. `?force=true` bypasses. Prevents accidental re-spend.                         | Cache.                     |
 | Cross-tenant data leak                           | Service layer scopes every Prisma query by `tenantId` from the request scope. `TenantGuard` resolves tenant per request.                                                | Guard + service.           |
 
@@ -183,7 +166,6 @@ How the system behaves when things go sideways. Each entry: trigger → handling
 
 ## Eval and monitoring
 
-- AI extraction eval set: the sample plus synthetic variants with expected JSON. `pnpm eval:extraction` reports per-field precision/recall.
-- Chatbot eval set: question/expected-tool pairs in `tests/chat/eval.json`. `pnpm eval:chat` reports tool-selection accuracy.
-- E2E happy path: Playwright run; passes before any merge to main.
-- Manual smoke: keyboard-only, mobile-only, dark-mode-only walkthroughs of every screen before submission.
+- E2E happy path: Playwright spec walks dashboard → wizard → save → detail view. Runs via `pnpm test:e2e`.
+- Axe-core accessibility sweep: zero serious / critical WCAG 2.1 AA violations on the dashboard + wizard step 1. Runs via `pnpm test:e2e e2e/a11y.spec.ts`.
+- Manual smoke before submission: keyboard-only walkthrough, 375 / 768 / 1024 / 1440 px breakpoints, light + dark mode.

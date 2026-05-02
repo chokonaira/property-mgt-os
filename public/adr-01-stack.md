@@ -43,4 +43,4 @@ Hosted demo and managed Postgres are deliberately **out** — the reviewer runs 
 
 **Negative.** No auth, no multi-tenant enforcement, no S3, no audit log. Documented in the README's "What's deferred" section. The bundle on the wizard's units step (TanStack Table + Virtual + AI Review Panel) sits at 222 kB first-load; lazy-loading the panel + virtualizer via `next/dynamic` is queued as v1.1.
 
-**Neutral.** No state-management library beyond TanStack Query — wizard state lives in RHF + a small WizardContext, persisted to localStorage. If the chatbot lands later, that picks up the same context shape.
+**Neutral.** No state-management library beyond TanStack Query — wizard state lives in RHF + a small WizardContext, persisted to localStorage.

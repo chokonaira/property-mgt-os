@@ -17,10 +17,10 @@ export const RateLimit = (options: RateLimitOptions) => SetMetadata(RATE_LIMIT_M
 export const byIp: RateLimitKeyer = (req) => `ip:${req.ip ?? 'unknown'}`;
 
 // Falls back to a shared `anonymous` bucket when the client supplies no
-// session id. That is intentional for v1 — anonymous chat callers all share
-// a single bucket so they can't bypass the limit just by omitting the
-// header. Real session middleware (T-802 dependency) should populate
-// req.session.id so each user gets their own bucket.
+// session id. That is intentional for v1 — anonymous callers all share a
+// single bucket so they can't bypass the limit just by omitting the header.
+// When real session middleware lands it should populate req.session.id so
+// each user gets their own bucket.
 export const bySession: RateLimitKeyer = (req) => {
   const sessionId =
     (req.headers['x-session-id'] as string | undefined) ??

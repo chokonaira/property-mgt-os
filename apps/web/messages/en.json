@@ -423,11 +423,6 @@
       "invalid_union_discriminator": "Pick a valid type."
     }
   },
-  "chat": {
-    "ask": "Ask Buena",
-    "placeholder": "Ask about your properties…",
-    "clear": "Clear conversation"
-  },
   "theme": {
     "toggle": "Toggle theme",
     "switchToDark": "Switch to dark mode",

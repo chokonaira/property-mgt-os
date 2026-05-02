@@ -12,7 +12,7 @@ Constraints:
 - Confidence has to be visible on a per-field level — not a single global score.
 - Citations must be grounded; hallucinated source spans cannot reach the UI.
 - The system must always offer a clean fallback to manual entry.
-- The same principle ("AI proposes, the user disposes") must hold across every AI surface (extraction now; chatbot when it lands).
+- The same principle ("AI proposes, the user disposes") must hold across every AI surface.
 
 ## Decision
 
@@ -32,7 +32,6 @@ Constraints:
 4. **AI Review Panel.** A clearly-bounded surface that renders extracted values with confidence + popover-source per field, prominent warnings (e.g. MEA mismatch), Accept-all, and Discard. Form fields stay editable after accept; the chips persist next to each AI-populated input and clear when the user edits the value.
 5. **Graceful fallback.** Every error mode (timeout, parse-failed, oversized, rate-limited, schema-rejected) lands the user back on a usable manual form with a localised banner + Retry + Fill manually. Structured `console.error('extraction.failed', payload)` correlates with `ExtractionRun` rows server-side.
 6. **No silent persistence.** Every extraction writes an `ExtractionRun` row regardless of outcome — success, failure, or partial. The user's accept commits the data; the run record persists either way for cost tracking + prompt-iteration triage.
-7. **Future chatbot follows the same rule.** When T-801–T-805 land, every chat suggestion gets a "Hand off to me" button and every response cites the database rows it consulted via tool-calling.
 
 ## Consequences
 
@@ -40,4 +39,4 @@ Constraints:
 
 **Negative.** The Review Panel adds inline JS (~60 kB) on the wizard's step 1; lazy-loading via `next/dynamic` is queued for v1.1. Per-field provenance state lives on the wizard context — tying it to a real long-lived telemetry sink (Sentry + a chip-engagement event) is also v1.1.
 
-**Neutral.** The principle scales: when the chatbot ships, "every response cites" becomes "every response includes the row IDs it read"; "every action reviewable" becomes "every mutation tool-call asks for confirmation." Same principle, same enforcement points.
+**Neutral.** The principle scales to other AI surfaces: "every response cites" becomes "every response includes the row IDs it read"; "every action reviewable" becomes "every mutation tool-call asks for confirmation." Same enforcement points, different surface.

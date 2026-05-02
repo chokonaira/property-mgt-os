@@ -27,8 +27,6 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio --schema=prisma/schema.prisma",
     "db:reset": "prisma migrate reset --schema=prisma/schema.prisma --force",
-    "extraction:eval": "pnpm --filter @buena/api --if-present extraction:eval",
-    "chat:eval": "pnpm --filter @buena/api --if-present chat:eval",
     "prepare": "husky"
   },
   "devDependencies": {
