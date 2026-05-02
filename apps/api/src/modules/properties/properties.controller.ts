@@ -1,4 +1,14 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   CreatePropertyRequestSchema,
   PropertyListQuerySchema,
@@ -35,5 +45,11 @@ export class PropertiesController {
     @Body(new ZodValidationPipe(CreatePropertyRequestSchema)) body: CreatePropertyRequest,
   ): Promise<PropertyDetail> {
     return this.properties.create(TENANT_ID, body);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param('id') id: string): Promise<void> {
+    return this.properties.delete(TENANT_ID, id);
   }
 }

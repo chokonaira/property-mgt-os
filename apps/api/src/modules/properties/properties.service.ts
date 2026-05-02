@@ -1,4 +1,6 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type {
   Building,
@@ -30,9 +32,19 @@ type ContactRow = NonNullable<PropertyWithRelations['propertyManager']>;
 const decimal = (value: Prisma.Decimal | null | undefined): number | undefined =>
   value === null || value === undefined ? undefined : Number(value.toString());
 
+interface PropertiesServiceConfig {
+  /** Resolved upload directory; deleted-property storage cleanup writes here. */
+  uploadDir: string;
+}
+
 @Injectable()
 export class PropertiesService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(PropertiesService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: PropertiesServiceConfig = { uploadDir: './uploads' },
+  ) {}
 
   async list(tenantId: string, query: PropertyListQuery): Promise<PropertyListResponse> {
     const { take, skip, uniqueNumber } = query;
@@ -191,6 +203,50 @@ export class PropertiesService {
       }
       return mapPropertyDetail(detail);
     });
+  }
+
+  /**
+   * Atomic delete with cascade. Schema-level `onDelete: Cascade` handles
+   * Building → Property and Unit → Building, but the Document attached
+   * via `declarationFileId` is referenced from Property and survives a
+   * naive Property delete (orphan row + orphan PDF on disk + orphan
+   * ExtractionRun rows pointing at the document). This service deletes
+   * the Property row first (DB cascade collects its buildings + units),
+   * then the document's extraction-run history, then the document row,
+   * inside one transaction. Storage cleanup runs best-effort after
+   * commit so a transient FS error doesn't undo the DB delete.
+   */
+  async delete(tenantId: string, id: string): Promise<void> {
+    const property = await this.prisma.property.findFirst({
+      where: { id, tenantId },
+      select: { id: true, declarationFileId: true },
+    });
+    if (!property) {
+      throw new AppException('NOT_FOUND', `Property ${id} not found.`, HttpStatus.NOT_FOUND);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.property.delete({ where: { id: property.id } });
+      if (property.declarationFileId) {
+        await tx.extractionRun.deleteMany({
+          where: { documentId: property.declarationFileId },
+        });
+        await tx.document.delete({ where: { id: property.declarationFileId } });
+      }
+    });
+
+    if (property.declarationFileId) {
+      const storageKey = path.join(tenantId, `${property.declarationFileId}.pdf`);
+      const absolutePath = path.join(this.config.uploadDir, storageKey);
+      fs.unlink(absolutePath).catch((err: unknown) => {
+        // The DB row is gone; storage residue is best-effort. Log so
+        // operators can sweep stale files later but never rollback.
+        this.logger.warn(
+          { storageKey, err: err instanceof Error ? err.message : String(err) },
+          'properties.delete_storage_unlink_failed',
+        );
+      });
+    }
   }
 }
 

@@ -226,8 +226,14 @@
     }
   },
   "propertyDetail": {
-    "edit": "Edit",
-    "editStubMessage": "Editing lands in a future ticket.",
+    "delete": {
+      "cta": "Delete",
+      "title": "Delete this property?",
+      "description": "Deleting \"{name}\" will permanently remove every building, unit, and the uploaded Teilungserklärung. This cannot be undone.",
+      "confirmLabel": "Delete property",
+      "toast": "Property deleted.",
+      "errorToast": "Couldn't delete the property. Try again in a moment."
+    },
     "notFound": {
       "title": "Property not found",
       "description": "This property may have been deleted, or the link is incorrect."

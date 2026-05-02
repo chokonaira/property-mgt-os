@@ -9,7 +9,7 @@ export interface ApiErrorBody {
   requestId?: string;
 }
 
-function parseEnvelope(raw: unknown): ApiErrorBody | null {
+export function parseEnvelope(raw: unknown): ApiErrorBody | null {
   const result = ApiErrorEnvelopeSchema.safeParse(raw);
   if (!result.success) return null;
   return result.data.error;

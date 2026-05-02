@@ -1,13 +1,16 @@
 'use client';
 
-import { ArrowLeft, FileSearch, RefreshCw } from 'lucide-react';
+import { ArrowLeft, FileSearch, RefreshCw, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import { usePropertyDetail } from '@/lib/hooks/use-property-detail';
+import { useDeleteProperty } from '@/lib/hooks/use-delete-property';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDialog, useConfirm } from '@/components/confirm-dialog';
 import { EmptyState } from '@/components/empty-state';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { GeneralInfo } from './general-info';
 import { BuildingsSection } from './buildings-section';
 import { UnitsSection } from './units-section';
@@ -19,7 +22,29 @@ interface DetailViewProps {
 export function PropertyDetailView({ id }: DetailViewProps) {
   const t = useTranslations('propertyDetail');
   const tErr = useTranslations('errors');
+  const router = useRouter();
   const { data, isPending, isError, error, refetch, isFetching } = usePropertyDetail(id);
+  const deleteProperty = useDeleteProperty();
+  const { confirm, dialogProps } = useConfirm();
+
+  async function handleDelete(propertyName: string) {
+    const ok = await confirm({
+      title: t('delete.title'),
+      description: t('delete.description', { name: propertyName }),
+      confirmLabel: t('delete.confirmLabel'),
+      variant: 'destructive',
+    });
+    if (!ok) return;
+    deleteProperty.mutate(id, {
+      onSuccess: () => {
+        toast.success(t('delete.toast'));
+        router.replace('/');
+      },
+      onError: () => {
+        toast.error(t('delete.errorToast'));
+      },
+    });
+  }
 
   if (isPending) return <DetailSkeleton />;
 
@@ -75,6 +100,17 @@ export function PropertyDetailView({ id }: DetailViewProps) {
             </h1>
             <p className="font-mono text-[11px] text-muted-foreground">{property.uniqueNumber}</p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDelete(property.name)}
+            disabled={deleteProperty.isPending}
+            className="self-start text-destructive hover:bg-destructive/10 hover:text-destructive sm:self-auto"
+            aria-label={t('delete.cta')}
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            {t('delete.cta')}
+          </Button>
         </div>
       </header>
       <div className="flex flex-col gap-8 pt-6">
@@ -82,6 +118,7 @@ export function PropertyDetailView({ id }: DetailViewProps) {
         <BuildingsSection buildings={property.buildings} />
         <UnitsSection buildings={property.buildings} totalMea={property.totalMea} />
       </div>
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }

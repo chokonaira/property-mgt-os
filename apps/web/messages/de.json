@@ -226,8 +226,14 @@
     }
   },
   "propertyDetail": {
-    "edit": "Bearbeiten",
-    "editStubMessage": "Die Bearbeitung folgt in einem späteren Ticket.",
+    "delete": {
+      "cta": "Löschen",
+      "title": "Diese Immobilie löschen?",
+      "description": "„{name}\" zu löschen entfernt dauerhaft jedes Gebäude, jede Einheit und die hochgeladene Teilungserklärung. Dies kann nicht rückgängig gemacht werden.",
+      "confirmLabel": "Immobilie löschen",
+      "toast": "Immobilie gelöscht.",
+      "errorToast": "Löschen fehlgeschlagen. Bitte erneut versuchen."
+    },
     "notFound": {
       "title": "Immobilie nicht gefunden",
       "description": "Diese Immobilie wurde möglicherweise gelöscht oder der Link ist fehlerhaft."
