@@ -10,7 +10,7 @@
 > Senior product engineer take-home for Buena Tech.
 
 **Live:** [henry-buena.chuka.io](https://henry-buena.chuka.io) · API: [`api-henry-buena.chuka.io`](https://api-henry-buena.chuka.io/healthz)
-**Loom:** _placeholder — replace before submission._
+**Loom:** [Demo 1](https://www.loom.com/share/2d72f3306f1b47bc813caeab5a936ebe), [Demo 2](https://www.loom.com/share/7358051c3f1f4565bead8114f181653e), [Demo 3](https://www.loom.com/share/6f82947e2e25429e95d33b7bbe04c852)
 
 ---
 
