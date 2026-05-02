@@ -421,6 +421,7 @@ export function GeneralInfoForm() {
           name="general.managementType"
           render={({ field }) => (
             <SegmentedControl
+              id={ids.managementType}
               name="management-type"
               ariaLabel={t('managementType.label')}
               value={field.value}

@@ -15,6 +15,12 @@ interface SegmentedControlProps<T extends string> {
   name: string;
   ariaLabel?: string;
   disabled?: boolean;
+  /**
+   * Optional id for the radiogroup container so a sibling <label htmlFor>
+   * can resolve to a real DOM node — Chrome's a11y panel flags an
+   * unresolved `for` attribute and autofill heuristics drop the field.
+   */
+  id?: string;
 }
 
 export function SegmentedControl<T extends string>({
@@ -24,9 +30,11 @@ export function SegmentedControl<T extends string>({
   name,
   ariaLabel,
   disabled,
+  id,
 }: SegmentedControlProps<T>) {
   return (
     <div
+      id={id}
       role="radiogroup"
       aria-label={ariaLabel}
       className="grid grid-cols-2 gap-2 rounded-lg border border-input bg-muted/40 p-1"
