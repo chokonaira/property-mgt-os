@@ -127,7 +127,12 @@ export function AiReviewPanel({
   });
 
   return (
-    <Card className="border-primary/30 shadow-md">
+    <Card
+      className="border-primary/30 shadow-md"
+      role="region"
+      aria-live="polite"
+      aria-label={t('header')}
+    >
       <CardHeader className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex flex-col gap-1">
           <p className="flex items-center gap-2 text-sm font-medium text-foreground">

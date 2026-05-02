@@ -51,6 +51,16 @@ describe('AiReviewPanel', () => {
     expect(screen.getByText(/4\.5 s/)).toBeTruthy();
   });
 
+  it('mounts as a polite live region so screen readers announce extraction completion', () => {
+    const result = makeResult();
+    const { container } = render(
+      withIntl(<AiReviewPanel result={result} onAccept={() => {}} onDiscard={() => {}} />),
+    );
+    const region = container.querySelector('[role="region"][aria-live="polite"]');
+    expect(region).not.toBeNull();
+    expect(region?.getAttribute('aria-label')).toMatch(/We read your document/i);
+  });
+
   it('shows the "served from cache" badge when result.cached is true', () => {
     const result = makeResult({ cached: true, durationMs: 0 });
     render(withIntl(<AiReviewPanel result={result} onAccept={() => {}} onDiscard={() => {}} />));
