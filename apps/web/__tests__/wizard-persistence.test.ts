@@ -64,4 +64,61 @@ describe('parseStoredDraft', () => {
     expect(round?.draft).toEqual(populated);
     expect(typeof round?.savedAt).toBe('string');
   });
+
+  // Reload mid-edit must restore the partial draft, not silently revert
+  // to defaults. Strict per-field validation is RHF's job once mounted;
+  // restore only checks the structural shape.
+  it('restores a partial in-flight draft (empty unique number, empty MEA)', () => {
+    const inflight = {
+      general: {
+        managementType: 'WEG' as const,
+        name: 'Half-typed',
+        uniqueNumber: '', // user hasn't filled it yet
+      },
+      buildings: [{ street: '', houseNumber: '' }],
+      units: [
+        {
+          type: 'APARTMENT' as const,
+          buildingIndex: 0,
+          number: '', // empty — would fail strict z.string().min(1)
+          // meaShare + sizeSqm + rooms intentionally absent
+        },
+      ],
+    };
+    const round = parseStoredDraft(
+      JSON.stringify({
+        version: WIZARD_DRAFT_VERSION,
+        savedAt: new Date().toISOString(),
+        draft: inflight,
+      }),
+    );
+    expect(round?.draft).toEqual(inflight);
+  });
+
+  it('rejects a draft missing the buildings array', () => {
+    const broken = JSON.stringify({
+      version: WIZARD_DRAFT_VERSION,
+      savedAt: new Date().toISOString(),
+      draft: { general: {}, units: [{}] },
+    });
+    expect(parseStoredDraft(broken)).toBeNull();
+  });
+
+  it('rejects a draft with empty buildings array (shape requires min 1)', () => {
+    const broken = JSON.stringify({
+      version: WIZARD_DRAFT_VERSION,
+      savedAt: new Date().toISOString(),
+      draft: { general: {}, buildings: [], units: [{}] },
+    });
+    expect(parseStoredDraft(broken)).toBeNull();
+  });
+
+  it('rejects a draft where units is not an array', () => {
+    const broken = JSON.stringify({
+      version: WIZARD_DRAFT_VERSION,
+      savedAt: new Date().toISOString(),
+      draft: { general: {}, buildings: [{}], units: 'oops' },
+    });
+    expect(parseStoredDraft(broken)).toBeNull();
+  });
 });
