@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { Building, Unit } from '@buena/shared';
 import {
@@ -11,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatFloor, formatNumber, formatSqm, sumMea } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { MeaBar } from './mea-bar';
 
 interface UnitsSectionProps {
@@ -22,6 +24,12 @@ export function UnitsSection({ buildings, totalMea }: UnitsSectionProps) {
   const t = useTranslations('propertyDetail.units');
   const allUnits = buildings.flatMap((b) => b.units);
   const sum = sumMea(allUnits);
+  // Single-active-building UI keeps the viewport focused. With 100+
+  // units across 3 buildings, rendering them all sequentially makes
+  // the user scroll past Haus A to find Haus B. Tab strip swaps the
+  // table in place — building stays one click away.
+  const [activeId, setActiveId] = useState<string | null>(buildings[0]?.id ?? null);
+  const active = buildings.find((b) => b.id === activeId) ?? buildings[0];
 
   return (
     <section aria-labelledby="units-heading" className="flex flex-col gap-4">
@@ -34,9 +42,41 @@ export function UnitsSection({ buildings, totalMea }: UnitsSectionProps) {
         </span>
       </div>
       <MeaBar sum={sum} total={totalMea} />
-      {buildings.map((building) => (
-        <BuildingUnits key={building.id} building={building} />
-      ))}
+      {buildings.length > 1 ? (
+        <div role="tablist" className="flex flex-wrap gap-2 border-b border-border pb-2">
+          {buildings.map((b) => {
+            const isActive = b.id === active?.id;
+            const label = b.label || b.nickname || `${b.street} ${b.houseNumber}`;
+            return (
+              <button
+                key={b.id}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`building-units-${b.id}`}
+                onClick={() => setActiveId(b.id)}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  isActive
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-background text-muted-foreground hover:bg-muted',
+                )}
+              >
+                <span>{label}</span>
+                <span
+                  className={cn(
+                    'rounded-full px-1.5 py-0.5 text-[10px] tabular-nums',
+                    isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground',
+                  )}
+                >
+                  {b.units.length}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+      {active ? <BuildingUnits building={active} /> : null}
     </section>
   );
 }
@@ -44,33 +84,45 @@ export function UnitsSection({ buildings, totalMea }: UnitsSectionProps) {
 function BuildingUnits({ building }: { building: Building & { units: Unit[] } }) {
   const t = useTranslations('propertyDetail.units');
   const locale = useLocale();
-  const heading =
-    building.label || building.nickname || `${building.street} ${building.houseNumber}`;
+  // Disambiguator: identical building.label across two cards is
+  // permitted at the schema level. Surface the address so the user
+  // can tell two "Haus A"s apart at a glance.
+  const heading = building.label || building.nickname || `${building.street} ${building.houseNumber}`;
+  const subline = `${building.street} ${building.houseNumber}${building.postalCode ? `, ${building.postalCode}` : ''}${building.city ? ` ${building.city}` : ''}`;
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex items-baseline justify-between gap-3 border-b border-border bg-muted/30 px-4 py-3">
-        <p className="text-sm font-semibold text-foreground">{heading}</p>
+    <div
+      id={`building-units-${building.id}`}
+      role="tabpanel"
+      className="overflow-hidden rounded-lg border border-border bg-card"
+    >
+      <div className="flex flex-col gap-1 border-b border-border bg-muted/30 px-4 py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
+        <div className="flex flex-col gap-0.5">
+          <p className="text-sm font-semibold text-foreground">{heading}</p>
+          <p className="text-[11px] text-muted-foreground">{subline}</p>
+        </div>
         <p className="text-xs text-muted-foreground">
           {t('rowCount', { count: building.units.length })}
         </p>
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[100px]">{t('columns.number')}</TableHead>
-            <TableHead className="w-[120px]">{t('columns.type')}</TableHead>
-            <TableHead className="w-[120px]">{t('columns.floor')}</TableHead>
-            <TableHead className="w-[120px]">{t('columns.size')}</TableHead>
-            <TableHead className="w-[100px]">{t('columns.rooms')}</TableHead>
-            <TableHead className="w-[120px] text-right">{t('columns.mea')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {building.units.map((unit) => (
-            <UnitRow key={unit.id} unit={unit} locale={locale} />
-          ))}
-        </TableBody>
-      </Table>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-[100px]">{t('columns.number')}</TableHead>
+              <TableHead className="w-[120px]">{t('columns.type')}</TableHead>
+              <TableHead className="w-[120px]">{t('columns.floor')}</TableHead>
+              <TableHead className="w-[120px]">{t('columns.size')}</TableHead>
+              <TableHead className="w-[100px]">{t('columns.rooms')}</TableHead>
+              <TableHead className="w-[120px] text-right">{t('columns.mea')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {building.units.map((unit) => (
+              <UnitRow key={unit.id} unit={unit} locale={locale} />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
