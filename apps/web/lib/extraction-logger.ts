@@ -31,8 +31,13 @@ export function logExtractionFailure(documentId: string | undefined, error: unkn
     documentId,
     ...extractFields(error),
   };
-  // eslint-disable-next-line no-console -- intentional structured error log; not a debug breadcrumb
-  console.error('extraction.failed', payload);
+  // console.warn (not console.error) so Next.js dev overlay doesn't
+  // treat a recoverable extraction failure as a crash. Real log
+  // shippers (Sentry, LogRocket, Datadog browser SDK) pick up both
+  // warn + error, so production telemetry is unchanged. Production
+  // upgrade swaps this for the shipper's own client.
+  // eslint-disable-next-line no-console -- intentional structured telemetry; not a debug breadcrumb
+  console.warn('extraction.failed', payload);
 }
 
 function extractFields(error: unknown): Omit<ExtractionFailurePayload, 'event' | 'documentId'> {

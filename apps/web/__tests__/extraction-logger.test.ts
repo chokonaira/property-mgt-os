@@ -3,14 +3,14 @@ import { ApiError } from '@/lib/api-client';
 import { logExtractionFailure } from '@/lib/extraction-logger';
 
 describe('logExtractionFailure', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
-    consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   it('emits a structured payload with the documentId and ApiError fields', () => {
@@ -20,8 +20,8 @@ describe('logExtractionFailure', () => {
       requestId: 'req_abc',
     });
     logExtractionFailure('doc-1', error);
-    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-    const [tag, payload] = consoleErrorSpy.mock.calls[0] as [string, Record<string, unknown>];
+    expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
+    const [tag, payload] = consoleWarnSpy.mock.calls[0] as [string, Record<string, unknown>];
     expect(tag).toBe('extraction.failed');
     expect(payload).toMatchObject({
       event: 'extraction.failed',
@@ -35,7 +35,7 @@ describe('logExtractionFailure', () => {
 
   it('falls back to a generic reason for non-ApiError throwables', () => {
     logExtractionFailure(undefined, new TypeError('boom'));
-    const payload = consoleErrorSpy.mock.calls[0]?.[1] as Record<string, unknown>;
+    const payload = consoleWarnSpy.mock.calls[0]?.[1] as Record<string, unknown>;
     expect(payload).toMatchObject({
       event: 'extraction.failed',
       documentId: undefined,
@@ -48,7 +48,7 @@ describe('logExtractionFailure', () => {
 
   it('handles non-Error inputs without throwing', () => {
     logExtractionFailure('doc-2', 'something opaque');
-    const payload = consoleErrorSpy.mock.calls[0]?.[1] as Record<string, unknown>;
+    const payload = consoleWarnSpy.mock.calls[0]?.[1] as Record<string, unknown>;
     expect(payload).toMatchObject({
       reason: 'unknown',
       message: 'something opaque',
