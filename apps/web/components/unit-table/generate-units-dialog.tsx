@@ -32,7 +32,7 @@ import {
 import { cn } from '@/lib/utils';
 
 interface GenerateUnitsDialogProps {
-  onGenerate: (rows: WizardUnitDraft[]) => void;
+  onGenerate: (result: { rows: WizardUnitDraft[]; skipped: number }) => void;
 }
 
 /**
@@ -50,6 +50,23 @@ export function GenerateUnitsDialog({ onGenerate }: GenerateUnitsDialogProps) {
   const { control } = useFormContext<WizardDraftInput>();
   const buildingsWatch = useWatch({ control, name: 'buildings' });
   const buildings = useMemo(() => buildingsWatch ?? [], [buildingsWatch]);
+  const unitsWatch = useWatch({ control, name: 'units' });
+  // Per-building set of currently-used unit numbers. The generator
+  // skips any candidate that already exists in the same building, so
+  // a Generate-5-from-01 against a building that already has 01..03
+  // produces 04..08 instead of colliding on save.
+  const existingByBuilding = useMemo(() => {
+    const map = new Map<number, Set<string>>();
+    for (const u of unitsWatch ?? []) {
+      const key = u.buildingIndex;
+      const num = (u.number ?? '').trim();
+      if (num === '') continue;
+      const set = map.get(key) ?? new Set<string>();
+      set.add(num);
+      map.set(key, set);
+    }
+    return map;
+  }, [unitsWatch]);
 
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<WizardUnitType>('APARTMENT');
@@ -105,15 +122,18 @@ export function GenerateUnitsDialog({ onGenerate }: GenerateUnitsDialogProps) {
     if (type === 'APARTMENT' && roomsNum !== undefined && Number.isFinite(roomsNum)) {
       template.rooms = roomsNum;
     }
-    const rows = generateUnits({
-      type,
-      buildingIndex,
-      startAt,
-      count,
-      ...(prefixOverride !== null ? { prefix: prefixOverride } : {}),
-      ...(Object.keys(template).length > 0 ? { template } : {}),
-    });
-    onGenerate(rows);
+    const result = generateUnits(
+      {
+        type,
+        buildingIndex,
+        startAt,
+        count,
+        ...(prefixOverride !== null ? { prefix: prefixOverride } : {}),
+        ...(Object.keys(template).length > 0 ? { template } : {}),
+      },
+      existingByBuilding.get(buildingIndex),
+    );
+    onGenerate(result);
     reset();
     setOpen(false);
   };

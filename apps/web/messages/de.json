@@ -44,7 +44,10 @@
     "toasts": {
       "success": "Immobilie gespeichert.",
       "failureValidation": "Einige Felder benötigen noch Aufmerksamkeit. Bitte markierte Eingaben prüfen.",
-      "failureGeneric": "Speichern fehlgeschlagen. Bitte erneut versuchen."
+      "failureGeneric": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+      "failureServer": "Serverfehler ({status}). Bitte gleich erneut versuchen — falls das Problem bestehen bleibt, Support kontaktieren.",
+      "failureWithMessage": "Speichern fehlgeschlagen: {message}",
+      "failureNetwork": "Server nicht erreichbar. Bitte Verbindung prüfen und erneut versuchen."
     },
     "general": {
       "managementType": {
@@ -189,6 +192,7 @@
         "cancel": "Abbrechen",
         "generate": "Generieren",
         "toast": "{count, plural, one {# Einheit erzeugt.} other {# Einheiten erzeugt.}}",
+        "toastSkipped": "{count, plural, one {# Einheit erzeugt.} other {# Einheiten erzeugt.}} {skipped, plural, one {# bereits vergebene Nummer übersprungen.} other {# bereits vergebene Nummern übersprungen.}}",
         "types": {
           "APARTMENT": "Wohnung",
           "OFFICE": "Gewerbe",
@@ -437,6 +441,8 @@
       "description": "Diese URL gehört zu keinem unserer Inhalte. Der Link ist möglicherweise falsch oder die Seite wurde verschoben."
     },
     "conflictUniqueNumber": "Diese Objektnummer wird bereits von einer anderen Immobilie verwendet.",
+    "conflictUnitNumber": "Einheitsnummer \"{number}\" kommt in {building} mehr als einmal vor. Innerhalb eines Gebäudes muss jede Einheitsnummer eindeutig sein.",
+    "conflictUnitNumberGeneric": "Zwei oder mehr Einheiten teilen sich innerhalb eines Gebäudes dieselbe Nummer. Einheitsnummern anpassen und erneut versuchen.",
     "zod": {
       "required": "Dieses Feld ist erforderlich.",
       "invalid_type": "Erwartet {expected}, erhalten {received}.",

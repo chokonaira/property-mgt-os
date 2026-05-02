@@ -44,7 +44,10 @@
     "toasts": {
       "success": "Property saved.",
       "failureValidation": "Some fields need attention. Check the highlighted inputs.",
-      "failureGeneric": "Couldn't save the property. Try again in a moment."
+      "failureGeneric": "Couldn't save the property. Try again in a moment.",
+      "failureServer": "Server error ({status}). The team has been notified — try again in a minute, or contact support if it keeps failing.",
+      "failureWithMessage": "Couldn't save: {message}",
+      "failureNetwork": "Couldn't reach the server. Check your connection and try again."
     },
     "general": {
       "managementType": {
@@ -189,6 +192,7 @@
         "cancel": "Cancel",
         "generate": "Generate",
         "toast": "{count, plural, one {Generated # unit.} other {Generated # units.}}",
+        "toastSkipped": "{count, plural, one {Generated # unit.} other {Generated # units.}} {skipped, plural, one {Skipped # number that already existed.} other {Skipped # numbers that already existed.}}",
         "types": {
           "APARTMENT": "Apartment",
           "OFFICE": "Office",
@@ -437,6 +441,8 @@
       "description": "That URL doesn't match anything we serve. The link may be wrong, or the page may have moved."
     },
     "conflictUniqueNumber": "This unique number is already in use by another property.",
+    "conflictUnitNumber": "Unit number \"{number}\" appears more than once in {building}. Each unit number must be unique within a building.",
+    "conflictUnitNumberGeneric": "Two or more units share the same number within a building. Adjust unit numbers and retry.",
     "zod": {
       "required": "This field is required.",
       "invalid_type": "Expected {expected}, received {received}.",

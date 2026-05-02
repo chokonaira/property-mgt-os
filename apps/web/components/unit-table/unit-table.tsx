@@ -704,7 +704,7 @@ export function UnitTable() {
           + {t('addRow')}
         </Button>
         <GenerateUnitsDialog
-          onGenerate={(rows) => {
+          onGenerate={({ rows, skipped }) => {
             // Pristine seed → replace; otherwise append.
             const pristine =
               fields.length === 1 &&
@@ -714,7 +714,14 @@ export function UnitTable() {
             const startIndex = pristine ? 0 : fields.length;
             for (const row of rows) append(row, { shouldFocus: false });
             flashRange(startIndex, rows.length);
-            toast.success(t('generate.toast', { count: rows.length }));
+            // Generator skipped existing numbers in the same building so
+            // we never produce a row that would 409 on save. Mention it
+            // in the toast so the user knows why their range advanced.
+            toast.success(
+              skipped > 0
+                ? t('generate.toastSkipped', { count: rows.length, skipped })
+                : t('generate.toast', { count: rows.length }),
+            );
           }}
         />
       </div>

@@ -44,22 +44,49 @@ export function formatGeneratedNumber(prefix: string, seq: number, padWidth: num
   return `${prefix}${String(seq).padStart(padWidth, '0')}`;
 }
 
+export interface GenerateUnitsResult {
+  /** Unit drafts ready to push into the field array. */
+  rows: WizardUnitDraft[];
+  /** How many sequence numbers were skipped because they already exist. */
+  skipped: number;
+}
+
 /**
- * Pure generator. Returns an array of wizard unit drafts ready to push
- * into the field array. Type-specific variant fields (rooms,
- * subCategory, layoutNote, parkingCode) start undefined so the user
- * can fill them in cell-by-cell after generation; APARTMENT.rooms is
- * an exception when supplied via `template.rooms`.
+ * Pure generator. Returns wizard unit drafts ready to push into the
+ * field array. When `existingNumbers` is supplied, the generator skips
+ * any candidate that already exists in the same building and keeps
+ * advancing the sequence until it has produced `count` fresh numbers —
+ * so a Generate-5-from-01 against a building that already has 01..03
+ * yields 04..08 instead of colliding with the existing rows.
+ *
+ * Type-specific variant fields (rooms, subCategory, layoutNote,
+ * parkingCode) start undefined so the user can fill them in cell-by-
+ * cell after generation; APARTMENT.rooms is an exception when supplied
+ * via `template.rooms`.
+ *
+ * Safety bound: caps the seek loop at `count + max(count × 4, 100)` so
+ * a pathological existingNumbers set can't pin the generator forever.
  */
-export function generateUnits(config: GenerateUnitsConfig): WizardUnitDraft[] {
-  if (config.count <= 0) return [];
+export function generateUnits(
+  config: GenerateUnitsConfig,
+  existingNumbers?: ReadonlySet<string>,
+): GenerateUnitsResult {
+  if (config.count <= 0) return { rows: [], skipped: 0 };
   const start = config.startAt ?? 1;
   const padWidth = config.padWidth ?? DEFAULT_PAD_WIDTH;
   const prefix = config.prefix ?? DEFAULT_PREFIX_BY_TYPE[config.type];
 
   const rows: WizardUnitDraft[] = [];
-  for (let i = 0; i < config.count; i += 1) {
-    const number = formatGeneratedNumber(prefix, start + i, padWidth);
+  let seq = start;
+  let skipped = 0;
+  const maxAttempts = config.count + Math.max(config.count * 4, 100);
+  for (let attempts = 0; attempts < maxAttempts && rows.length < config.count; attempts += 1) {
+    const number = formatGeneratedNumber(prefix, seq, padWidth);
+    seq += 1;
+    if (existingNumbers && existingNumbers.has(number)) {
+      skipped += 1;
+      continue;
+    }
     const draft: Record<string, unknown> = {
       ...EMPTY_UNIT,
       type: config.type,
@@ -73,5 +100,5 @@ export function generateUnits(config: GenerateUnitsConfig): WizardUnitDraft[] {
     }
     rows.push(draft as unknown as WizardUnitDraft);
   }
-  return rows;
+  return { rows, skipped };
 }

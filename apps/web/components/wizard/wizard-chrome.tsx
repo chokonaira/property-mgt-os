@@ -33,6 +33,43 @@ function serverPathToFormPath(serverPath: string): string {
   return serverPath;
 }
 
+interface DuplicateUnitInfo {
+  rowIndex: number;
+  number: string;
+  buildingLabel: string;
+}
+
+/**
+ * Surfaces the (building, number) pair the API rejected so the toast can
+ * name it. Walks the wizard's units array and returns the SECOND
+ * occurrence of any duplicate (buildingIndex, number) — that's the row
+ * the user most likely just added or pasted, and the one whose number
+ * they need to change. Pure: no RHF coupling, unit-testable.
+ */
+export function findDuplicateUnitNumber(
+  draft: WizardDraftInput,
+): DuplicateUnitInfo | null {
+  const seen = new Map<string, number>();
+  for (let idx = 0; idx < draft.units.length; idx += 1) {
+    const unit = draft.units[idx]!;
+    const number = (unit.number ?? '').trim();
+    if (number === '') continue;
+    const key = `${unit.buildingIndex}::${number}`;
+    if (seen.has(key)) {
+      const buildingIndex = unit.buildingIndex;
+      const building = draft.buildings[buildingIndex];
+      const buildingLabel =
+        building?.label ||
+        building?.nickname ||
+        `${building?.street ?? ''} ${building?.houseNumber ?? ''}`.trim() ||
+        `Building ${buildingIndex + 1}`;
+      return { rowIndex: idx, number, buildingLabel };
+    }
+    seen.set(key, idx);
+  }
+  return null;
+}
+
 export function WizardChrome({ children }: { children: ReactNode }) {
   const t = useTranslations('wizard');
   const tToasts = useTranslations('wizard.toasts');
@@ -131,6 +168,35 @@ export function WizardChrome({ children }: { children: ReactNode }) {
               toast.error(tErr('conflictUniqueNumber'));
               return;
             }
+            // Unit-level (buildingId, number) unique constraint violation.
+            // The server emits one detail per field name; if either matches
+            // we know the conflict is on a same-(building, number) pair.
+            // Locate the offending pair from the form state so the toast
+            // can name it instead of saying "couldn't save."
+            const onUnitPair = details.some(
+              (d) => d.path === 'buildingId' || d.path === 'number',
+            );
+            if (onUnitPair) {
+              const draft = getValues();
+              const dup = findDuplicateUnitNumber(draft);
+              startTransition(() => router.push(pathForStep(WIZARD_STEPS[2])));
+              if (dup) {
+                setError(`units.${dup.rowIndex}.number` as 'units.0.number', {
+                  type: 'conflict',
+                  message: tErr('conflictUnitNumberGeneric'),
+                });
+                setErrorsVisible(true);
+                toast.error(
+                  tErr('conflictUnitNumber', {
+                    number: dup.number,
+                    building: dup.buildingLabel,
+                  }),
+                );
+              } else {
+                toast.error(tErr('conflictUnitNumberGeneric'));
+              }
+              return;
+            }
           }
           if (error.status === 422 && Array.isArray(error.body.details)) {
             type Detail = { path?: string; message?: string };
@@ -154,8 +220,25 @@ export function WizardChrome({ children }: { children: ReactNode }) {
             toast.error(tToasts('failureValidation'));
             return;
           }
+          // Other ApiError statuses (5xx, unrecognised 4xx). Prefer the
+          // server's own message when present so the user gets a real
+          // hint instead of a one-size-fits-all generic — a 503 from a
+          // db-down event reads "Service unavailable" instead of "Try
+          // again in a moment."
+          const serverMessage = error.body.message;
+          if (error.status >= 500 && error.status < 600) {
+            toast.error(tToasts('failureServer', { status: error.status }));
+            return;
+          }
+          if (serverMessage && serverMessage.length > 0) {
+            toast.error(tToasts('failureWithMessage', { message: serverMessage }));
+            return;
+          }
         }
-        toast.error(tToasts('failureGeneric'));
+        // Network / fetch failure / schema-mismatch on response. None of
+        // these carry a server message — surface a hint that points at
+        // the user's connection rather than a "try again" platitude.
+        toast.error(tToasts('failureNetwork'));
       },
     });
   }
