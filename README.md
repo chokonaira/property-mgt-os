@@ -132,22 +132,18 @@ Scope cuts, not architectural debt. Each item lists what exists today, what woul
 - _Today_: schema carries `tenantId` on every row; demo tenant id is hardcoded in services.
 - _v1.1_: NextAuth or Clerk for login, read tenant id off the session in every controller, drop the constant.
 - _Cost_: ~half-day. No schema change.
-- _Unblocks_: audit log, real per-user rate-limit keys, contact CRUD permission model.
+- _Unblocks_: real per-user rate-limit keys, contact CRUD permission model, audit log gets real `actorId` instead of the seeded `demo-user`.
 
 **Edit flow for saved properties / buildings / units**
 - _Today_: Create + Delete are wired. No PATCH; the dashboard view is read-only.
 - _v1.1_: reuse the wizard's RHF + Zod schemas in an "edit" mode against `PATCH /properties/:id`, with per-field diffing.
 - _Cost_: ~half-day on top of the existing schemas.
-- _Notes_: pairs naturally with audit log — every edit becomes a row in the history.
+- _Notes_: audit log already wired — every PATCH that lands will write a row into the existing `AuditLog` table automatically.
 
 **Contact (Property Manager / Accountant) edit + delete**
 - _Today_: Create is wired via the wizard's inline combobox modal.
 - _v1.1_: dedicated `/contacts` page with full CRUD + a "block delete when referenced by N properties" guard.
 - _Cost_: ~half-day.
-
-**Audit log / change history** — _shipped_
-- _Today_: `AuditLog` table + Prisma middleware snapshot every Property / Building / Unit / Contact write (create / update / delete / upsert). Per-tenant retention cap (default 5,000, env-overridable) with probabilistic prune. Property detail page surfaces a "Last modified by X · n min ago" pill that opens a sleek hover-preview popover (desktop) / tap-popover (mobile) showing the latest 5 entries; "View all" expands into a paginated, mobile-responsive timeline dialog with field-level diff per change and an expandable raw-snapshot view.
-- _Pre-auth shim_: `actorId` reads from `USER_DEFAULT_ID` env (defaults to `'demo-user'`) via an `ActorContextMiddleware` that seeds an `AsyncLocalStorage`-backed scope. When NextAuth/Clerk lands, the middleware swaps to `req.session.userId` — no other code changes.
 
 **S3-backed document storage**
 - _Today_: PDFs land on the API server's local disk at `{UPLOAD_DIR}/{tenantId}/{cuid}.pdf`. Single-instance only; container restart loses uploads if the volume isn't mounted.
