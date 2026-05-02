@@ -154,8 +154,13 @@ export function UnitTable() {
       const current = (getValues(`units.${rowIndex}`) ?? {}) as WizardUnitDraft;
       const copy = { ...current, number: nextNumber(current.number) } as WizardUnitDraft;
       insert(rowIndex + 1, copy, { shouldFocus: false });
+      // The new row sits directly below the source with the same data
+      // and a bumped number. Without a toast users couldn't tell the
+      // click did anything because the rows look near-identical.
+      flashRange(rowIndex + 1, 1);
+      toast.success(t('duplicateToast', { index: rowIndex + 1 }));
     },
-    [getValues, insert],
+    [getValues, insert, flashRange, t],
   );
 
   const deleteSelected = useCallback(() => {
@@ -326,7 +331,7 @@ export function UnitTable() {
       {
         id: 'description',
         header: t('columns.description'),
-        size: 280,
+        size: 360,
         cell: ({ row }) => (
           <CellWithChip path={`units[${row.index}].description`} label={t('columns.description')}>
             <input
@@ -355,6 +360,7 @@ export function UnitTable() {
               size="sm"
               onClick={() => duplicateRow(row.index)}
               aria-label={t('duplicateRow', { index: row.index + 1 })}
+              title={t('duplicateTooltip')}
               className="text-muted-foreground hover:text-foreground"
             >
               <Copy className="h-4 w-4" aria-hidden="true" />
@@ -363,9 +369,13 @@ export function UnitTable() {
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => remove(row.index)}
+              onClick={() => {
+                remove(row.index);
+                toast.success(t('removeToast', { index: row.index + 1 }));
+              }}
               disabled={fields.length === 1}
               aria-label={t('removeRow', { index: row.index + 1 })}
+              title={t('removeTooltip')}
               className="text-muted-foreground hover:text-destructive"
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -422,9 +432,19 @@ export function UnitTable() {
       if (isPristineSeed) {
         remove(0);
       }
+      const startIndex = isPristineSeed ? 0 : fields.length;
       for (const row of parsed.rows) {
         append(row, { shouldFocus: false });
       }
+      flashRange(startIndex, parsed.rows.length);
+      // Scroll the first newly-pasted row into view so a paste that
+      // lands below the fold isn't invisible to the user.
+      requestAnimationFrame(() => {
+        const target = containerRef.current?.querySelector<HTMLElement>(
+          `tr[data-index="${startIndex}"], tbody tr:nth-child(${startIndex + 1})`,
+        );
+        target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
       const errorCount = parsed.errors.length;
       const okCount = parsed.rows.length - new Set(parsed.errors.map((e) => e.rowIndex)).size;
       toast.success(
@@ -433,7 +453,7 @@ export function UnitTable() {
           : t('paste.successPartial', { count: okCount, errors: errorCount }),
       );
     },
-    [append, remove, fields, buildings.length, t],
+    [append, remove, fields, buildings.length, flashRange, containerRef, t],
   );
 
   const selectionContextValue = useMemo<SelectionContextValue>(
