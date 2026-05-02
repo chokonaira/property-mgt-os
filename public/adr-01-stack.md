@@ -29,7 +29,7 @@ Match Buena's stack as closely as possible:
 | State / cache | TanStack Query |
 | Schemas | Zod, hosted in `packages/shared`, consumed by web + api + extraction |
 | OpenAPI | `@asteasolutions/zod-to-openapi` from the same Zod schemas |
-| AI | OpenAI `gpt-4o-mini` + JSON Schema mode |
+| AI | Anthropic `claude-haiku-4-5` (default) or OpenAI `gpt-4o-mini` (fallback), behind a provider-agnostic `AiExtractionClient` interface |
 | PDF parsing | `unpdf` primary + `pdfjs-dist` fallback |
 | Tests | Vitest + RTL + jsdom (per-file `// @vitest-environment jsdom`) |
 | CI | GitHub Actions: lint / typecheck / test / build on every push |

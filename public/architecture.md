@@ -6,7 +6,7 @@ System design, data model, and operational choices.
 
 ## High-level
 
-Two Node services (Next.js web, NestJS API) over a single PostgreSQL database. OpenAI is used for two purposes: structured extraction of Teilungserklärung documents, and the data-aware chat assistant. No queues, caches, or background services beyond what Postgres provides.
+Two Node services (Next.js web, NestJS API) over a single PostgreSQL database. An LLM provider (Anthropic Claude by default; OpenAI available as a fallback) is used for one purpose: structured extraction of Teilungserklärung documents. No queues, caches, or background services beyond what Postgres provides.
 
 The web app is locale-aware out of the box. `next-intl` routes through a `[locale]` segment; English and German message catalogs live in `messages/{en,de}.json`. Default locale is `de` to match the primary market; domain terms (WEG, MV, MEA, Teilungserklärung, Wohnfläche, Nutzfläche) are kept German across both locales.
 
@@ -29,7 +29,7 @@ flowchart LR
 
     Postgres[(PostgreSQL 16)]
     Disk[(./uploads)]
-    OpenAI[(OpenAI)]
+    LLM[("LLM<br/>Anthropic / OpenAI")]
 
     Browser --> Web
     Web -->|REST| API
@@ -37,7 +37,7 @@ flowchart LR
     DocMod --> Disk
     DocMod --> Postgres
     ExtractionMod --> DocMod
-    ExtractionMod --> OpenAI
+    ExtractionMod --> LLM
     ExtractionMod --> Postgres
     Web -.shared Zod schemas.-> API
 ```
@@ -46,7 +46,7 @@ flowchart LR
 
 ## Repository layout
 
-A pnpm monorepo with two apps and one shared package. Schemas defined once in `packages/shared` are consumed by both client (RHF resolver) and server (NestJS validation pipe) — and used as the JSON schema for OpenAI structured output. Single source of truth, no drift.
+A pnpm monorepo with two apps and one shared package. Schemas defined once in `packages/shared` are consumed by both client (RHF resolver) and server (NestJS validation pipe) — and converted to JSON Schema (via `zod-to-json-schema`) for the LLM provider's structured-output contract (OpenAI's `response_format` or Anthropic's tool `input_schema`). Single source of truth, no drift.
 
 ```
 property-mgt-os/
@@ -78,7 +78,7 @@ property-mgt-os/
 | ORM                      | Prisma                                                              |
 | Database                 | PostgreSQL 16                                                       |
 | Validation               | Zod (shared package)                                                |
-| AI                       | OpenAI gpt-4o-mini, structured outputs (json_schema mode)           |
+| AI                       | Anthropic claude-haiku-4-5 (default) or OpenAI gpt-4o-mini (fallback) behind an `AiExtractionClient` interface; structured output via tool_use / json_schema |
 | PDF                      | unpdf (modern pdfjs-dist wrapper), pdfjs-dist directly as fallback  |
 | i18n                     | next-intl, en + de catalogs, locale-aware route segment             |
 | Security                 | helmet, CORS allowlist, structured error envelope, pino redaction   |
@@ -372,7 +372,7 @@ PDF upload
 PDF text extraction (unpdf → pdfjs-dist fallback; rejected pdf-parse — unmaintained since 2018)
 Pre-call token guard: > 25K tokens → ExtractionError('document_too_large')
 Idempotency cache lookup keyed by documentId — hit returns cached run with cached: true
-OpenAI gpt-4o-mini call with strict JSON schema (zod-to-json-schema of ExtractionResult)
+LLM call via the active provider (Anthropic forced tool_use, or OpenAI strict JSON schema) — both consume the same zod-to-json-schema(ExtractionResult)
 Validate with Zod (same schema)
 Source-span verification: every claimed sourceSpansByField entry checked with indexOf
   against the original PDF text; unverified spans dropped before response
@@ -422,7 +422,7 @@ pnpm db:seed
 pnpm dev
 ```
 
-Dependency surface for review: Docker and an OpenAI API key. Nothing else.
+Dependency surface for review: Docker and one AI provider API key (Anthropic or OpenAI). Nothing else.
 
 ---
 

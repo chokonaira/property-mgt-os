@@ -8,7 +8,7 @@ Reference for everything you might need to operate the project locally — every
 
 - **Docker Desktop** running (Postgres 16 ships in a container).
 - **Node 20+** and **pnpm 9+** (`packageManager` pin in root `package.json`).
-- **OpenAI API key** with ~$5 of credit. The dashboard, wizard, and atomic save all run without it; only the AI extraction surface needs a key.
+- **AI provider key** — Anthropic (`ANTHROPIC_API_KEY`, default) or OpenAI (`OPENAI_API_KEY`, legacy fallback). The dashboard, wizard, and atomic save all run without one; only the AI extraction surface needs a key.
 
 ---
 
@@ -101,7 +101,7 @@ Domain terms stay German in both catalogs: `WEG`, `MV`, `MEA`, `Teilungserkläru
 - **Port 5432 already in use** — a host Postgres is binding it. Dev container maps to `55432` on the host. Don't change unless your local Postgres is also off-port.
 - **`P1010: User 'buena' was denied access`** — `DATABASE_URL` is pointing at a different Postgres. `lsof -nP -iTCP:55432` to confirm the dev container is the one listening.
 - **Prisma Client out of date after pull** — `pnpm db:generate`.
-- **Extraction returns 502 EXTRACTION_PARSE_FAILED** — usually OpenAI rate-limit or quota. The orchestrator retries once with an error addendum; persistent failure surfaces the structured banner. Check `OPENAI_API_KEY`.
+- **Extraction returns 502 EXTRACTION_PARSE_FAILED** — usually a rate-limit or quota error from the active AI provider. The orchestrator retries once with an error addendum; persistent failure surfaces the structured banner. Check `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY` if `AI_PROVIDER=openai`).
 - **Want to wipe everything** — `pnpm db:reset` rebuilds the schema + reseeds.
 
 ---

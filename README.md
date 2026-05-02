@@ -1,7 +1,7 @@
 # A Buena Case Study
 
 [![CI](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml/badge.svg)](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-400_passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-340_passing-brightgreen)](#testing)
 [![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](./tsconfig.base.json)
 [![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?logo=openapiinitiative&logoColor=white)](https://api-henry-buena.chuka.io/openapi.json)
 [![First Load JS](https://img.shields.io/badge/first_load_JS-≤230_kB-blue)](#performance)

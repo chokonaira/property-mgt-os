@@ -16,17 +16,17 @@ Hard requirements:
 
 ## Decision
 
-**Pipeline:** PDF → text-extract → token-budget guard → OpenAI structured-output call → Zod parse → server-side span verification → MEA invariant injection → persist `ExtractionRun` → return wire shape.
+**Pipeline:** PDF → text-extract → token-budget guard → AI structured-output call → Zod parse → server-side span verification → MEA invariant injection → persist `ExtractionRun` → return wire shape.
 
-**Model + transport.** `gpt-4o-mini` with `response_format = { type: 'json_schema', strict: true, schema: zodToJsonSchema(ExtractionResultSchema) }`. 15 s timeout enforced via AbortController on top of the SDK timeout. Single retry on parse failure with an error addendum on the user message.
+**Provider abstraction.** `ExtractionService` depends on an `AiExtractionClient` interface (`extract(text) → ExtractionCallResult`). Two implementations ship: `AnthropicService` (default — `claude-haiku-4-5-20251001` via Messages API + forced tool_use for structured output) and `OpenAIService` (legacy fallback — `gpt-4o-mini` via chat.completions + JSON Schema mode). Both share the same prompt fixtures, retry budget (one), and 15 s AbortController timeout. `AI_PROVIDER` env pins the choice; with no override, the runtime prefers Anthropic when `ANTHROPIC_API_KEY` is set.
 
 **PDF parsing.** `unpdf` (modern, maintained) primary, `pdfjs-dist` legacy build as fallback. Rejected `pdf-parse` (unmaintained since 2018, ships a sample PDF in `dist/`, wraps an old pdfjs).
 
 **Source-span verification (post-call).** Every value in `sourceSpansByField` is checked with `indexOf(span)` against the original PDF text. Spans that don't appear verbatim are dropped; the corresponding field's chip flips to "Unverified" (grey) on the UI. Whitespace + soft-hyphens normalised; comparison is case-insensitive.
 
-**Token-budget guard (pre-call).** PDFs over 25 K tokens (BPE-counted via `gpt-tokenizer`) short-circuit with `EXTRACTION_TOO_LARGE` before the OpenAI call. The user sees the banner; we don't pay for the request.
+**Token-budget guard (pre-call).** PDFs over 25 K tokens (BPE-counted via `gpt-tokenizer` — Anthropic and OpenAI tokenisers are close enough at extraction-doc scale that the same heuristic works for either provider) short-circuit with `EXTRACTION_TOO_LARGE` before the LLM call. The user sees the banner; we don't pay for the request.
 
-**Idempotency cache.** Before calling OpenAI, the orchestrator looks up the most recent successful `ExtractionRun` for the same `documentId`. Cache hit returns instantly with `cached: true` and `durationMs: 0` unless `?force=true`. Always-on, survives independent of the rate-limit ticket.
+**Idempotency cache.** Before calling the active provider, the orchestrator looks up the most recent successful `ExtractionRun` for the same `documentId`. Cache hit returns instantly with `cached: true` and `durationMs: 0` unless `?force=true`. Always-on, survives independent of the rate-limit ticket.
 
 **MEA invariant.** Server-side `ensureMeaWarning` recomputes the sum-of-shares vs declared total (0.01 tolerance). If the model didn't already emit a `MEA_MISMATCH` warning, the orchestrator injects one before returning. Same tolerance the wizard's MEA bar uses, so client and server agree.
 
