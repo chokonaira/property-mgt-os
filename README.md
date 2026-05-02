@@ -16,9 +16,11 @@
 
 ## Problem
 
-A property manager holding a 30-page **Teilungserklärung** has to type 60+ rows of units, owners, and shares into a dashboard, and the **MEA** math (shares summing to 1 000) gets verified end-of-day, after the typing is done.
+Onboarding a property in Buena's dashboard means typing the contents of a **Teilungserklärung** — a 30-page notarised declaration of division — into a form. For a typical building that's 60+ unit rows, plus addresses, contacts, MEA shares per unit, and the **MEA** total. It's tedious, easy to mis-key, and the math (every unit's share has to sum to the declared total, usually 1.000) only gets caught at the end.
 
-This submission keeps the manual path bullet-proof and adds an AI assist on top: 3-step wizard (WEG + MV), bulk-entry unit table (keyboard, paste, generate, virtualised past 50 rows), AI extraction with per-field confidence + source-grounded citations + graceful fallback (_AI proposes, the user disposes_), live MEA invariant sticky in the wizard and surfaced as a server-side warning at save time.
+The build attacks this two ways. First, the manual path is fast on its own — a 3-step wizard, a unit table with keyboard nav, paste-from-Excel, range-generate for parking blocks, and virtualisation past 50 rows. Second, an AI extraction step on the General Info screen reads the Teilungserklärung and pre-fills the form with per-field confidence chips, source-grounded citations, and a review surface where every value is editable before it's saved. Either path works on its own; the AI is an accelerator, not a dependency.
+
+The MEA invariant runs everywhere it can fail: live in the wizard footer as the user types or pastes, server-side at save time as a warning when the unit shares don't reconcile against the declared total.
 
 ---
 
