@@ -1,0 +1,13 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "RAILPACK",
+    "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter @buena/shared build && pnpm --filter @buena/api exec prisma generate --schema=../../prisma/schema.prisma && pnpm --filter @buena/api build"
+  },
+  "deploy": {
+    "preDeployCommand": "pnpm --filter @buena/api exec prisma migrate deploy --schema=../../prisma/schema.prisma",
+    "startCommand": "pnpm --filter @buena/api start",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  }
+}
