@@ -126,13 +126,75 @@ ADRs cover the consequential calls: [`stack`](./public/adr-01-stack.md), [`AI ex
 
 ## What's deferred
 
-- **Edit flow for saved properties / buildings / units** — only Create + Delete are wired. The brief calls out the dashboard and the creation flow; editing is a separate surface that would reuse the wizard's RHF + Zod schemas in an edit mode against PATCH endpoints, with field-level diffing and an audit log alongside. ~half-day on top of the existing schemas.
-- **Contact (Property Manager / Accountant) edit + delete** — Create is wired (inline modal in the wizard's combobox); full CRUD belongs on a dedicated `/contacts` page with a "block delete when referenced by N properties" guard.
-- **Auth / multi-tenant** — schema has `tenantId` columns; enforcement is a service-layer flip.
-- **OCR for scanned PDFs** — `tesseract.js` server-side would slot in as a 3rd extraction fallback.
-- **Real S3 storage** — local disk under `./uploads/{tenantId}/`; one swap away from `@aws-sdk/client-s3`.
-- **Versioning / change history** — last-write-wins; an `Audit` table is its own ticket.
-- **AI Assistant chatbot** — tool-calling (`list_properties`, `compute_mea_total`, `find_unit`) + SSE streaming.
-- **Lazy-load TanStack Virtual on units step** — step 3 at 223 kB (engages past 50 rows). Deferring via `next/dynamic` would drop step 3 below ~190 kB; not blocking because we're under the 230 kB cap. (AI Review Panel is already lazy as of this push.)
+Scope cuts, not architectural debt. Each item lists what exists today, what would land in v1.1, and any dependency that orders the work.
 
-Edge-case matrix in [`public/edge-cases.md`](./public/edge-cases.md). Design tokens in [`public/design-system.md`](./public/design-system.md).
+**Auth + multi-tenant enforcement**
+- _Today_: schema carries `tenantId` on every row; demo tenant id is hardcoded in services.
+- _v1.1_: NextAuth or Clerk for login, read tenant id off the session in every controller, drop the constant.
+- _Cost_: ~half-day. No schema change.
+- _Unblocks_: audit log, real per-user rate-limit keys, contact CRUD permission model.
+
+**Edit flow for saved properties / buildings / units**
+- _Today_: Create + Delete are wired. No PATCH; the dashboard view is read-only.
+- _v1.1_: reuse the wizard's RHF + Zod schemas in an "edit" mode against `PATCH /properties/:id`, with per-field diffing.
+- _Cost_: ~half-day on top of the existing schemas.
+- _Notes_: pairs naturally with audit log — every edit becomes a row in the history.
+
+**Contact (Property Manager / Accountant) edit + delete**
+- _Today_: Create is wired via the wizard's inline combobox modal.
+- _v1.1_: dedicated `/contacts` page with full CRUD + a "block delete when referenced by N properties" guard.
+- _Cost_: ~half-day.
+
+**Audit log / change history**
+- _Today_: last-write-wins. No record of who edited what when. `ExtractionRun` is append-only but only covers AI extraction attempts, not user edits.
+- _v1.1_: `AuditLog` table + Prisma middleware that snapshots before/after on every write.
+- _Cost_: ~2 hours for the table + middleware. Half-day extra for a "History" tab on the property detail.
+- _Depends on auth_: without identity, `actorId` is meaningless — every row would say `'demo-user'`.
+
+**S3-backed document storage**
+- _Today_: PDFs land on the API server's local disk at `{UPLOAD_DIR}/{tenantId}/{cuid}.pdf`. Single-instance only; container restart loses uploads if the volume isn't mounted.
+- _v1.1_: inject a `DocumentsStorage` interface; swap `LocalDiskStorage` for an `S3Storage` impl using `@aws-sdk/client-s3`. The existing `storageKey` field is already S3-key shaped.
+- _Cost_: ~half-day. No DB schema change.
+- _Production-blocker_: anything that horizontally scales the API needs this.
+
+**Redis-backed rate-limit + idempotency cache**
+- _Today_: rate-limit bucket is an in-process `Map`. Restart wipes counters; multi-pod = each pod has its own counter (10 pods × 5/min cap = effective 50/min). Idempotency cache reads Postgres so it's already multi-instance safe.
+- _v1.1_: Redis-backed bucket behind the same `RateLimitGuard` interface.
+- _Cost_: ~half-day. No service-call-site change.
+- _Production-blocker_: same as above — horizontal scale.
+
+**OCR for scanned PDFs**
+- _Today_: text extraction is `unpdf` (primary) → `pdfjs-dist` (fallback). Both fail on scanned PDFs (image bitmaps, no text layer).
+- _v1.1_: `tesseract.js` as a 3rd-tier fallback — render each PDF page to PNG, OCR, concatenate the text. Same downstream Claude pipeline; just a new branch in the text-extractor cascade.
+- _Cost_: ~1 day. Slow at runtime (~5–10s per page) so probably needs a job queue + status polling.
+
+**Content-hash dedup on uploads**
+- _Today_: same PDF uploaded twice creates two `Document` rows + two disk writes + two extraction runs.
+- _v1.1_: add `contentSha256 @unique` on `Document`; on upload, hash the bytes first and reuse the existing row when the hash matches. Caches extraction across users + saves storage cost.
+- _Cost_: one migration + ~1 hour of upload-path tweaks.
+
+**Cross-provider runtime fallback**
+- _Today_: provider is pinned by `AI_PROVIDER` env (Anthropic by default, OpenAI optional). One vendor failure = manual env flip.
+- _v1.1_: try primary, on hard error (5xx, quota-exhausted, rate-limit) automatically retry on the secondary. Both already share the `AiExtractionClient` interface so the orchestrator wouldn't change.
+- _Cost_: ~half-day. Adds a circuit-breaker per provider so we don't retry forever.
+
+**OpenTelemetry**
+- _Today_: pino structured logs with `requestId` propagation + redaction. No traces, no metrics export.
+- _v1.1_: `@opentelemetry/sdk-node` + auto-instrumentations (HTTP, Prisma, Nest, fetch) + a manual span around the AI call with `ai.provider` / `ai.tokens.in` / `ai.cache.hit` attributes. OTLP exporter pointing at any backend (Tempo, Honeycomb, Datadog).
+- _Cost_: ~1 day. Most is collector wiring.
+- _Why deferred_: no real users, no traces to look at. Adding instrumentation without a backend to ship to is theatre.
+
+**AI Assistant chatbot**
+- _Today_: not built.
+- _v1.1_: tool-calling (`list_properties`, `compute_mea_total`, `find_unit`) + SSE streaming on the response. Reuses the existing `AiExtractionClient` interface, different system prompt + tools.
+- _Cost_: ~1.5 days for the wedge feature; was traded against polishing the wizard + extraction.
+
+**Lazy-load TanStack Virtual on units step (perf)**
+- _Today_: step 3 first-load JS = 223 kB. Virtualizer is statically imported; ships in the bundle even when the user has &lt;50 units.
+- _v1.1_: wrap the virtualized branch in `next/dynamic({ ssr: false })`. Step 3 drops to ~190 kB.
+- _Cost_: ~30 min.
+- _Why not blocking_: badge cap is 230 kB; step 3 has 7 kB headroom. AI Review Panel was the bigger bundle win and already ships lazy.
+
+---
+
+Edge-case matrix in [`public/edge-cases.md`](./public/edge-cases.md). Design tokens in [`public/design-system.md`](./public/design-system.md). ADRs (Context → Decision → Consequences) in [`public/adr-01..05.md`](./public/) — that's where the trade-offs for decisions we DID make live; this section is what we deliberately didn't build.
