@@ -41,25 +41,40 @@ export function ExtractionLoading({ stage }: ExtractionLoadingProps) {
       aria-live="polite"
       aria-busy="true"
     >
-      <CardContent className="flex flex-col gap-3 py-4">
-        <ol className="flex flex-col gap-2.5">
-          {stages.map((s) => (
-            <li key={s.key} className="flex items-center gap-3">
-              <StageIcon state={s.state} />
-              <span
-                className={cn(
-                  'text-sm font-medium transition-colors',
-                  s.state === 'done' && 'text-muted-foreground',
-                  s.state === 'active' && 'text-foreground',
-                  s.state === 'pending' && 'text-muted-foreground/60',
-                )}
-              >
-                {t(`stages.${s.key}`)}
-              </span>
-            </li>
-          ))}
+      <CardContent className="flex flex-col gap-4 py-5">
+        <ol className="grid grid-cols-3 gap-2">
+          {stages.map((s, i) => {
+            const isLast = i === stages.length - 1;
+            const nextDone = !isLast && stages[i + 1]!.state !== 'pending';
+            return (
+              <li key={s.key} className="relative flex flex-col items-center gap-2">
+                {!isLast ? (
+                  <div
+                    aria-hidden="true"
+                    className={cn(
+                      'absolute left-1/2 top-2.5 h-px w-full transition-colors',
+                      nextDone ? 'bg-primary/40' : 'bg-border',
+                    )}
+                  />
+                ) : null}
+                <div className="relative z-10 bg-card">
+                  <StageIcon state={s.state} />
+                </div>
+                <span
+                  className={cn(
+                    'text-center text-xs font-medium transition-colors sm:text-sm',
+                    s.state === 'done' && 'text-muted-foreground',
+                    s.state === 'active' && 'text-foreground',
+                    s.state === 'pending' && 'text-muted-foreground/60',
+                  )}
+                >
+                  {t(`stages.${s.key}`)}
+                </span>
+              </li>
+            );
+          })}
         </ol>
-        <p className="pl-7 text-xs text-muted-foreground">{t('hint')}</p>
+        <p className="text-center text-xs text-muted-foreground">{t('hint')}</p>
       </CardContent>
     </Card>
   );
