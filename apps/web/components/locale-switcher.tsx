@@ -42,6 +42,7 @@ export function LocaleSwitcher() {
               aria-pressed={isActive}
               aria-label={fullName[code]}
               onClick={() => {
+                document.cookie = `BUENA_LOCALE=${code}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
                 startTransition(() => {
                   router.replace(pathname, { locale: code });
                 });

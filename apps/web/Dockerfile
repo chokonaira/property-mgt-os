@@ -1,8 +1,16 @@
 # Multi-stage Dockerfile for the Next.js web in a pnpm workspace.
 # Build context is the repo root.
 
-FROM node:20-alpine AS base
-RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
+# Debian-based Node image. Matches the api Dockerfile so both
+# images share the same libc / openssl version — keeps Prisma engine
+# resolution consistent across services and avoids the Alpine + libssl
+# parse error that breaks `prisma migrate` on first boot.
+FROM node:20-bookworm-slim AS base
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/* \
+  && corepack enable \
+  && corepack prepare pnpm@9.12.0 --activate
 
 # ------------------------------------------------------------------
 # Dependencies

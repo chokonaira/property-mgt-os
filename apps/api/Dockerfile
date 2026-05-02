@@ -2,8 +2,17 @@
 # Build context is the repo root, not apps/api/, so we can install
 # the workspace once and let the resolver pick the right deps.
 
-FROM node:20-alpine AS base
-RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
+# Debian-based Node image. Prisma's binary engine ships glibc-linked
+# binaries with a libssl dependency; Alpine's musl + older libssl makes
+# the engine emit a non-JSON load error that breaks `prisma migrate`
+# at first run. bookworm-slim has openssl 3.0 + glibc out of the box,
+# so Prisma resolves the right engine binary without extra config.
+FROM node:20-bookworm-slim AS base
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/* \
+  && corepack enable \
+  && corepack prepare pnpm@9.12.0 --activate
 
 # ------------------------------------------------------------------
 # Dependencies — copy only the manifests so this layer caches well.
