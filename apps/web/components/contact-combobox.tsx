@@ -27,7 +27,7 @@ export function ContactCombobox({
   ariaDescribedBy,
 }: ContactComboboxProps) {
   const t = useTranslations('wizard.general.contacts');
-  const { data, isPending, isError } = useContacts(role);
+  const { data, isError } = useContacts(role);
   const [modalOpen, setModalOpen] = useState(false);
 
   function handleCreated(contact: Contact) {

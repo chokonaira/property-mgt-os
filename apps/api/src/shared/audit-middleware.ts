@@ -30,14 +30,6 @@ const AUDIT_MAX_ROWS_PER_TENANT = Number(process.env.AUDIT_MAX_ROWS_PER_TENANT ?
  */
 const AUDIT_PRUNE_PROBABILITY = Number(process.env.AUDIT_PRUNE_PROBABILITY ?? 0.05);
 
-interface PrismaParams {
-  model?: string;
-  action: string;
-  args: { where?: Record<string, unknown> } & Record<string, unknown>;
-}
-
-type Next = (params: PrismaParams) => Promise<unknown>;
-
 /**
  * Pure registration helper — wires the audit hook onto a Prisma client.
  * Capturing the client + context service as parameters keeps this unit-
@@ -121,7 +113,6 @@ export function registerAuditMiddleware(
       }
     } catch (err) {
       // Telemetry must never break the originating write.
-      // eslint-disable-next-line no-console -- intentional fallback log
       console.warn('audit.write_failed', { model, action, entityId, err });
     }
 

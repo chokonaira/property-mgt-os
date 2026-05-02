@@ -1,7 +1,6 @@
 import { Inject, Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { registerAuditMiddleware } from './audit-middleware';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- runtime value: Nest DI reads constructor param metadata
 import { RequestContextService } from './request-context.service';
 
 @Injectable()

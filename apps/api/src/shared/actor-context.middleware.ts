@@ -1,6 +1,5 @@
 import { Inject, Injectable, type NestMiddleware } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- runtime value: Nest DI reads constructor param metadata
 import { RequestContextService } from './request-context.service';
 
 /**
