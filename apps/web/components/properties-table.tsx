@@ -101,7 +101,7 @@ function PropertyRow({ property }: { property: PropertyListItem }) {
           </span>
         </TableCell>
         <TableCell>
-          <Badge variant={property.managementType === 'WEG' ? 'weg' : 'mv'}>
+          <Badge variant={property.managementType === 'WEG' ? 'weg' : 'mv'} translate="no">
             {property.managementType}
           </Badge>
         </TableCell>
@@ -123,7 +123,7 @@ function PropertyRow({ property }: { property: PropertyListItem }) {
         </Link>
       </TableCell>
       <TableCell>
-        <Badge variant={property.managementType === 'WEG' ? 'weg' : 'mv'}>
+        <Badge variant={property.managementType === 'WEG' ? 'weg' : 'mv'} translate="no">
           {property.managementType}
         </Badge>
       </TableCell>

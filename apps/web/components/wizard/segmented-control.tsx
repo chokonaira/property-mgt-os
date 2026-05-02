@@ -64,7 +64,7 @@ export function SegmentedControl<T extends string>({
               onChange={() => onChange(option.value)}
               className="sr-only"
             />
-            <span className="text-sm font-semibold">{option.label}</span>
+            <span className="text-sm font-semibold" translate="no">{option.label}</span>
             {option.description ? (
               <span className="text-xs text-muted-foreground">{option.description}</span>
             ) : null}

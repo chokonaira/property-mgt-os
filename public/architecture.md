@@ -111,6 +111,23 @@ model Tenant {
   createdAt   DateTime   @default(now())
   properties  Property[]
   contacts    Contact[]
+  users       User[]
+  auditLogs   AuditLog[]
+}
+
+// Identity surface — pre-auth shim. Today one demo row is seeded;
+// when NextAuth/Clerk lands, real rows replace the seed and
+// AuditLog.actorId keeps pointing at this table without any
+// data-model change.
+model User {
+  id         String     @id @default(cuid())
+  tenantId   String
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  name       String
+  email      String     @unique
+  createdAt  DateTime   @default(now())
+  auditLogs  AuditLog[]
+  @@index([tenantId])
 }
 
 model Property {
@@ -250,6 +267,30 @@ model ExtractionRun {
   error         String?
   createdAt     DateTime @default(now())
 }
+
+// Append-only change log. Prisma middleware writes one row per
+// auditable mutation (create / update / delete / upsert) on
+// Property / Building / Unit / Contact, capturing the actor + tenant
+// + before / after JSON snapshots. Read-side: GET /properties/:id/history
+// (paginated, newest first) backs the property-detail "Last modified"
+// pill + timeline dialog. Per-tenant retention cap (default 5,000,
+// env override) with probabilistic prune keeps the table bounded.
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  actorId    String
+  actor      User     @relation(fields: [actorId], references: [id])
+  entity     String   // 'Property' | 'Building' | 'Unit' | 'Contact'
+  entityId   String
+  action     String   // 'create' | 'update' | 'delete' | 'upsert'
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+  @@index([tenantId, entity, entityId, createdAt])
+  @@index([tenantId, createdAt])
+  @@index([actorId, createdAt])
+}
 ```
 
 ### Invariants enforced at the database
@@ -262,6 +303,7 @@ model ExtractionRun {
 ### Invariant enforced at the application layer
 
 - **MEA invariant warning** — for WEG properties, the sum of unit shares is compared to the property's declared total. A mismatch is surfaced as a non-blocking warning in API responses and live in the UI. Not a hard block, because real-world declarations sometimes don't reconcile cleanly and we'd rather flag than reject.
+- **Audit log middleware** — Prisma `$use` hook captures before / after snapshots on every Property / Building / Unit / Contact write and persists an `AuditLog` row. Actor + tenant come from an `AsyncLocalStorage`-backed `RequestContextService` seeded by an HTTP middleware (env constants today, `req.session` post-auth). Audit failures never block the originating write — telemetry, not transactional. Per-tenant retention cap (default 5,000, env override) with a probabilistic prune sweep keeps the table bounded without paying the cost on every write.
 
 ---
 
@@ -338,6 +380,7 @@ REST, NestJS. Each endpoint validated with Zod via a global `ZodValidationPipe`.
 GET    /properties                      list (dashboard pagination)
 POST   /properties                      atomic create (property + buildings + units, single transaction)
 GET    /properties/:id                  full detail
+GET    /properties/:id/history          audit timeline (paginated, newest first; covers the property + every building + every unit underneath)
 PATCH  /properties/:id                  partial update
 DELETE /properties/:id                  cascade delete
 

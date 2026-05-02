@@ -42,7 +42,7 @@ export function ContactCombobox({
         onChange={(e) => onChange(e.target.value || undefined)}
         aria-invalid={ariaInvalid || undefined}
         aria-describedby={ariaDescribedBy}
-        disabled={isPending || isError}
+        disabled={isError}
         className={cn(
           'flex h-10 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
@@ -50,9 +50,7 @@ export function ContactCombobox({
           'aria-[invalid=true]:border-destructive aria-[invalid=true]:focus-visible:ring-destructive',
         )}
       >
-        <option value="">
-          {isPending ? t('loading') : isError ? t('error') : t('placeholder')}
-        </option>
+        <option value="">{isError ? t('error') : t('placeholder')}</option>
         {data?.items.map((contact: Contact) => (
           <option key={contact.id} value={contact.id}>
             {contact.name}

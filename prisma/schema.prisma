@@ -41,6 +41,47 @@ model Tenant {
   properties Property[]
   contacts   Contact[]
   documents  Document[]
+  users      User[]
+  auditLogs  AuditLog[]
+}
+
+// Identity surface — pre-auth shim so the audit log can record a real
+// actor on every write. One demo user is seeded today; when auth lands
+// (NextAuth/Clerk), real rows replace the seed and `actorId` keeps
+// pointing at this table without any data-model change.
+model User {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  auditLogs AuditLog[]
+
+  @@index([tenantId])
+}
+
+// Append-only change log. Every Property / Building / Unit / Contact
+// write captures the actor + tenant + entity + action + before/after
+// snapshots via Prisma middleware. Read-only at the API surface today;
+// a "History" tab on the property detail page is queued for v1.1.
+model AuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  actorId   String
+  actor     User     @relation(fields: [actorId], references: [id])
+  entity    String
+  entityId  String
+  action    String
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, entity, entityId, createdAt])
+  @@index([tenantId, createdAt])
+  @@index([actorId, createdAt])
 }
 
 model Property {

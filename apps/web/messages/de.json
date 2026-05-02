@@ -304,6 +304,39 @@
       "mismatch": "Die Summe weicht um {delta} vom deklarierten Gesamtwert ab."
     }
   },
+  "history": {
+    "viewHistory": "Änderungsverlauf anzeigen",
+    "loading": "Verlauf wird geladen…",
+    "noHistory": "Noch keine Änderungen",
+    "lastModified": "Zuletzt bearbeitet von {actor} · {when}",
+    "title": "Änderungsverlauf",
+    "description": "{total, plural, =0 {Noch keine Änderungen erfasst.} one {# Änderung} other {# Änderungen}} an dieser Immobilie und ihren Gebäuden + Einheiten.",
+    "loadMore": "{remaining, plural, one {# weiteren Eintrag} other {# weitere Einträge}} laden",
+    "viewAll": "Alle {total, plural, one {# Änderung} other {# Änderungen}} ansehen",
+    "error": "Verlauf konnte nicht geladen werden. Bitte erneut versuchen.",
+    "empty": "Für diese Immobilie wurden noch keine Änderungen erfasst.",
+    "showSnapshot": "Vollständigen Snapshot anzeigen",
+    "hideSnapshot": "Snapshot ausblenden",
+    "before": "Vorher",
+    "after": "Nachher",
+    "justNow": "gerade eben",
+    "secondsAgo": "{count, plural, one {vor # Sekunde} other {vor # Sekunden}}",
+    "minutesAgo": "{count, plural, one {vor # Min.} other {vor # Min.}}",
+    "hoursAgo": "{count, plural, one {vor # Stunde} other {vor # Stunden}}",
+    "daysAgo": "{count, plural, one {vor # Tag} other {vor # Tagen}}",
+    "actions": {
+      "create": "erstellt",
+      "update": "bearbeitet",
+      "delete": "gelöscht",
+      "upsert": "geschrieben"
+    },
+    "entities": {
+      "Property": "Immobilie",
+      "Building": "Gebäude",
+      "Unit": "Einheit",
+      "Contact": "Kontakt"
+    }
+  },
   "extraction": {
     "panel": {
       "header": "Wir haben Ihr Dokument gelesen.",

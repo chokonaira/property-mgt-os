@@ -1,6 +1,7 @@
 import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthController } from './health/health.controller';
+import { AuditModule } from './modules/audit/audit.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { ExtractionModule } from './modules/extraction/extraction.module';
@@ -10,6 +11,7 @@ import { PrismaModule } from './shared/prisma.module';
 import { RATE_LIMIT_BUCKET, rateLimitBucket } from './shared/rate-limit';
 import { RateLimitGuard } from './shared/rate-limit.guard';
 import { requestIdMiddleware } from './shared/request-id.middleware';
+import { ActorContextMiddleware } from './shared/actor-context.middleware';
 
 @Module({
   imports: [
@@ -43,6 +45,7 @@ import { requestIdMiddleware } from './shared/request-id.middleware';
     }),
     PrismaModule,
     PropertiesModule,
+    AuditModule,
     ContactsModule,
     DocumentsModule,
     ExtractionModule,
@@ -54,6 +57,10 @@ import { requestIdMiddleware } from './shared/request-id.middleware';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(requestIdMiddleware).forRoutes('*');
+    // Order matters: requestId first so the actor-context middleware
+    // can log under the same id; ActorContext wraps every downstream
+    // handler in the AsyncLocalStorage scope so Prisma audit middleware
+    // can read actor + tenant on every write.
+    consumer.apply(requestIdMiddleware, ActorContextMiddleware).forRoutes('*');
   }
 }

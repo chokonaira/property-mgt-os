@@ -27,7 +27,7 @@ export function GeneralInfo({ property }: GeneralInfoProps) {
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
         <CardTitle>{t('title')}</CardTitle>
-        <Badge variant={property.managementType === 'WEG' ? 'weg' : 'mv'}>
+        <Badge variant={property.managementType === 'WEG' ? 'weg' : 'mv'} translate="no">
           {property.managementType}
         </Badge>
       </CardHeader>

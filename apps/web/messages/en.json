@@ -304,6 +304,39 @@
       "mismatch": "Sum differs from declared total by {delta}."
     }
   },
+  "history": {
+    "viewHistory": "View change history",
+    "loading": "Loading history…",
+    "noHistory": "No edits yet",
+    "lastModified": "Last modified by {actor} · {when}",
+    "title": "Change history",
+    "description": "{total, plural, =0 {No changes recorded yet.} one {# change} other {# changes}} across this property and its buildings + units.",
+    "loadMore": "Load {remaining, plural, one {# more entry} other {# more entries}}",
+    "viewAll": "View all {total, plural, one {# change} other {# changes}}",
+    "error": "Couldn't load history. Try again in a moment.",
+    "empty": "No changes recorded yet for this property.",
+    "showSnapshot": "Show full snapshot",
+    "hideSnapshot": "Hide snapshot",
+    "before": "Before",
+    "after": "After",
+    "justNow": "just now",
+    "secondsAgo": "{count, plural, one {# second ago} other {# seconds ago}}",
+    "minutesAgo": "{count, plural, one {# min ago} other {# min ago}}",
+    "hoursAgo": "{count, plural, one {# hour ago} other {# hours ago}}",
+    "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
+    "actions": {
+      "create": "created",
+      "update": "edited",
+      "delete": "deleted",
+      "upsert": "upserted"
+    },
+    "entities": {
+      "Property": "Property",
+      "Building": "Building",
+      "Unit": "Unit",
+      "Contact": "Contact"
+    }
+  },
   "extraction": {
     "panel": {
       "header": "We read your document.",

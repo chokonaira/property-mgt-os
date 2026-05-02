@@ -42,4 +42,4 @@ The wizard's TypeCell snapshots variant siblings on focus and restores them on E
 
 **Negative.** OG.qualifier had to be added retroactively when extraction returned `{ kind: 'OG', level: 2, qualifier: 'links' }` — the wizard schema initially rejected the qualifier and the value was silently lost on accept. Now wizard schema, extraction schema, and the formatter all agree.
 
-**Neutral.** No `Audit` table yet — last-write-wins. Versioning + diff view is its own ticket.
+**Neutral.** `AuditLog` + `User` tables shipped. Prisma middleware snapshots before/after on every Property / Building / Unit / Contact write; the property-detail header surfaces a "Last modified by X · n min ago" pill with hover-preview + full timeline. Per-tenant retention cap (default 5,000) with probabilistic prune keeps the table bounded. Pre-auth shim wires `actorId` to a seeded `demo-user`; the swap to NextAuth/Clerk is one diff in `ActorContextMiddleware`.

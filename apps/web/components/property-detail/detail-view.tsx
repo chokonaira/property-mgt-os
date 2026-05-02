@@ -14,6 +14,7 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { GeneralInfo } from './general-info';
 import { BuildingsSection } from './buildings-section';
 import { UnitsSection } from './units-section';
+import { LastModifiedPill } from '@/components/audit/last-modified-pill';
 
 interface DetailViewProps {
   id: string;
@@ -99,6 +100,9 @@ export function PropertyDetailView({ id }: DetailViewProps) {
               {property.name}
             </h1>
             <p className="font-mono text-[11px] text-muted-foreground">{property.uniqueNumber}</p>
+            <div className="mt-1">
+              <LastModifiedPill propertyId={property.id} />
+            </div>
           </div>
           <Button
             variant="outline"

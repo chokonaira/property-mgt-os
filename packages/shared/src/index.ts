@@ -10,3 +10,4 @@ export * from './property-create';
 export * from './property-detail';
 export * from './property-list';
 export * from './extraction';
+export * from './audit-log';

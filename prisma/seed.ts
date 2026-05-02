@@ -9,6 +9,20 @@ async function main(): Promise<void> {
     create: { id: 'demo', name: 'Demo Tenant' },
   });
 
+  // Pre-auth identity shim. The audit-log middleware needs a real
+  // User row to FK against; seeding `demo-user` now means the swap
+  // to NextAuth/Clerk is a controller change, not a schema change.
+  await prisma.user.upsert({
+    where: { id: 'demo-user' },
+    update: {},
+    create: {
+      id: 'demo-user',
+      tenantId: tenant.id,
+      name: 'Demo User',
+      email: 'demo@example.com',
+    },
+  });
+
   await prisma.property.deleteMany({
     where: { tenantId: tenant.id, uniqueNumber: '10-557-PRB' },
   });
