@@ -46,7 +46,16 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body className="min-h-screen bg-background font-sans text-foreground antialiased">
+      {/* `suppressHydrationWarning` on body neutralises attributes that
+          browser extensions (Grammarly, Honey, password managers) inject
+          on `<body>` before React hydrates. Without it, the React
+          dev-overlay throws a hydration error pointing at the extension's
+          own data-* attrs even though our markup is fine. Suppression
+          here is scoped to body's own attribute list, not its children. */}
+      <body
+        className="min-h-screen bg-background font-sans text-foreground antialiased"
+        suppressHydrationWarning
+      >
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>
