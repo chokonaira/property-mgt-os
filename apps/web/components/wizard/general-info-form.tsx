@@ -46,7 +46,7 @@ export function GeneralInfoForm() {
   const {
     control,
     register,
-    formState: { errors },
+    formState: { errors, touchedFields, isSubmitted },
     watch,
     trigger,
     reset: resetForm,
@@ -102,10 +102,26 @@ export function GeneralInfoForm() {
   }, [managementType, uniqueNumber, probeOk, trigger, setStepValid]);
 
   const generalErrors = errors.general;
-  const nameError = generalErrors?.name?.message;
-  const uniqueError = generalErrors?.uniqueNumber?.message;
-  const managerError = generalErrors?.propertyManagerId?.message;
-  const accountantError = generalErrors?.accountantId?.message;
+  // Only surface schema errors after the user has interacted with
+  // the field (or hit Save). The wizard runs `trigger()` continuously
+  // to feed the validity gate, so error.message is populated from
+  // first render — without this gate the user sees red flags on a
+  // blank form they haven't touched.
+  const generalTouched = touchedFields.general;
+  const fieldErrorVisible = (touched: boolean | undefined): boolean =>
+    Boolean(touched) || isSubmitted;
+  const nameError = fieldErrorVisible(generalTouched?.name)
+    ? generalErrors?.name?.message
+    : undefined;
+  const uniqueError = fieldErrorVisible(generalTouched?.uniqueNumber)
+    ? generalErrors?.uniqueNumber?.message
+    : undefined;
+  const managerError = fieldErrorVisible(generalTouched?.propertyManagerId)
+    ? generalErrors?.propertyManagerId?.message
+    : undefined;
+  const accountantError = fieldErrorVisible(generalTouched?.accountantId)
+    ? generalErrors?.accountantId?.message
+    : undefined;
   const probeErrorMessage = isUnavailable
     ? tErrors('uniqueTaken')
     : isProbeError
@@ -261,6 +277,7 @@ export function GeneralInfoForm() {
         label={t('managementType.label')}
         htmlFor={ids.managementType}
         description={t('managementType.help')}
+        required
         adornment={<FieldChip path="property.managementType" fieldLabel={t('managementType.label')} />}
       >
         <Controller
@@ -285,6 +302,7 @@ export function GeneralInfoForm() {
         label={t('name.label')}
         htmlFor={ids.name}
         error={nameError}
+        required
         adornment={<FieldChip path="property.name" fieldLabel={t('name.label')} />}
       >
         <Input
@@ -304,6 +322,7 @@ export function GeneralInfoForm() {
         label={t('uniqueNumber.label')}
         htmlFor={ids.uniqueNumber}
         description={t('uniqueNumber.help')}
+        required
         adornment={<FieldChip path="property.uniqueNumber" fieldLabel={t('uniqueNumber.label')} />}
         error={uniqueError ?? probeErrorMessage}
         hint={
@@ -453,16 +472,21 @@ interface FieldProps {
   hint?: React.ReactNode;
   /** Optional inline affordance rendered next to the label (e.g. an AI provenance chip). */
   adornment?: React.ReactNode;
+  /** Marks the field with an asterisk for sighted users + the standard `required` semantic. */
+  required?: boolean;
   children: React.ReactNode;
 }
 
-function Field({ label, htmlFor, description, error, hint, adornment, children }: FieldProps) {
+function Field({ label, htmlFor, description, error, hint, adornment, required, children }: FieldProps) {
   const errorId = error ? `${htmlFor}-error` : undefined;
   const hintId = !error && hint ? `${htmlFor}-hint` : undefined;
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-2">
-        <Label htmlFor={htmlFor}>{label}</Label>
+        <Label htmlFor={htmlFor}>
+          {label}
+          {required ? <span className="ml-0.5 text-destructive">*</span> : null}
+        </Label>
         {adornment}
       </div>
       {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}

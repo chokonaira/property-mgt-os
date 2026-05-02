@@ -9,6 +9,7 @@ import { useRouter, usePathname } from '@/i18n/navigation';
 import { ApiError } from '@/lib/api-client';
 import { useCreateProperty } from '@/lib/hooks/use-create-property';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog, useConfirm } from '@/components/confirm-dialog';
 import { LastSavedIndicator } from './last-saved-indicator';
 import { StepIndicator } from './step-indicator';
 import { WIZARD_STEPS, nextStep, pathForStep, previousStep, stepFromPath } from './steps';
@@ -40,6 +41,8 @@ export function WizardChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const currentStep = stepFromPath(pathname);
   const { validity, validateStep, reset, hydrated, lastSavedAt } = useWizard();
+  const { confirm, dialogProps } = useConfirm();
+  const tCommon = useTranslations('common');
   const { setError, getValues, trigger } = useFormContext<WizardDraftInput, unknown, WizardDraft>();
   const [isPending, startTransition] = useTransition();
   const createProperty = useCreateProperty();
@@ -70,8 +73,15 @@ export function WizardChrome({ children }: { children: ReactNode }) {
     startTransition(() => router.push(pathForStep(back)));
   }
 
-  function handleDiscard() {
-    if (!window.confirm(t('discardConfirm'))) return;
+  async function handleDiscard() {
+    const ok = await confirm({
+      title: t('discard'),
+      description: t('discardConfirm'),
+      confirmLabel: t('discard'),
+      cancelLabel: tCommon('cancel'),
+      variant: 'destructive',
+    });
+    if (!ok) return;
     reset();
     startTransition(() => router.push('/'));
   }
@@ -160,16 +170,19 @@ export function WizardChrome({ children }: { children: ReactNode }) {
           </h1>
           <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleDiscard}
-          disabled={saving}
-          className="self-start text-muted-foreground hover:text-destructive"
-        >
-          <Trash2 className="h-4 w-4" aria-hidden="true" />
-          {t('discard')}
-        </Button>
+        <div className="flex flex-col items-stretch gap-2 sm:items-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDiscard}
+            disabled={saving}
+            className="self-start text-muted-foreground hover:text-destructive sm:self-end"
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            {t('discard')}
+          </Button>
+          <LastSavedIndicator lastSavedAt={lastSavedAt} />
+        </div>
       </header>
       <StepIndicator currentStep={currentStep} />
       <section
@@ -189,9 +202,6 @@ export function WizardChrome({ children }: { children: ReactNode }) {
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           {t('back')}
         </Button>
-        <div className="flex flex-1 items-center justify-center sm:flex-1">
-          <LastSavedIndicator lastSavedAt={lastSavedAt} />
-        </div>
         <Button
           onClick={isLastStep ? handleSave : handleNext}
           disabled={advanceDisabled}
@@ -202,6 +212,7 @@ export function WizardChrome({ children }: { children: ReactNode }) {
           {isLastStep ? <span>{advanceLabel}</span> : null}
         </Button>
       </footer>
+      <ConfirmDialog {...dialogProps} />
     </main>
   );
 }

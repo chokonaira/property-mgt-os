@@ -8,9 +8,15 @@ import { locales, routing, type Locale } from '@/i18n/routing';
 import '../globals.css';
 
 export const metadata: Metadata = {
-  title: 'Buena — Property OS',
+  title: 'Property OS — A Buena Case Study',
   description:
     'Property dashboard with guided creation flow + AI-powered Teilungserklärung extraction.',
+  icons: {
+    // Next App Router auto-discovers `app/icon.svg`; the explicit
+    // declaration here keeps the manifest predictable and lets the
+    // PNG variant slot in later for older browsers.
+    icon: '/icon.svg',
+  },
 };
 
 export const viewport: Viewport = {

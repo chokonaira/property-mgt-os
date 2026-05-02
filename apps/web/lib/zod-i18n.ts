@@ -25,6 +25,13 @@ export function zodI18nResolver(t: Translator): ZodErrorMap {
         return { message: t('zod.invalid_string') };
       }
       case z.ZodIssueCode.too_small:
+        // Required-field semantics: a string with `.min(1)` reads
+        // better as "This field is required" than as
+        // "Must be at least 1 characters". The min(>= 2) cases keep
+        // the explicit-count message.
+        if (issue.type === 'string' && issue.minimum === 1) {
+          return { message: t('zod.required') };
+        }
         return {
           message: t(issue.type === 'string' ? 'zod.too_small_string' : 'zod.too_small_number', {
             minimum: String(issue.minimum),

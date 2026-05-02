@@ -34,10 +34,10 @@
     "discardConfirm": "Discard this draft? Any entered data will be lost.",
     "save": "Save property",
     "autoSave": {
-      "justSaved": "Just saved",
-      "secondsAgo": "{count, plural, one {Saved # second ago} other {Saved # seconds ago}}",
-      "minutesAgo": "{count, plural, one {Saved # minute ago} other {Saved # minutes ago}}",
-      "hoursAgo": "{count, plural, one {Saved # hour ago} other {Saved # hours ago}}"
+      "justSaved": "Draft saved just now",
+      "secondsAgo": "{count, plural, one {Draft saved # second ago} other {Draft saved # seconds ago}}",
+      "minutesAgo": "{count, plural, one {Draft saved # minute ago} other {Draft saved # minutes ago}}",
+      "hoursAgo": "{count, plural, one {Draft saved # hour ago} other {Draft saved # hours ago}}"
     },
     "toasts": {
       "success": "Property saved.",
