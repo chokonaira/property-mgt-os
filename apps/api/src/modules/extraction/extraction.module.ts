@@ -41,18 +41,6 @@ const moduleLogger = new Logger('ExtractionModule');
  * boundary, where ExtractionService persists a failed run row.
  */
 function buildAiExtractionClient(): AiExtractionClient {
-  // gpt-4o-mini's structured-output JSON Schema dialect is also valid
-  // input for Anthropic's tool input_schema (both consume vanilla
-  // JSON Schema 2020-12), so we generate it once and reuse for either
-  // provider.
-  const responseSchema = zodToJsonSchema(
-    ExtractionResultSchema as unknown as Parameters<typeof zodToJsonSchema>[0],
-    {
-      target: 'openAi',
-      name: 'ExtractionResult',
-    },
-  );
-
   const provider = resolveProvider();
   if (provider === 'anthropic') {
     moduleLogger.log({ provider: 'anthropic' }, 'extraction.provider_selected');
@@ -62,6 +50,14 @@ function buildAiExtractionClient(): AiExtractionClient {
     const client = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY ?? 'placeholder',
     });
+    // Anthropic's tool input_schema consumes vanilla JSON Schema
+    // 2020-12, NOT the OpenAI-tuned dialect (which strips $defs and
+    // adds oneOf restrictions). Generate without the openAi target so
+    // the provider doesn't reject the tool definition with a 400.
+    const responseSchema = zodToJsonSchema(
+      ExtractionResultSchema as unknown as Parameters<typeof zodToJsonSchema>[0],
+      { name: 'ExtractionResult' },
+    );
     return new AnthropicService(client as unknown as AnthropicMessagesClient, {
       model: process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001',
       timeoutMs: Number(process.env.ANTHROPIC_TIMEOUT_MS ?? 15_000),
@@ -74,6 +70,16 @@ function buildAiExtractionClient(): AiExtractionClient {
   if (!process.env.OPENAI_API_KEY) {
     moduleLogger.warn('OPENAI_API_KEY missing — extraction calls will 401 at the API boundary.');
   }
+  // OpenAI's structured-output mode wants the openAi-tuned dialect of
+  // zod-to-json-schema (no $defs, oneOf restrictions). Generate per
+  // provider so each gets the dialect it actually accepts.
+  const responseSchema = zodToJsonSchema(
+    ExtractionResultSchema as unknown as Parameters<typeof zodToJsonSchema>[0],
+    {
+      target: 'openAi',
+      name: 'ExtractionResult',
+    },
+  );
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY ?? 'placeholder' });
   return new OpenAIService(client as unknown as OpenAIChatClient, {
     model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',

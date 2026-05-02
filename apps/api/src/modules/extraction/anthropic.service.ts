@@ -159,7 +159,30 @@ export class AnthropicService implements AiExtractionClient {
           error,
         );
       }
-      throw error;
+      // Wrap raw SDK errors so the controller can map them to a
+      // typed AppException. Without this, a 401 / 400 / 429 from
+      // Anthropic bubbles up unwrapped → INTERNAL 500 → the client
+      // sees a misleading "Something went wrong on our side" message.
+      // Log with status + provider error type so Railway logs name
+      // the actual cause.
+      const apiStatus = readApiStatus(error);
+      const apiCode = readApiCode(error);
+      const apiMessage = readApiMessage(error);
+      this.logger.error(
+        {
+          model: this.config.model,
+          apiStatus,
+          apiCode,
+          apiMessage,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        'extraction.anthropic_call_failed',
+      );
+      throw new ExtractionError(
+        mapAnthropicStatusToReason(apiStatus),
+        anthropicMessageFor(apiStatus, apiMessage),
+        { apiStatus, apiCode, apiMessage },
+      );
     } finally {
       clearTimeout(timeout);
     }
@@ -178,4 +201,55 @@ export class AnthropicService implements AiExtractionClient {
       model: this.config.model,
     };
   }
+}
+
+/**
+ * Anthropic.APIError shape (mirrored from @anthropic-ai/sdk's runtime
+ * — we keep it as a structural read because importing the SDK's class
+ * for an instanceof check would couple our test stubs to the real
+ * package).
+ */
+function readApiStatus(error: unknown): number | undefined {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const status = (error as { status?: unknown }).status;
+  return typeof status === 'number' ? status : undefined;
+}
+
+function readApiCode(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const inner = (error as { error?: { error?: { type?: unknown } } }).error?.error?.type;
+  return typeof inner === 'string' ? inner : undefined;
+}
+
+function readApiMessage(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const inner = (error as { error?: { error?: { message?: unknown } } }).error?.error?.message;
+  if (typeof inner === 'string') return inner;
+  const top = (error as { message?: unknown }).message;
+  return typeof top === 'string' ? top : undefined;
+}
+
+function mapAnthropicStatusToReason(status: number | undefined) {
+  // 4xx → cannot_read_pdf is wrong; reuse parse_failed since the
+  // model never produced a parseable result. Auth + invalid_request
+  // both surface as parse_failed at the orchestration layer; the
+  // controller already maps parse_failed → 502 EXTRACTION_PARSE_FAILED
+  // which the UI banner renders cleanly. Detail (apiStatus + apiCode)
+  // travels in the cause for log triage.
+  if (status === 429) return 'parse_failed' as const;
+  if (status && status >= 500) return 'parse_failed' as const;
+  return 'parse_failed' as const;
+}
+
+function anthropicMessageFor(
+  status: number | undefined,
+  apiMessage: string | undefined,
+): string {
+  if (status === 401) return 'Anthropic API key rejected (401). Check ANTHROPIC_API_KEY.';
+  if (status === 400) return `Anthropic rejected the request (400). ${apiMessage ?? ''}`.trim();
+  if (status === 429) return 'Anthropic rate limit hit (429). Retry shortly.';
+  if (status && status >= 500) {
+    return `Anthropic upstream error (${status}). ${apiMessage ?? ''}`.trim();
+  }
+  return apiMessage ?? 'Anthropic call failed.';
 }
