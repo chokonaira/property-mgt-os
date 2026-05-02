@@ -81,7 +81,10 @@ describe('OpenAIService.extract', () => {
     await expect(svc.extract('document text')).rejects.toMatchObject({ reason: 'timeout' });
   });
 
-  it('passes the live document AFTER the few-shot anchor on the first call', async () => {
+  it('passes the live document AFTER the few-shot anchor wrapped in <document> tags', async () => {
+    // Wrapping isolates untrusted text from trusted instructions so an
+    // attacker can't redirect the model with payloads embedded in the
+    // PDF. The system prompt's security clause references this tag.
     const { client, create } = makeClient(async () => ({
       content: JSON.stringify(VALID_RESULT),
     }));
@@ -91,9 +94,93 @@ describe('OpenAIService.extract', () => {
       messages: Array<{ role: string; content: string }>;
     };
     expect(firstCall.messages[0]?.role).toBe('system');
-    expect(firstCall.messages[1]?.role).toBe('user'); // few-shot user
+    expect(firstCall.messages[1]?.role).toBe('user'); // few-shot user (also wrapped)
     expect(firstCall.messages[2]?.role).toBe('assistant'); // few-shot assistant
     expect(firstCall.messages[3]?.role).toBe('user');
-    expect(firstCall.messages[3]?.content).toBe('LIVE DOCUMENT TEXT');
+    expect(firstCall.messages[3]?.content).toContain('<document>');
+    expect(firstCall.messages[3]?.content).toContain('LIVE DOCUMENT TEXT');
+    expect(firstCall.messages[3]?.content).toContain('</document>');
+  });
+
+  it('wraps an OpenAI 401 as ExtractionError(parse_failed) with auth-specific message', async () => {
+    const client = {
+      chat: {
+        completions: {
+          create: vi.fn(async () => {
+            throw Object.assign(new Error('Unauthorized'), {
+              status: 401,
+              error: { code: 'invalid_api_key', message: 'Invalid API key' },
+            });
+          }),
+        },
+      },
+    } as unknown as OpenAIChatClient;
+    const svc = new OpenAIService(client, baseConfig);
+    await expect(svc.extract('doc')).rejects.toMatchObject({
+      reason: 'parse_failed',
+      message: expect.stringContaining('OPENAI_API_KEY'),
+    });
+  });
+
+  it('wraps OpenAI insufficient_quota as ExtractionError with a quota-specific message', async () => {
+    const client = {
+      chat: {
+        completions: {
+          create: vi.fn(async () => {
+            throw Object.assign(new Error('quota'), {
+              status: 429,
+              code: 'insufficient_quota',
+              error: { message: 'You exceeded your current quota.' },
+            });
+          }),
+        },
+      },
+    } as unknown as OpenAIChatClient;
+    const svc = new OpenAIService(client, baseConfig);
+    await expect(svc.extract('doc')).rejects.toBeInstanceOf(ExtractionError);
+    await expect(svc.extract('doc')).rejects.toMatchObject({
+      reason: 'parse_failed',
+      message: expect.stringMatching(/quota/i),
+    });
+  });
+
+  it('wraps an OpenAI 429 (no insufficient_quota code) as a rate-limit message', async () => {
+    const client = {
+      chat: {
+        completions: {
+          create: vi.fn(async () => {
+            throw Object.assign(new Error('rate'), {
+              status: 429,
+              error: { message: 'Rate limit reached' },
+            });
+          }),
+        },
+      },
+    } as unknown as OpenAIChatClient;
+    const svc = new OpenAIService(client, baseConfig);
+    await expect(svc.extract('doc')).rejects.toMatchObject({
+      reason: 'parse_failed',
+      message: expect.stringMatching(/rate limit/i),
+    });
+  });
+
+  it('wraps an OpenAI 5xx with the upstream message', async () => {
+    const client = {
+      chat: {
+        completions: {
+          create: vi.fn(async () => {
+            throw Object.assign(new Error('boom'), {
+              status: 503,
+              error: { message: 'temporary upstream error' },
+            });
+          }),
+        },
+      },
+    } as unknown as OpenAIChatClient;
+    const svc = new OpenAIService(client, baseConfig);
+    await expect(svc.extract('doc')).rejects.toMatchObject({
+      reason: 'parse_failed',
+      message: expect.stringContaining('503'),
+    });
   });
 });

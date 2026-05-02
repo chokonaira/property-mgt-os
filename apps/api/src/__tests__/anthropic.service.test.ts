@@ -98,7 +98,7 @@ describe('AnthropicService.extract', () => {
     await expect(svc.extract('document text')).rejects.toMatchObject({ reason: 'timeout' });
   });
 
-  it('forwards the document AFTER the few-shot anchor and forces the tool', async () => {
+  it('forwards the document AFTER the few-shot anchor wrapped in <document> tags and forces the tool', async () => {
     const { client, create } = makeClient(async () => VALID_RESULT);
     const svc = new AnthropicService(client, baseConfig);
     await svc.extract('LIVE DOCUMENT TEXT');
@@ -112,9 +112,13 @@ describe('AnthropicService.extract', () => {
     // so the few-shot order is user → assistant → user (3 messages).
     expect(firstCall.system.length).toBeGreaterThan(0);
     expect(firstCall.messages.length).toBe(3);
-    expect(firstCall.messages[0]?.role).toBe('user'); // few-shot user
+    expect(firstCall.messages[0]?.role).toBe('user'); // few-shot user (also wrapped)
     expect(firstCall.messages[1]?.role).toBe('assistant'); // few-shot assistant
-    expect(firstCall.messages[2]?.content).toBe('LIVE DOCUMENT TEXT');
+    // Live document text is wrapped in <document> tags so prompt-
+    // injection payloads in the PDF can't pose as instructions.
+    expect(firstCall.messages[2]?.content).toContain('<document>');
+    expect(firstCall.messages[2]?.content).toContain('LIVE DOCUMENT TEXT');
+    expect(firstCall.messages[2]?.content).toContain('</document>');
     expect(firstCall.tool_choice).toEqual({
       type: 'tool',
       name: 'submit_extraction_result',

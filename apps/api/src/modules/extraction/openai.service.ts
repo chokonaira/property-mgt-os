@@ -80,9 +80,9 @@ export class OpenAIService implements AiExtractionClient {
   async extract(documentText: string): Promise<ExtractionCallResult> {
     const baseMessages: ChatCompletionRequest['messages'] = [
       { role: 'system', content: EXTRACTION_SYSTEM_PROMPT },
-      { role: 'user', content: FEW_SHOT_USER_TEXT },
+      { role: 'user', content: wrapAsDocument(FEW_SHOT_USER_TEXT) },
       { role: 'assistant', content: JSON.stringify(FEW_SHOT_ASSISTANT_RESULT) },
-      { role: 'user', content: documentText },
+      { role: 'user', content: wrapAsDocument(documentText) },
     ];
 
     const start = Date.now();
@@ -151,7 +151,28 @@ export class OpenAIService implements AiExtractionClient {
           error,
         );
       }
-      throw error;
+      // Wrap raw SDK errors so the controller maps them to a typed
+      // AppException. Without this, a 401 / 400 / 429 from OpenAI
+      // bubbles up unwrapped → INTERNAL 500 → the client sees a
+      // misleading "Something went wrong on our side" message.
+      const apiStatus = readApiStatus(error);
+      const apiCode = readApiCode(error);
+      const apiMessage = readApiMessage(error);
+      this.logger.error(
+        {
+          model: this.config.model,
+          apiStatus,
+          apiCode,
+          apiMessage,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        'extraction.openai_call_failed',
+      );
+      throw new ExtractionError(
+        mapOpenAiStatusToReason(apiStatus),
+        openAiMessageFor(apiStatus, apiCode, apiMessage),
+        { apiStatus, apiCode, apiMessage },
+      );
     } finally {
       clearTimeout(timeout);
     }
@@ -170,5 +191,67 @@ export class OpenAIService implements AiExtractionClient {
       model: this.config.model,
     };
   }
+}
+
+// `<document>` tags isolate untrusted content from trusted instructions
+// — pairs with the system prompt's prompt-injection clause.
+function wrapAsDocument(text: string): string {
+  return `<document>\n${text}\n</document>`;
+}
+
+// Structural reads against openai SDK's APIError so test stubs don't
+// need the real class. SDK v6 surfaces `status`, `code`, `type` plus a
+// nested `error.message`.
+function readApiStatus(error: unknown): number | undefined {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const status = (error as { status?: unknown }).status;
+  return typeof status === 'number' ? status : undefined;
+}
+
+function readApiCode(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const direct = (error as { code?: unknown }).code;
+  if (typeof direct === 'string') return direct;
+  const nested = (error as { error?: { code?: unknown; type?: unknown } }).error;
+  if (nested && typeof nested === 'object') {
+    if (typeof nested.code === 'string') return nested.code;
+    if (typeof nested.type === 'string') return nested.type;
+  }
+  return undefined;
+}
+
+function readApiMessage(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const inner = (error as { error?: { message?: unknown } }).error?.message;
+  if (typeof inner === 'string') return inner;
+  const top = (error as { message?: unknown }).message;
+  return typeof top === 'string' ? top : undefined;
+}
+
+function mapOpenAiStatusToReason(status: number | undefined) {
+  // The orchestrator only distinguishes timeout / parse_failed / too_large;
+  // every API-side failure (auth, quota, rate, 5xx) maps to parse_failed,
+  // which the controller renders as 502 EXTRACTION_PARSE_FAILED. Status +
+  // code travel in the cause for log triage.
+  if (status === 429) return 'parse_failed' as const;
+  if (status && status >= 500) return 'parse_failed' as const;
+  return 'parse_failed' as const;
+}
+
+function openAiMessageFor(
+  status: number | undefined,
+  apiCode: string | undefined,
+  apiMessage: string | undefined,
+): string {
+  if (status === 401) return 'OpenAI API key rejected (401). Check OPENAI_API_KEY.';
+  if (apiCode === 'insufficient_quota' || status === 402) {
+    return 'OpenAI quota exhausted. Top up the account or rotate to a key with credit.';
+  }
+  if (status === 429) return 'OpenAI rate limit hit (429). Retry shortly.';
+  if (status === 400) return `OpenAI rejected the request (400). ${apiMessage ?? ''}`.trim();
+  if (status && status >= 500) {
+    return `OpenAI upstream error (${status}). ${apiMessage ?? ''}`.trim();
+  }
+  return apiMessage ?? 'OpenAI call failed.';
 }
 

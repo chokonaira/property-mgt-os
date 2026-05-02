@@ -23,9 +23,15 @@ interface PdfDocumentProxyLike {
   destroy(): Promise<void>;
 }
 
+// Refuse pathological page counts before allocating per-page state.
+const MAX_PDF_PAGES = 200;
+
 async function readPages(doc: PdfDocumentProxyLike): Promise<ExtractedPage[]> {
   const pages: ExtractedPage[] = [];
   try {
+    if (doc.numPages > MAX_PDF_PAGES) {
+      throw new Error(`pdf_too_many_pages: ${doc.numPages} > ${MAX_PDF_PAGES}`);
+    }
     for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
       const page = await doc.getPage(pageNumber);
       const content = await page.getTextContent();
@@ -90,7 +96,9 @@ export async function pdfjsExtract(buffer: Buffer | Uint8Array): Promise<Extract
   const params = {
     data: asPlainUint8Array(buffer),
     disableFontFace: true,
+    // CVE-2024-4367: refuse in-PDF JS evaluation.
     isEvalSupported: false,
+    useSystemFonts: false,
   } as Parameters<typeof pdfjs.getDocument>[0];
   const doc = (await pdfjs.getDocument(params).promise) as unknown as PdfDocumentProxyLike;
   return readPages(doc);

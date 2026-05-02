@@ -80,9 +80,9 @@ export class AnthropicService implements AiExtractionClient {
 
   async extract(documentText: string): Promise<ExtractionCallResult> {
     const baseMessages: AnthropicMessageRequest['messages'] = [
-      { role: 'user', content: FEW_SHOT_USER_TEXT },
+      { role: 'user', content: wrapAsDocument(FEW_SHOT_USER_TEXT) },
       { role: 'assistant', content: JSON.stringify(FEW_SHOT_ASSISTANT_RESULT) },
-      { role: 'user', content: documentText },
+      { role: 'user', content: wrapAsDocument(documentText) },
     ];
 
     const start = Date.now();
@@ -239,6 +239,12 @@ function mapAnthropicStatusToReason(status: number | undefined) {
   if (status === 429) return 'parse_failed' as const;
   if (status && status >= 500) return 'parse_failed' as const;
   return 'parse_failed' as const;
+}
+
+// `<document>` tags isolate untrusted content from trusted instructions
+// — pairs with the system prompt's prompt-injection clause.
+function wrapAsDocument(text: string): string {
+  return `<document>\n${text}\n</document>`;
 }
 
 function anthropicMessageFor(

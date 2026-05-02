@@ -40,6 +40,24 @@ const moduleLogger = new Logger('ExtractionModule');
  * module wires up cleanly in dev / test; live calls fail at the API
  * boundary, where ExtractionService persists a failed run row.
  */
+// Anthropic's tool `input_schema` requires a top-level object schema;
+// passing a `name` to zodToJsonSchema wraps it as `{$ref, definitions}`
+// which Anthropic rejects with 400.
+export function buildAnthropicResponseSchema(): Record<string, unknown> {
+  return zodToJsonSchema(
+    ExtractionResultSchema as unknown as Parameters<typeof zodToJsonSchema>[0],
+  ) as Record<string, unknown>;
+}
+
+// OpenAI's `response_format.json_schema` accepts the named, $ref-wrapped
+// shape and the `openAi` dialect (no $defs, oneOf restrictions).
+export function buildOpenAiResponseSchema(): Record<string, unknown> {
+  return zodToJsonSchema(
+    ExtractionResultSchema as unknown as Parameters<typeof zodToJsonSchema>[0],
+    { target: 'openAi', name: 'ExtractionResult' },
+  ) as Record<string, unknown>;
+}
+
 function buildAiExtractionClient(): AiExtractionClient {
   const provider = resolveProvider();
   if (provider === 'anthropic') {
@@ -50,19 +68,11 @@ function buildAiExtractionClient(): AiExtractionClient {
     const client = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY ?? 'placeholder',
     });
-    // Anthropic's tool input_schema consumes vanilla JSON Schema
-    // 2020-12, NOT the OpenAI-tuned dialect (which strips $defs and
-    // adds oneOf restrictions). Generate without the openAi target so
-    // the provider doesn't reject the tool definition with a 400.
-    const responseSchema = zodToJsonSchema(
-      ExtractionResultSchema as unknown as Parameters<typeof zodToJsonSchema>[0],
-      { name: 'ExtractionResult' },
-    );
     return new AnthropicService(client as unknown as AnthropicMessagesClient, {
       model: process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001',
       timeoutMs: Number(process.env.ANTHROPIC_TIMEOUT_MS ?? 15_000),
       maxOutputTokens: Number(process.env.ANTHROPIC_MAX_OUTPUT_TOKENS ?? 4_096),
-      responseSchema,
+      responseSchema: buildAnthropicResponseSchema(),
     });
   }
 
@@ -70,21 +80,11 @@ function buildAiExtractionClient(): AiExtractionClient {
   if (!process.env.OPENAI_API_KEY) {
     moduleLogger.warn('OPENAI_API_KEY missing — extraction calls will 401 at the API boundary.');
   }
-  // OpenAI's structured-output mode wants the openAi-tuned dialect of
-  // zod-to-json-schema (no $defs, oneOf restrictions). Generate per
-  // provider so each gets the dialect it actually accepts.
-  const responseSchema = zodToJsonSchema(
-    ExtractionResultSchema as unknown as Parameters<typeof zodToJsonSchema>[0],
-    {
-      target: 'openAi',
-      name: 'ExtractionResult',
-    },
-  );
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY ?? 'placeholder' });
   return new OpenAIService(client as unknown as OpenAIChatClient, {
     model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
     timeoutMs: Number(process.env.OPENAI_TIMEOUT_MS ?? 15_000),
-    responseSchema,
+    responseSchema: buildOpenAiResponseSchema(),
   });
 }
 
