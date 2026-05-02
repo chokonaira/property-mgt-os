@@ -242,9 +242,12 @@ function mapAnthropicStatusToReason(status: number | undefined) {
 }
 
 // `<document>` tags isolate untrusted content from trusted instructions
-// — pairs with the system prompt's prompt-injection clause.
+// — pairs with the system prompt's prompt-injection clause. Embedded
+// `</document>` literals get escaped so an adversarial PDF can't close
+// the wrapper early and slip an instruction outside it.
 function wrapAsDocument(text: string): string {
-  return `<document>\n${text}\n</document>`;
+  const safe = text.replaceAll('</document>', '<\\/document>');
+  return `<document>\n${safe}\n</document>`;
 }
 
 function anthropicMessageFor(

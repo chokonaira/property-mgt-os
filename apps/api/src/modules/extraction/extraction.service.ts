@@ -39,7 +39,7 @@ export class ExtractionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pdfText: PdfTextService,
-    @Inject(AI_EXTRACTION_CLIENT) private readonly openai: AiExtractionClient,
+    @Inject(AI_EXTRACTION_CLIENT) private readonly aiClient: AiExtractionClient,
     private readonly config: ExtractionConfig,
   ) {}
 
@@ -81,7 +81,7 @@ export class ExtractionService {
 
     let call: ExtractionCallResult;
     try {
-      call = await this.openai.extract(sourceText);
+      call = await this.aiClient.extract(sourceText);
     } catch (error) {
       if (error instanceof ExtractionError) {
         await this.persistFailed(documentId, error.reason, error.cause);

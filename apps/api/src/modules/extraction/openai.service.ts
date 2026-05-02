@@ -194,9 +194,12 @@ export class OpenAIService implements AiExtractionClient {
 }
 
 // `<document>` tags isolate untrusted content from trusted instructions
-// — pairs with the system prompt's prompt-injection clause.
+// — pairs with the system prompt's prompt-injection clause. Embedded
+// `</document>` literals get escaped so an adversarial PDF can't close
+// the wrapper early and slip an instruction outside it.
 function wrapAsDocument(text: string): string {
-  return `<document>\n${text}\n</document>`;
+  const safe = text.replaceAll('</document>', '<\\/document>');
+  return `<document>\n${safe}\n</document>`;
 }
 
 // Structural reads against openai SDK's APIError so test stubs don't
