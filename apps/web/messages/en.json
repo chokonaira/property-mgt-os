@@ -5,7 +5,9 @@
     "cancel": "Cancel",
     "back": "Back",
     "next": "Next",
-    "discard": "Discard"
+    "discard": "Discard",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "dashboard": {
     "title": "Properties",
@@ -52,7 +54,7 @@
       "name": { "label": "Property name" },
       "uniqueNumber": {
         "label": "Unique number",
-        "help": "Letters, numbers, and hyphens only.",
+        "help": "Your internal reference (e.g. 10-557-PRB). Letters, numbers, hyphens.",
         "checking": "Checking availability…",
         "available": "Available."
       },

@@ -23,10 +23,10 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
   const t = useTranslations('wizard.buildings');
   const {
     register,
-    formState: { errors },
+    formState: { errors, dirtyFields },
     watch,
   } = useFormContext<WizardDraftInput>();
-  const { markFieldEdited } = useWizard();
+  const { markFieldEdited, errorsVisible } = useWizard();
   const onEdit = (key: string) => () => markFieldEdited(`buildings[${index}].${key}`);
 
   const [collapsed, setCollapsed] = useState(false);
@@ -50,6 +50,16 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
   const buildingErrors = errors.buildings?.[index] as
     | Partial<Record<keyof WizardDraftInput['buildings'][number], { message?: string }>>
     | undefined;
+  // Gate red borders + inline copy on (this field is dirty || the
+  // wizard is in "show me everything broken" mode after Save/Next).
+  // Without this, landing on /properties/new/buildings flashes a
+  // required-error against an input the user hasn't typed in yet.
+  const dirtyForRow = (dirtyFields.buildings?.[index] ?? {}) as Record<string, unknown>;
+  const fieldError = (key: keyof WizardDraftInput['buildings'][number]): string | undefined => {
+    const message = buildingErrors?.[key]?.message;
+    if (!message) return undefined;
+    return dirtyForRow[key as string] || errorsVisible ? message : undefined;
+  };
   const street = watch(`buildings.${index}.street`);
   const houseNumber = watch(`buildings.${index}.houseNumber`);
   const summary = [street, houseNumber].filter(Boolean).join(' ').trim() || t('newBuilding');
@@ -92,7 +102,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
               <FieldRow
                 label={t('street')}
                 htmlFor={ids.street}
-                error={buildingErrors?.street?.message}
+                error={fieldError('street')}
                 required
                 adornment={<FieldChip path={`buildings[${index}].street`} fieldLabel={t('street')} />}
               >
@@ -100,7 +110,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                   id={ids.street}
                   autoComplete="address-line1"
                   maxLength={200}
-                  aria-invalid={Boolean(buildingErrors?.street) || undefined}
+                  aria-invalid={Boolean(fieldError('street')) || undefined}
                   {...register(`buildings.${index}.street`, { onChange: onEdit('street') })}
                 />
               </FieldRow>
@@ -108,7 +118,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
             <FieldRow
               label={t('houseNumber')}
               htmlFor={ids.houseNumber}
-              error={buildingErrors?.houseNumber?.message}
+              error={fieldError('houseNumber')}
               required
               adornment={
                 <FieldChip path={`buildings[${index}].houseNumber`} fieldLabel={t('houseNumber')} />
@@ -118,7 +128,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                 id={ids.houseNumber}
                 autoComplete="address-line2"
                 maxLength={20}
-                aria-invalid={Boolean(buildingErrors?.houseNumber) || undefined}
+                aria-invalid={Boolean(fieldError('houseNumber')) || undefined}
                 {...register(`buildings.${index}.houseNumber`, { onChange: onEdit('houseNumber') })}
               />
             </FieldRow>
@@ -137,7 +147,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                 <FieldRow
                   label={t('postalCode')}
                   htmlFor={ids.postalCode}
-                  error={buildingErrors?.postalCode?.message}
+                  error={fieldError('postalCode')}
                   adornment={
                     <FieldChip path={`buildings[${index}].postalCode`} fieldLabel={t('postalCode')} />
                   }
@@ -154,7 +164,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                   <FieldRow
                     label={t('city')}
                     htmlFor={ids.city}
-                    error={buildingErrors?.city?.message}
+                    error={fieldError('city')}
                     adornment={<FieldChip path={`buildings[${index}].city`} fieldLabel={t('city')} />}
                   >
                     <Input
@@ -170,7 +180,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                 <FieldRow
                   label={t('label')}
                   htmlFor={ids.label}
-                  error={buildingErrors?.label?.message}
+                  error={fieldError('label')}
                   description={t('labelHelp')}
                   adornment={<FieldChip path={`buildings[${index}].label`} fieldLabel={t('label')} />}
                 >
@@ -183,7 +193,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                 <FieldRow
                   label={t('nickname')}
                   htmlFor={ids.nickname}
-                  error={buildingErrors?.nickname?.message}
+                  error={fieldError('nickname')}
                   description={t('nicknameHelp')}
                   adornment={
                     <FieldChip path={`buildings[${index}].nickname`} fieldLabel={t('nickname')} />
@@ -200,7 +210,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                 <FieldRow
                   label={t('yearBuilt')}
                   htmlFor={ids.yearBuilt}
-                  error={buildingErrors?.yearBuilt?.message}
+                  error={fieldError('yearBuilt')}
                   adornment={
                     <FieldChip path={`buildings[${index}].yearBuilt`} fieldLabel={t('yearBuilt')} />
                   }
@@ -220,7 +230,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                 <FieldRow
                   label={t('floorsCount')}
                   htmlFor={ids.floorsCount}
-                  error={buildingErrors?.floorsCount?.message}
+                  error={fieldError('floorsCount')}
                   adornment={
                     <FieldChip
                       path={`buildings[${index}].floorsCount`}
@@ -265,7 +275,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                 <FieldRow
                   label={t('energyStandard')}
                   htmlFor={ids.energyStandard}
-                  error={buildingErrors?.energyStandard?.message}
+                  error={fieldError('energyStandard')}
                   adornment={
                     <FieldChip
                       path={`buildings[${index}].energyStandard`}
@@ -284,7 +294,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                 <FieldRow
                   label={t('heating')}
                   htmlFor={ids.heating}
-                  error={buildingErrors?.heating?.message}
+                  error={fieldError('heating')}
                   adornment={
                     <FieldChip path={`buildings[${index}].heating`} fieldLabel={t('heating')} />
                   }
@@ -298,7 +308,7 @@ export function BuildingCard({ index, isOnly, onRemove }: BuildingCardProps) {
                 <FieldRow
                   label={t('buildingType')}
                   htmlFor={ids.buildingType}
-                  error={buildingErrors?.buildingType?.message}
+                  error={fieldError('buildingType')}
                   adornment={
                     <FieldChip
                       path={`buildings[${index}].buildingType`}

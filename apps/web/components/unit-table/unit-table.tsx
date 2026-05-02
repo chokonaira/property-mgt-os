@@ -250,7 +250,7 @@ export function UnitTable() {
       {
         id: 'sizeSqm',
         header: t('columns.size'),
-        size: 100,
+        size: 120,
         cell: ({ row }) => (
           <CellWithChip path={`units[${row.index}].sizeSqm`} label={t('columns.size')}>
             <SizeCell rowIndex={row.index} onEdit={onEdit(row.index, 'sizeSqm')} />
@@ -276,7 +276,7 @@ export function UnitTable() {
       {
         id: 'meaShare',
         header: t('columns.mea'),
-        size: 110,
+        size: 130,
         cell: ({ row }) => (
           <CellWithChip path={`units[${row.index}].meaShare`} label={t('columns.mea')}>
             <MeaCell rowIndex={row.index} onEdit={onEdit(row.index, 'meaShare')} />
@@ -308,7 +308,7 @@ export function UnitTable() {
       {
         id: 'description',
         header: t('columns.description'),
-        size: 200,
+        size: 280,
         cell: ({ row }) => (
           <CellWithChip path={`units[${row.index}].description`} label={t('columns.description')}>
             <input
@@ -736,6 +736,22 @@ function MetricBadge({ index }: { index: number }) {
   );
 }
 
+// Per-cell red border + tooltip is gated on (cell is dirty || the
+// wizard has flipped the global errorsVisible flag) so a freshly
+// rendered table doesn't paint the seeded empty row in red. RHF's
+// dirtyFields is keyed by row index, which shifts on remove/insert —
+// that's fine here because the array stays in sync with `errors`.
+function useUnitCellErrorGate(rowIndex: number, key: string): boolean {
+  const {
+    formState: { dirtyFields },
+  } = useFormContext<WizardDraftInput>();
+  const { errorsVisible } = useWizard();
+  const dirty = Boolean(
+    (dirtyFields.units?.[rowIndex] as Record<string, unknown> | undefined)?.[key],
+  );
+  return dirty || errorsVisible;
+}
+
 function RoomsCell({ rowIndex, onEdit }: { rowIndex: number; onEdit: () => void }) {
   const {
     control,
@@ -744,8 +760,10 @@ function RoomsCell({ rowIndex, onEdit }: { rowIndex: number; onEdit: () => void 
   } = useFormContext<WizardDraftInput>();
   const type = useWatch({ control, name: `units.${rowIndex}.type` }) as WizardUnitType;
   const isApartment = type === 'APARTMENT';
-  const error = (errors.units?.[rowIndex] as { rooms?: { message?: string } } | undefined)?.rooms
+  const rawError = (errors.units?.[rowIndex] as { rooms?: { message?: string } } | undefined)?.rooms
     ?.message;
+  const showError = useUnitCellErrorGate(rowIndex, 'rooms');
+  const error = showError ? rawError : undefined;
   return (
     <input
       type="number"
@@ -772,8 +790,10 @@ function SizeCell({ rowIndex, onEdit }: { rowIndex: number; onEdit: () => void }
     register,
     formState: { errors },
   } = useFormContext<WizardDraftInput>();
-  const error = (errors.units?.[rowIndex] as { sizeSqm?: { message?: string } } | undefined)
+  const rawError = (errors.units?.[rowIndex] as { sizeSqm?: { message?: string } } | undefined)
     ?.sizeSqm?.message;
+  const showError = useUnitCellErrorGate(rowIndex, 'sizeSqm');
+  const error = showError ? rawError : undefined;
   return (
     <input
       type="number"
@@ -798,8 +818,10 @@ function NumberCell({ rowIndex, onEdit }: { rowIndex: number; onEdit: () => void
     register,
     formState: { errors },
   } = useFormContext<WizardDraftInput>();
-  const error = (errors.units?.[rowIndex] as { number?: { message?: string } } | undefined)?.number
+  const rawError = (errors.units?.[rowIndex] as { number?: { message?: string } } | undefined)?.number
     ?.message;
+  const showError = useUnitCellErrorGate(rowIndex, 'number');
+  const error = showError ? rawError : undefined;
   return (
     <input
       type="text"
@@ -819,8 +841,10 @@ function MeaCell({ rowIndex, onEdit }: { rowIndex: number; onEdit: () => void })
     register,
     formState: { errors },
   } = useFormContext<WizardDraftInput>();
-  const error = (errors.units?.[rowIndex] as { meaShare?: { message?: string } } | undefined)
+  const rawError = (errors.units?.[rowIndex] as { meaShare?: { message?: string } } | undefined)
     ?.meaShare?.message;
+  const showError = useUnitCellErrorGate(rowIndex, 'meaShare');
+  const error = showError ? rawError : undefined;
   return (
     <input
       type="number"

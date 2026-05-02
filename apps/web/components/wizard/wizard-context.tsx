@@ -75,6 +75,14 @@ interface WizardContextValue {
   hydrated: boolean;
   /** Epoch ms of the last localStorage write; null until the first save. */
   lastSavedAt: number | null;
+  /**
+   * Becomes true the first time the user clicks Save. Field-level
+   * components gate red borders and inline error messages on
+   * (dirtyFields[path] || errorsVisible) so a freshly-loaded step
+   * doesn't flash validation against inputs the user hasn't touched.
+   */
+  errorsVisible: boolean;
+  setErrorsVisible: (next: boolean) => void;
 }
 
 const initialValidity: StepValidityMap = {
@@ -107,6 +115,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const [validityHydrated, setValidityHydrated] = useState(false);
   const [declarationFile, setDeclarationFile] = useState<File | undefined>(undefined);
   const [extractionMeta, setExtractionMetaState] = useState<WizardExtractionMeta | null>(null);
+  const [errorsVisible, setErrorsVisible] = useState(false);
   const validators = useRef<Partial<Record<WizardStepId, ValidatorFn>>>({});
   // Generation counter — bumped on every reset(). The hydration trigger
   // pass captures its generation at start and only commits validity if
@@ -144,6 +153,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setValidityHydrated(false);
     setDeclarationFile(undefined);
     setExtractionMetaState(null);
+    setErrorsVisible(false);
     validators.current = {};
     methods.reset(WIZARD_DRAFT_DEFAULTS);
     clearPersistedWizardDraft();
@@ -224,6 +234,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       markFieldEdited,
       hydrated,
       lastSavedAt,
+      errorsVisible,
+      setErrorsVisible,
     }),
     [
       validity,
@@ -237,6 +249,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       markFieldEdited,
       hydrated,
       lastSavedAt,
+      errorsVisible,
     ],
   );
 

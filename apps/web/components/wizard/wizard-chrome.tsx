@@ -40,7 +40,7 @@ export function WizardChrome({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const currentStep = stepFromPath(pathname);
-  const { validity, validateStep, reset, hydrated, lastSavedAt } = useWizard();
+  const { validity, validateStep, reset, hydrated, lastSavedAt, setErrorsVisible } = useWizard();
   const { confirm, dialogProps } = useConfirm();
   const tCommon = useTranslations('common');
   const { setError, getValues, trigger } = useFormContext<WizardDraftInput, unknown, WizardDraft>();
@@ -64,7 +64,15 @@ export function WizardChrome({ children }: { children: ReactNode }) {
 
   async function handleNext() {
     const ok = await validateStep(currentStep);
-    if (!ok || !next) return;
+    if (!ok) {
+      // User asked to advance but the step isn't valid — flip the
+      // global "now show me everything that's broken" gate so the
+      // failing inputs go red. Untouched fields stay quiet up to
+      // this point; the click is the explicit signal.
+      setErrorsVisible(true);
+      return;
+    }
+    if (!next) return;
     startTransition(() => router.push(pathForStep(next)));
   }
 
@@ -87,6 +95,10 @@ export function WizardChrome({ children }: { children: ReactNode }) {
   }
 
   async function handleSave() {
+    // Reveal red borders + inline messages for every required field
+    // the user hasn't touched yet — once they hit Save, "show me what's
+    // wrong" outranks the "don't yell on first paint" guard.
+    setErrorsVisible(true);
     // Trigger every step's validation up front so the user lands on
     // the correct step if something earlier is broken (e.g. someone
     // tampered with the persisted draft).
@@ -150,68 +162,82 @@ export function WizardChrome({ children }: { children: ReactNode }) {
 
   const saving = createProperty.isPending;
   const advanceLabel = isLastStep ? t('save') : t('next');
-  const advanceIcon = isLastStep ? (
-    saving ? (
-      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-    ) : (
-      <Save className="h-4 w-4" aria-hidden="true" />
-    )
+  // Spinner appears on three signals: route transition (isPending),
+  // server-side create in flight (saving), or — on the last step — the
+  // mutation itself. Without this the Next click felt dead on slow
+  // navigations because the button was disabled but unchanged.
+  const showAdvanceSpinner = isLastStep ? saving : isPending;
+  const advanceIcon = showAdvanceSpinner ? (
+    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+  ) : isLastStep ? (
+    <Save className="h-4 w-4" aria-hidden="true" />
   ) : (
     <ArrowRight className="h-4 w-4" aria-hidden="true" />
   );
   const advanceDisabled = isPending || saving || !validity[currentStep] || (!isLastStep && !next);
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-            {t('title')}
-          </h1>
-          <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
+    <main className="flex min-h-screen flex-col">
+      {/* Sticky chrome keeps the title, Discard CTA, last-saved hint
+          and step indicator pinned while the user scrolls a long unit
+          table. The wrapper is full-bleed so the backdrop reads
+          edge-to-edge; the inner div re-applies the page's max width
+          + padding so content stays centered. */}
+      <div className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
+          <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="flex flex-col gap-0.5">
+              <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                {t('title')}
+              </h1>
+              <p className="text-xs text-muted-foreground sm:text-sm">{t('subtitle')}</p>
+            </div>
+            <div className="flex flex-col items-stretch gap-1 sm:items-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDiscard}
+                disabled={saving}
+                className="self-start text-muted-foreground hover:text-destructive sm:self-end"
+              >
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                {t('discard')}
+              </Button>
+              <LastSavedIndicator lastSavedAt={lastSavedAt} />
+            </div>
+          </header>
+          <StepIndicator currentStep={currentStep} />
         </div>
-        <div className="flex flex-col items-stretch gap-2 sm:items-end">
+      </div>
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <section
+          key={currentStep}
+          aria-live="polite"
+          className="rounded-lg border border-border bg-card p-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-200 sm:p-6"
+        >
+          {children}
+        </section>
+        <footer className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDiscard}
-            disabled={saving}
-            className="self-start text-muted-foreground hover:text-destructive sm:self-end"
+            variant="outline"
+            onClick={handleBack}
+            disabled={!back || isPending || saving}
+            className="sm:min-w-32"
           >
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-            {t('discard')}
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            {t('back')}
           </Button>
-          <LastSavedIndicator lastSavedAt={lastSavedAt} />
-        </div>
-      </header>
-      <StepIndicator currentStep={currentStep} />
-      <section
-        key={currentStep}
-        aria-live="polite"
-        className="rounded-lg border border-border bg-card p-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-200 sm:p-6"
-      >
-        {children}
-      </section>
-      <footer className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Button
-          variant="outline"
-          onClick={handleBack}
-          disabled={!back || isPending || saving}
-          className="sm:min-w-32"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          {t('back')}
-        </Button>
-        <Button
-          onClick={isLastStep ? handleSave : handleNext}
-          disabled={advanceDisabled}
-          className="sm:min-w-32"
-        >
-          {!isLastStep ? <span>{advanceLabel}</span> : null}
-          {advanceIcon}
-          {isLastStep ? <span>{advanceLabel}</span> : null}
-        </Button>
-      </footer>
+          <Button
+            onClick={isLastStep ? handleSave : handleNext}
+            disabled={advanceDisabled}
+            className="sm:min-w-32"
+          >
+            {!isLastStep ? <span>{advanceLabel}</span> : null}
+            {advanceIcon}
+            {isLastStep ? <span>{advanceLabel}</span> : null}
+          </Button>
+        </footer>
+      </div>
       <ConfirmDialog {...dialogProps} />
     </main>
   );

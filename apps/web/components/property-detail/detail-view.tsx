@@ -2,6 +2,7 @@
 
 import { ArrowLeft, FileSearch, Pencil, RefreshCw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import { usePropertyDetail } from '@/lib/hooks/use-property-detail';
 import { Button } from '@/components/ui/button';
@@ -60,32 +61,38 @@ export function PropertyDetailView({ id }: DetailViewProps) {
 
   const property = data;
   return (
-    <div className="flex flex-col gap-8">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-2">
-          <Button asChild variant="ghost" size="sm" className="-ml-2 self-start">
-            <Link href="/">
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              <span>{tErr('backToDashboard')}</span>
-            </Link>
+    <div className="flex flex-col">
+      <header className="sticky top-0 z-30 -mx-4 border-b border-border/60 bg-background/85 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:-mx-6 sm:px-6 sm:py-4 lg:-mx-8 lg:px-8">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="flex flex-col gap-1">
+            <Button asChild variant="ghost" size="sm" className="-ml-2 h-7 self-start px-2 text-xs">
+              <Link href="/">
+                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>{tErr('backToDashboard')}</span>
+              </Link>
+            </Button>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+              {property.name}
+            </h1>
+            <p className="font-mono text-[11px] text-muted-foreground">{property.uniqueNumber}</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => toast.info(t('editStubMessage'))}
+            aria-label={t('edit')}
+            className="self-start sm:self-auto"
+          >
+            <Pencil className="h-4 w-4" aria-hidden="true" />
+            {t('edit')}
           </Button>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-            {property.name}
-          </h1>
-          <p className="font-mono text-xs text-muted-foreground">{property.uniqueNumber}</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => window.alert(t('editStubMessage'))}
-          aria-label={t('edit')}
-        >
-          <Pencil className="h-4 w-4" aria-hidden="true" />
-          {t('edit')}
-        </Button>
       </header>
-      <GeneralInfo property={property} />
-      <BuildingsSection buildings={property.buildings} />
-      <UnitsSection buildings={property.buildings} totalMea={property.totalMea} />
+      <div className="flex flex-col gap-8 pt-6">
+        <GeneralInfo property={property} />
+        <BuildingsSection buildings={property.buildings} />
+        <UnitsSection buildings={property.buildings} totalMea={property.totalMea} />
+      </div>
     </div>
   );
 }

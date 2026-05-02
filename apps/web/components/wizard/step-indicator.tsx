@@ -23,7 +23,27 @@ export function StepIndicator({ currentStep }: StepIndicatorProps) {
         const isPending = idx > currentIdx;
         const label = t(`step${(idx + 1) as 1 | 2 | 3}`);
         return (
-          <li key={step} className="flex flex-1 items-center gap-2 sm:gap-3">
+          <li
+            key={step}
+            className={cn(
+              'flex items-center gap-2 sm:gap-3',
+              // Every step after the first owns the connector line that
+              // visually leads into it. Combined with `flex-1`, this
+              // pins step 1 to the left edge, the last step to the
+              // right edge, and distributes the lines through the
+              // middle — so the indicator spans the full container.
+              idx > 0 && 'flex-1',
+            )}
+          >
+            {idx > 0 ? (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'h-px flex-1',
+                  idx <= currentIdx ? 'bg-success/60' : 'bg-border',
+                )}
+              />
+            ) : null}
             <span
               aria-current={isCurrent ? 'step' : undefined}
               className={cn(
@@ -43,15 +63,6 @@ export function StepIndicator({ currentStep }: StepIndicatorProps) {
             >
               {label}
             </span>
-            {idx < WIZARD_STEPS.length - 1 ? (
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'hidden h-px flex-1 sm:block',
-                  idx < currentIdx ? 'bg-success/60' : 'bg-border',
-                )}
-              />
-            ) : null}
           </li>
         );
       })}

@@ -5,7 +5,9 @@
     "cancel": "Abbrechen",
     "back": "Zurück",
     "next": "Weiter",
-    "discard": "Verwerfen"
+    "discard": "Verwerfen",
+    "copy": "Kopieren",
+    "copied": "Kopiert"
   },
   "dashboard": {
     "title": "Immobilien",
@@ -52,7 +54,7 @@
       "name": { "label": "Objektname" },
       "uniqueNumber": {
         "label": "Objektnummer",
-        "help": "Nur Buchstaben, Ziffern und Bindestriche.",
+        "help": "Ihre interne Referenz (z. B. 10-557-PRB). Buchstaben, Ziffern, Bindestriche.",
         "checking": "Verfügbarkeit wird geprüft…",
         "available": "Verfügbar."
       },

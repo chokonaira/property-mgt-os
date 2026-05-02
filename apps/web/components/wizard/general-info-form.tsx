@@ -20,6 +20,7 @@ import { useUploadDocument } from '@/lib/hooks/use-upload-document';
 import { useExtractDocument } from '@/lib/hooks/use-extract-document';
 import { useUniqueNumberCheck } from '@/lib/hooks/use-unique-number-check';
 import { extractionToWizardDraft } from '@/lib/extraction-to-wizard-draft';
+import { extractionErrorKey } from '@/lib/extraction-error-key';
 import { logExtractionFailure } from '@/lib/extraction-logger';
 import { useStepValidator, useWizard } from './wizard-context';
 import { SegmentedControl } from './segmented-control';
@@ -46,14 +47,20 @@ export function GeneralInfoForm() {
   const {
     control,
     register,
-    formState: { errors, touchedFields, isSubmitted },
+    formState: { errors, touchedFields },
     watch,
     trigger,
     reset: resetForm,
     getValues,
   } = useFormContext<WizardDraftInput>();
-  const { setStepValid, declarationFile, setDeclarationFile, setExtractionMeta, markFieldEdited } =
-    useWizard();
+  const {
+    setStepValid,
+    declarationFile,
+    setDeclarationFile,
+    setExtractionMeta,
+    markFieldEdited,
+    errorsVisible,
+  } = useWizard();
   const tExtraction = useTranslations('extraction');
   const upload = useUploadDocument();
   const extract = useExtractDocument();
@@ -109,7 +116,7 @@ export function GeneralInfoForm() {
   // blank form they haven't touched.
   const generalTouched = touchedFields.general;
   const fieldErrorVisible = (touched: boolean | undefined): boolean =>
-    Boolean(touched) || isSubmitted;
+    Boolean(touched) || errorsVisible;
   const nameError = fieldErrorVisible(generalTouched?.name)
     ? generalErrors?.name?.message
     : undefined;
@@ -252,25 +259,55 @@ export function GeneralInfoForm() {
   const showError = !showLoading && extractionError && !extractionResult;
   const showPanel = !showLoading && !showError && extractionResult;
 
+  // Anchor the loading / error / panel block + scroll it into view
+  // whenever its visibility flips. The PDF uploader sits at the bottom
+  // of the form, so without this the user clicks "Use AI to extract"
+  // and the result lands two screens above their viewport — invisible
+  // until they scroll up. Plus a toast on error so the failure surface
+  // never depends on the user's scroll position.
+  const feedbackAnchorRef = useRef<HTMLDivElement | null>(null);
+  const lastToastedError = useRef<unknown>(null);
+  useEffect(() => {
+    if (!(showLoading || showError || showPanel)) return;
+    feedbackAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [showLoading, showError, showPanel]);
+  useEffect(() => {
+    if (!showError || !extractionError) {
+      lastToastedError.current = null;
+      return;
+    }
+    if (lastToastedError.current === extractionError) return;
+    lastToastedError.current = extractionError;
+    const key = extractionErrorKey(extractionError);
+    toast.error(tExtraction(`status.errors.${key}`));
+  }, [showError, extractionError, tExtraction]);
+
   return (
     <form className="flex flex-col gap-6" noValidate>
+      <div ref={feedbackAnchorRef} aria-hidden="true" className="-mb-6 scroll-mt-32" />
       {showLoading ? (
-        <ExtractionLoading stage={isUploading ? 'uploading' : 'extracting'} />
+        <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-300">
+          <ExtractionLoading stage={isUploading ? 'uploading' : 'extracting'} />
+        </div>
       ) : null}
       {showError ? (
-        <ExtractionErrorBanner
-          error={extractionError}
-          onRetry={handleRetryExtraction}
-          onDismiss={handleDismissError}
-        />
+        <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-300">
+          <ExtractionErrorBanner
+            error={extractionError}
+            onRetry={handleRetryExtraction}
+            onDismiss={handleDismissError}
+          />
+        </div>
       ) : null}
       {showPanel ? (
-        <AiReviewPanel
-          result={extractionResult}
-          onAccept={handleAcceptExtraction}
-          onDiscard={handleDiscardExtraction}
-          droppedUnits={droppedUnits}
-        />
+        <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-300">
+          <AiReviewPanel
+            result={extractionResult}
+            onAccept={handleAcceptExtraction}
+            onDiscard={handleDiscardExtraction}
+            droppedUnits={droppedUnits}
+          />
+        </div>
       ) : null}
 
       <Field
