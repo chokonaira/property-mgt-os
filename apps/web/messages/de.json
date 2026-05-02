@@ -76,6 +76,7 @@
         "prefillTitle": "Teilungserklärung vorhanden? Hochladen zum Vorausfüllen",
         "prefillHelp": "KI extrahiert Objekt-, Gebäude- und Einheitsdaten aus dem Dokument. Sie überprüfen jedes Feld vor dem Speichern.",
         "orManual": "Oder unten manuell ausfüllen",
+        "mvNote": "MV-verwaltete Immobilien werden manuell erfasst — für Mietverwaltung gibt es keine Teilungserklärung, daher entfällt die KI-Extraktion hier.",
         "dropzone": "PDF hier ablegen oder klicken zum Auswählen",
         "limits": "Nur PDF, bis zu {mb} MB.",
         "wrongType": "Es werden nur PDF-Dateien akzeptiert.",

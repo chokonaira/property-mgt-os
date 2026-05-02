@@ -399,6 +399,12 @@ export function GeneralInfoForm() {
         </div>
       ) : null}
 
+      {managementType === 'MV' ? (
+        <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          {t('upload.mvNote')}
+        </p>
+      ) : null}
+
       <Field
         label={t('managementType.label')}
         htmlFor={ids.managementType}

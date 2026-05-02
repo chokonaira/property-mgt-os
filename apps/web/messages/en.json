@@ -76,6 +76,7 @@
         "prefillTitle": "Have a Teilungserklärung? Upload to prefill",
         "prefillHelp": "AI extracts property, buildings, and unit data from the document. You'll review every field before saving.",
         "orManual": "Or fill manually below",
+        "mvNote": "MV-managed properties are filled manually — no Teilungserklärung is issued for rental management, so AI extraction doesn't apply here.",
         "dropzone": "Drop a PDF here or click to browse",
         "limits": "PDF only, up to {mb} MB.",
         "wrongType": "Only PDF files are accepted.",
