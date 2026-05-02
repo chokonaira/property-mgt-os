@@ -1,7 +1,7 @@
 # A Buena Case Study
 
 [![CI](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml/badge.svg)](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-331_passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-400_passing-brightgreen)](#testing)
 [![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](./tsconfig.base.json)
 [![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?logo=openapiinitiative&logoColor=white)](http://localhost:3001/openapi.json)
 [![First Load JS](https://img.shields.io/badge/first_load_JS-≤230_kB-blue)](#performance)
@@ -13,94 +13,75 @@
 
 ---
 
+## Problem
+
+A property manager holding a 30-page **Teilungserklärung** has to type 60+ rows of units, owners, and shares into a dashboard, and the **MEA** math (shares summing to 1 000) gets verified end-of-day, after the typing is done.
+
+This submission keeps the manual path bullet-proof and adds an AI assist on top: 3-step wizard (WEG + MV), bulk-entry unit table (keyboard, paste, generate, virtualised past 50 rows), AI extraction with per-field confidence + source-grounded citations + graceful fallback (_AI proposes, the user disposes_), live MEA invariant sticky in the wizard and surfaced as a server-side warning at save time.
+
+---
+
+## What's in the box
+
+- **Dashboard + property detail.** WEG / MV listing with type badges; create CTA with optimistic insertion + rollback. Detail view groups units by building with the MEA bar pinned at the top.
+- **3-step wizard** (General Info → Buildings → Units). One RHF `FormProvider`, auto-saves draft to `localStorage` every 500 ms, "Saved 30 s ago" footer indicator.
+- **Bulk unit table.** TanStack Table headless, inline editing, full keyboard navigation, paste TSV/CSV, "Generate N units" (parking-block case), duplicate row, multi-select bulk delete, sticky MEA invariant bar (green / amber / red), virtualised past 50 rows.
+- **AI Review Panel.** Per-field confidence chips (≥ 0.85 green, 0.6–0.85 amber, < 0.6 red) + source-span popovers + prominent warnings. Server-side `verifySpans` drops hallucinated citations before the response leaves the API. Inline chips persist on the form post-accept and clear when the user edits a field.
+- **OpenAPI 3.1** at `/openapi.json` generated from the same Zod schemas the form uses.
+- **Error boundaries** at `app/[locale]/error.tsx`, `not-found.tsx`, `global-error.tsx` — localised copy + Retry / Back-to-dashboard.
+- **i18n** via `next-intl`; default `de` (unprefixed URL), opt-in `/en`. Domain terms stay German.
+- **Dark mode**, **400 tests** across three packages.
+
+---
+
 ## Quick start
 
-### Prerequisites
+**Prerequisites:** Docker Desktop running · Node 20+ · pnpm 9+ · OpenAI API key (for the AI extraction surface; the rest of the app boots without it).
 
-- **Node 20+** and **pnpm 9+** (`packageManager` pin in root `package.json`).
-- **Docker Desktop** running. Postgres 16 is launched via `docker-compose.dev.yml` — required for `pnpm dev` and for migrations / seeding.
-- **OpenAI API key** with ~$5 of credit (only for the AI extraction + chatbot tickets; the rest of the app boots without it).
-
-### Reviewer path (one command)
+**Reviewer path — one command boots everything:**
 
 ```bash
-cp .env.example .env       # paste OPENAI_API_KEY
-docker compose up
+git clone git@github.com:chokonaira/property-mgt-os.git
+cd property-mgt-os
+cp .env.example .env             # paste your OPENAI_API_KEY
+docker compose up                # builds web + api images, runs Postgres, applies migrations, seeds the demo property
 ```
 
-Open `http://localhost:3000`. The dashboard is pre-seeded with one demo property so you see a working product, not an empty state.
+Open **http://localhost:3000**. You should see the **Parkview Residences Berlin** row on the dashboard (1 property · 2 buildings · 14 units). Click it for the read-only detail view; click **Create new property** for the wizard.
 
-### Local development (hot reload)
+**Hot-reload path** (faster iteration):
 
 ```bash
 pnpm install
-cp .env.example .env       # edit if a port conflicts; default Postgres host port is 55432 to avoid clashing with a host-installed Postgres on 5432
-pnpm dev                   # boots Postgres in Docker, waits, generates Prisma client, applies migrations, then runs api + web in parallel
+cp .env.example .env
+pnpm dev                         # Postgres up → wait → migrate:deploy → seed → web + api in parallel
 ```
 
-`pnpm dev` is end-to-end: it brings the database up, syncs the schema, and starts both apps. If Docker isn't running it will fail fast — start Docker Desktop and re-run.
+`pnpm dev` is end-to-end and fails fast if Docker isn't running.
 
-To seed the demo data once the DB is up:
+**Test the AI extraction:** Create new property → step 1 → upload a Teilungserklärung PDF → click "Use AI to extract" → review the panel → Accept all. Steps 2 + 3 pre-fill from the model's output.
 
-```bash
-pnpm db:seed
-```
+**Locale:** German default (URL stays unprefixed); switch to English at `/en` or via the locale toggle. Choice persists in a `BUENA_LOCALE` cookie. Domain terms (`WEG`, `MV`, `MEA`, `Teilungserklärung`, `Tiefgaragenstellplatz`) stay German in both.
 
-### Useful scripts
+**Common gotchas:**
 
-| Script                        | What it does                                                                     |
-| ----------------------------- | -------------------------------------------------------------------------------- |
-| `pnpm dev`                    | Postgres up → wait → generate → migrate:deploy → web + api in parallel           |
-| `pnpm dev:apps`               | Skip the DB orchestration; just run web + api (use when DB is already healthy)   |
-| `pnpm db:up` / `pnpm db:down` | Start / stop the dev Postgres container                                          |
-| `pnpm db:wait`                | Block until Postgres is accepting connections                                    |
-| `pnpm db:generate`            | Regenerate Prisma Client after schema changes                                    |
-| `pnpm db:migrate`             | Create and apply a new migration (interactive, picks the name)                   |
-| `pnpm db:migrate:deploy`      | Apply pending migrations non-interactively (CI / reviewer flow)                  |
-| `pnpm db:seed`                | Seed the Parkview Residences demo property (1 property · 2 buildings · 14 units) |
-| `pnpm db:reset`               | Drop + reapply migrations + reseed (destructive)                                 |
-| `pnpm db:studio`              | Open Prisma Studio for ad-hoc inspection                                         |
+- **Port 3000 / 3001 already in use** — `lsof -ti:3000,3001 | xargs kill -9`.
+- **Port 5432 already in use** — host Postgres clash. Dev container maps to **55432** on the host (per `.env`); don't change unless your local Postgres is also off-port.
+- **`P1010: User 'buena' was denied access`** — `DATABASE_URL` is pointing at a different Postgres. `lsof -nP -iTCP:55432` confirms the dev container is the one listening.
+- **Prisma Client out of date after pull** — `pnpm db:generate`.
+- **Wipe + reseed** — `pnpm db:reset` (destructive).
 
-### Locale (de / en)
-
-The web app defaults to **German**. Switch from the top-right control on the home page, or directly:
-
-- `http://localhost:3000/` — German (`de`, default; the URL stays unprefixed)
-- `http://localhost:3000/en` — English
-
-The choice is persisted in a `BUENA_LOCALE` cookie (1-year max-age) so subsequent visits stick. To force a locale via cookie from a script:
-
-```bash
-curl -i -b 'BUENA_LOCALE=en' http://localhost:3000/
-```
-
-Domain terms — `WEG`, `MV`, `MEA`, `Teilungserklärung`, `Wohnfläche`, `Nutzfläche`, `Miteigentumsanteile`, `Tiefgaragenstellplatz` — stay in German in both catalogs by design.
-
-### Common gotchas
-
-- **Port 5432 already in use**: a host Postgres is binding it. The dev Postgres container maps to **55432** on the host (`DATABASE_URL=postgres://buena:buena@localhost:55432/buena`) to avoid the clash. If you change the port, update `.env`.
-- **`P1010: User 'buena' was denied access`**: usually means `DATABASE_URL` is pointing at a different Postgres (e.g. host-installed) that doesn't have the `buena` user. Confirm with `lsof -nP -iTCP:55432`.
-- **Prisma Client out of date**: re-run `pnpm db:generate` after pulling schema changes.
+Every workspace script + env var documented in [`public/runbook.md`](./public/runbook.md).
 
 ---
 
 ## Repo layout
 
 ```
-property-mgt-os/
-├── apps/
-│   ├── web/           Next.js 15, App Router, locale-aware [locale] segment
-│   └── api/           NestJS, Prisma, OpenAI extraction + chat
-├── packages/
-│   └── shared/        Zod schemas — single source of truth for client, server, AI
-├── prisma/            schema.prisma + migrations + seed
-├── public/            Architecture, design system, domain notes, edge cases (reviewer docs)
-├── docker-compose.yml         Reviewer path
-├── docker-compose.dev.yml     Postgres-only for hot reload
-└── .env.example       Every required env var, documented
+apps/{web,api}    packages/shared    prisma/    public/    docker-compose.yml    .env.example
 ```
 
-Full architecture in `public/architecture.md`. Domain primer in `public/domain.md`. Edge-case matrix in `public/edge-cases.md`. Design system in `public/design-system.md`.
+`apps/web` (Next.js 15) + `apps/api` (NestJS) + `packages/shared` (Zod schemas — single source of truth for client, server, AI). Reviewer docs + ADRs in [`public/`](./public/).
 
 ---
 
@@ -113,20 +94,11 @@ pnpm lint              # ESLint
 pnpm build             # Next + Nest production builds
 ```
 
-Workspace currently runs **331 tests** across three packages (72 shared schemas, 123 API services, 136 web utilities + components). RTL + jsdom power the panel render tests; the rest run in node for speed. Coverage is intentional rather than complete: discriminated unions, the MEA invariant, the TSV / CSV parser, the AI extraction pipeline (verify-spans, token budget, idempotency cache, controller error mapping), and the wizard's accept-translation logic each have dedicated suites.
+Workspace runs **400 tests** across three packages (72 shared schemas, 123 API services, 205 web utilities + components). RTL + jsdom power the panel render tests; the rest run in node for speed. Coverage is intentional rather than complete: discriminated unions, MEA invariant, TSV / CSV parser, AI pipeline (verify-spans, token budget, idempotency cache, controller error mapping), and the wizard's accept-translation logic each have dedicated suites.
 
 ## Performance
 
-| Surface             | First Load JS |
-| ------------------- | ------------- |
-| Shared chunks       | **101 kB**    |
-| Wizard step 1       | **213 kB**    |
-| Wizard step 2       | **186 kB**    |
-| Wizard step 3       | **222 kB**    |
-| Property detail     | **163 kB**    |
-| Middleware (locale) | **52 kB**     |
-
-Numbers from `pnpm build`. Wizard step 1 carries the AI Review Panel + extraction hooks inline; step 3 carries TanStack Virtual (kicks in past 50 rows per T-409). Lazy-loading the panel + the virtualizer via `next/dynamic` is queued as a v1.1 perf cut. Cap on the badge above is set to **230 kB** to keep current numbers honest with reviewer-visible headroom.
+First-load JS from `pnpm build`: shared chunks **101 kB** · property detail **163 kB** · wizard step 2 **186 kB** · wizard step 1 **213 kB** (carries the AI Review Panel inline) · wizard step 3 **222 kB** (carries TanStack Virtual, engages past 50 rows). Badge cap **230 kB** with reviewer-visible headroom; lazy-loading the panel + virtualizer via `next/dynamic` is queued as a v1.1 cut.
 
 ## OpenAPI
 
@@ -139,17 +111,21 @@ Generated from the same Zod schemas in `packages/shared` via `@asteasolutions/zo
 
 ---
 
-## Status
+## Tech stack
 
-This README will be expanded by T-601 from the case-study planning template. Current scaffold:
+**Next.js 15** (App Router) · **NestJS** · **Prisma** · **Postgres 16** · **Tailwind + shadcn/ui + Radix** · **React Hook Form + Zod resolver** · **TanStack Table + Virtual + Query** · **OpenAI gpt-4o-mini** with JSON Schema mode · **unpdf** primary + `pdfjs-dist` fallback · **`@asteasolutions/zod-to-openapi`** · **Vitest + RTL + jsdom** · **GitHub Actions**.
 
-- T-000 — CI (lint / typecheck / test / build on push + PR)
-- T-001 — pnpm workspace, ESLint, Prettier, Husky
-- T-002 — NestJS skeleton, `/healthz`, global Zod pipe, error envelope, pino + request-id
-- T-003 — Next.js 15 skeleton, shadcn/ui (slate), TanStack Query, typed API client
-- T-004 — Postgres (Docker) + Prisma schema + initial migration + seeded Parkview Residences
-- T-005 — Shared Zod schemas in `packages/shared` (Property, Building, Unit discriminated, Contact, Document, Floor, ExtractionResult)
-- T-006 — Helmet, CORS allowlist, Zod-validated env loader, PrismaExceptionFilter, pino redaction
-- T-007 — Rate-limit primitive (token bucket + guard + decorator) ready to attach to T-504 / T-802
-- T-008 — `next-intl` wired on the App Router (`[locale]` segment, middleware, switcher), de + en catalogs, Zod error localization
-- `.env.example` — all required env vars
+ADRs cover the consequential calls: [`stack`](./public/adr-01-stack.md), [`AI extraction`](./public/adr-02-ai-extraction.md), [`bulk entry`](./public/adr-03-bulk-entry.md), [`data model`](./public/adr-04-data-model.md), [`AI handoff`](./public/adr-05-ai-handoff.md). Architecture diagram + data flow in [`public/architecture.md`](./public/architecture.md). German real-estate primer in [`public/domain.md`](./public/domain.md).
+
+---
+
+## What's deferred
+
+- **Auth / multi-tenant** — schema has `tenantId` columns; enforcement is a service-layer flip.
+- **OCR for scanned PDFs** — `tesseract.js` server-side would slot in as a 3rd extraction fallback.
+- **Real S3 storage** — local disk under `./uploads/{tenantId}/`; one swap away from `@aws-sdk/client-s3`.
+- **Versioning / change history** — last-write-wins; an `Audit` table is its own ticket.
+- **AI Assistant chatbot** — tool-calling (`list_properties`, `compute_mea_total`, `find_unit`) + SSE streaming.
+- **Lazy-load AI panel + virtualizer** — step 1 at 213 kB, step 3 at 222 kB; both under the 230 kB cap.
+
+Edge-case matrix in [`public/edge-cases.md`](./public/edge-cases.md). Design tokens in [`public/design-system.md`](./public/design-system.md).
