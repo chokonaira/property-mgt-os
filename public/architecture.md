@@ -54,14 +54,16 @@ property-mgt-os/
 │   ├── web/                  # Next.js 15
 │   └── api/                  # NestJS
 ├── packages/
-│   └── shared/               # Zod schemas + types
+│   └── shared/               # Zod schemas + types — single source of truth
 ├── prisma/
 │   ├── schema.prisma
 │   ├── migrations/
 │   └── seed.ts
-├── docs/
+├── public/                   # Reviewer-facing docs + ADRs
 └── docker-compose.yml
 ```
+
+`public/` is the only documentation folder exposed in this repo: this architecture overview, the deploy + runbook walkthroughs, the design-system reference, the edge-case matrix, the domain primer, and the five ADRs (`adr-01` through `adr-05`). Everything that ships to a reviewer lives there. Private build notes, tickets, and the Loom script are gitignored and stay local to the author.
 
 ---
 
