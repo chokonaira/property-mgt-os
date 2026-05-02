@@ -162,6 +162,10 @@
         "deleteSelected": "Delete selected",
         "toast": "{count, plural, one {Removed # row.} other {Removed # rows.}}"
       },
+      "bulkDuplicate": {
+        "duplicateSelected": "Duplicate selected",
+        "toast": "{count, plural, one {Duplicated # row.} other {Duplicated # rows.}}"
+      },
       "buildingFallback": "Building {index}",
       "paste": {
         "successAll": "{count, plural, one {Pasted # unit.} other {Pasted # units.}}",

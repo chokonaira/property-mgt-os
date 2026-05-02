@@ -215,6 +215,26 @@ export function UnitTable() {
     toast.error(t('bulkDelete.toast', { count: indices.length }));
   }, [fields, remove, selectedIds, liveSelectedCount, t]);
 
+  const duplicateSelected = useCallback(() => {
+    if (liveSelectedCount === 0) return;
+    // Build copies in the user's visual order so the duplicates land at
+    // the end as a coherent block, not scrambled. Inserting at each
+    // source index would shift later indices mid-loop and tangle which
+    // copies belong to which sources — appending at the bottom keeps
+    // the operation predictable, and drag-to-reorder is the recovery.
+    const copies: WizardUnitDraft[] = [];
+    fields.forEach((f, idx) => {
+      if (!selectedIds.has(f.id)) return;
+      const current = (getValues(`units.${idx}`) ?? {}) as WizardUnitDraft;
+      copies.push({ ...current, number: nextNumber(current.number) });
+    });
+    const startIndex = fields.length;
+    for (const copy of copies) append(copy, { shouldFocus: false });
+    setSelectedIds(new Set());
+    flashRange(startIndex, copies.length);
+    toast.success(t('bulkDuplicate.toast', { count: copies.length }));
+  }, [append, fields, flashRange, getValues, liveSelectedCount, selectedIds, t]);
+
   const columns = useMemo<Array<ColumnDef<WizardUnitDraft & { _id: string }, RowMeta>>>(
     () => [
       {
@@ -558,6 +578,16 @@ export function UnitTable() {
               onClick={() => setSelectedIds(new Set())}
             >
               {t('bulkDelete.clearSelection')}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={duplicateSelected}
+              className="hover:bg-success/10 hover:text-success"
+            >
+              <CopyPlus className="h-4 w-4" aria-hidden="true" />
+              {t('bulkDuplicate.duplicateSelected')}
             </Button>
             <Button
               type="button"

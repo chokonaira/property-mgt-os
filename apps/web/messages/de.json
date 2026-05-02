@@ -162,6 +162,10 @@
         "deleteSelected": "Ausgewählte löschen",
         "toast": "{count, plural, one {# Zeile entfernt.} other {# Zeilen entfernt.}}"
       },
+      "bulkDuplicate": {
+        "duplicateSelected": "Ausgewählte duplizieren",
+        "toast": "{count, plural, one {# Zeile dupliziert.} other {# Zeilen dupliziert.}}"
+      },
       "buildingFallback": "Gebäude {index}",
       "paste": {
         "successAll": "{count, plural, one {# Einheit eingefügt.} other {# Einheiten eingefügt.}}",
