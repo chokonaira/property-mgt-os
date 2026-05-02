@@ -415,9 +415,9 @@ export function GeneralInfoForm() {
             promote this help text out of the muted-grey description slot
             and into an explicit info callout. Without it the
             WEG/MV distinction reads like an arbitrary radio choice. */}
-        <p className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground/80">
+        <p className="flex items-start gap-2 rounded-md border border-accent/30 bg-accent/10 px-3 py-2 text-sm text-foreground/80">
           <Info
-            className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
+            className="mt-0.5 h-4 w-4 shrink-0 text-accent"
             aria-hidden="true"
           />
           <span>{t('managementType.help')}</span>

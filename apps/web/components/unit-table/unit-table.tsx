@@ -212,7 +212,7 @@ export function UnitTable() {
     // Remove from highest index first so earlier indices stay valid.
     indices.reverse().forEach((idx) => remove(idx));
     setSelectedIds(new Set());
-    toast.success(t('bulkDelete.toast', { count: indices.length }));
+    toast.error(t('bulkDelete.toast', { count: indices.length }));
   }, [fields, remove, selectedIds, liveSelectedCount, t]);
 
   const columns = useMemo<Array<ColumnDef<WizardUnitDraft & { _id: string }, RowMeta>>>(
@@ -420,7 +420,7 @@ export function UnitTable() {
               size="sm"
               onClick={() => {
                 remove(row.index);
-                toast.success(t('removeToast', { index: row.index + 1 }));
+                toast.error(t('removeToast', { index: row.index + 1 }));
               }}
               disabled={fields.length === 1}
               aria-label={t('removeRow', { index: row.index + 1 })}
