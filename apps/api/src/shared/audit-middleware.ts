@@ -108,8 +108,17 @@ export function registerAuditMiddleware(
       });
       // Probabilistic retention sweep — keeps the table bounded
       // without paying the count + delete cost on every write.
+      // Fire-and-forget: prune failures NEVER surface to the caller
+      // (audit-table-down isn't worth crashing a real write over),
+      // and the `.catch` keeps the floating promise rejection from
+      // bubbling up as an unhandled-rejection in the test runtime
+      // when a stubbed prisma doesn't implement count / findMany.
       if (Math.random() < AUDIT_PRUNE_PROBABILITY) {
-        void pruneAuditLog(prisma, ctx.tenantId, AUDIT_MAX_ROWS_PER_TENANT);
+        void pruneAuditLog(prisma, ctx.tenantId, AUDIT_MAX_ROWS_PER_TENANT).catch(
+          (err: unknown) => {
+            console.warn('audit.prune_failed', { tenantId: ctx.tenantId, err });
+          },
+        );
       }
     } catch (err) {
       // Telemetry must never break the originating write.

@@ -182,6 +182,33 @@ describe('registerAuditMiddleware', () => {
     warnSpy.mockRestore();
   });
 
+  it('swallows prune failures from the fire-and-forget retention sweep', async () => {
+    // Force the probabilistic prune to fire, then have it throw —
+    // simulates an audit-table-down condition or a partial mock that
+    // doesn't implement prisma.auditLog.count. The middleware must
+    // catch internally; an unhandled rejection here would crash the
+    // request runtime (and the test runner — CI caught this before
+    // the .catch landed).
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const harness = makeHarness({
+      contextStore: ctx,
+      nextResult: { id: 'p1', name: 'X' },
+    });
+    // Audit insert succeeds; prune throws because the mock harness
+    // intentionally has no count() method.
+    const result = await harness.invoke({
+      model: 'Property',
+      action: 'create',
+      args: { data: { name: 'X' } },
+    });
+    // Give the floating promise a tick to settle inside the catch.
+    await new Promise((r) => setImmediate(r));
+    expect(result).toEqual({ id: 'p1', name: 'X' });
+    randomSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
   it('captures entityId from the result when create has no where', async () => {
     const harness = makeHarness({
       contextStore: ctx,
