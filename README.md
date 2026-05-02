@@ -99,7 +99,7 @@ Workspace runs **400 tests** across three packages (72 shared schemas, 123 API s
 
 ## Performance
 
-First-load JS from `pnpm build`: shared chunks **101 kB** · property detail **163 kB** · wizard step 2 **186 kB** · wizard step 1 **213 kB** (carries the AI Review Panel inline) · wizard step 3 **222 kB** (carries TanStack Virtual, engages past 50 rows). Badge cap **230 kB** with reviewer-visible headroom; lazy-loading the panel + virtualizer via `next/dynamic` is queued as a v1.1 cut.
+First-load JS from `pnpm build`: shared chunks **102 kB** · dashboard **165 kB** · property detail **174 kB** · wizard step 2 **187 kB** · wizard step 1 **211 kB** · wizard step 3 **223 kB** (carries TanStack Virtual, engages past 50 rows). The AI Review Panel is loaded via `next/dynamic` so its body only ships when extraction succeeds; deps it shares with always-present components (Radix Popover, ConfidenceChip) stay in step 1. Badge cap **230 kB** with reviewer-visible headroom; lazy-loading TanStack Virtual on step 3 is queued as a v1.1 cut.
 
 ## OpenAPI
 
@@ -129,6 +129,6 @@ ADRs cover the consequential calls: [`stack`](./public/adr-01-stack.md), [`AI ex
 - **Real S3 storage** — local disk under `./uploads/{tenantId}/`; one swap away from `@aws-sdk/client-s3`.
 - **Versioning / change history** — last-write-wins; an `Audit` table is its own ticket.
 - **AI Assistant chatbot** — tool-calling (`list_properties`, `compute_mea_total`, `find_unit`) + SSE streaming.
-- **Lazy-load AI panel + virtualizer** — step 1 at 213 kB, step 3 at 222 kB; both under the 230 kB cap.
+- **Lazy-load TanStack Virtual on units step** — step 3 at 223 kB (engages past 50 rows). Deferring via `next/dynamic` would drop step 3 below ~190 kB; not blocking because we're under the 230 kB cap. (AI Review Panel is already lazy as of this push.)
 
 Edge-case matrix in [`public/edge-cases.md`](./public/edge-cases.md). Design tokens in [`public/design-system.md`](./public/design-system.md).

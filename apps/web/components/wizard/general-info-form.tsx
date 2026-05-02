@@ -9,13 +9,33 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ContactCombobox } from '@/components/contact-combobox';
+import dynamic from 'next/dynamic';
 import { PdfUploader } from '@/components/pdf-uploader';
+// Import the always-present components from their direct files, NOT
+// the barrel — pulling through the index would defeat the lazy-load
+// below because webpack treats the barrel as a single module and
+// includes every re-export in step 1's initial chunk.
 import {
-  AiReviewPanel,
   ExtractionErrorBanner,
   ExtractionLoading,
-  FieldChip,
-} from '@/components/ai-extraction-review';
+} from '@/components/ai-extraction-review/extraction-status';
+import { FieldChip } from '@/components/ai-extraction-review/field-chip';
+
+// AiReviewPanel only renders after extraction succeeds — defer the
+// chunk (confidence chips, source-span popovers, accept/discard
+// affordances, extraction-warnings rollup) until the user actually
+// clicks "Use AI to extract". Step 1's first-load JS drops because
+// the panel + its tree (Radix Popover, ConfidenceChip,
+// SourceSpanPopover, ExtractionWarnings) is no longer in the initial
+// route bundle. ssr: false because the panel is purely interactive and
+// post-mutation; nothing to pre-render.
+const AiReviewPanel = dynamic(
+  () =>
+    import('@/components/ai-extraction-review/ai-review-panel').then(
+      (mod) => mod.AiReviewPanel,
+    ),
+  { ssr: false },
+);
 import { useUploadDocument } from '@/lib/hooks/use-upload-document';
 import { useExtractDocument } from '@/lib/hooks/use-extract-document';
 import { useUniqueNumberCheck } from '@/lib/hooks/use-unique-number-check';
