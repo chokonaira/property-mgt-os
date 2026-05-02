@@ -45,9 +45,9 @@ Domain rules (very important):
 
 11. Contacts: extract WEG-Verwalter (PROPERTY_MANAGER) and Buchhaltung (ACCOUNTANT). They are companies, not people; extract company name and address.
 
-12. Confidence: for each field you populate, score your confidence in confidenceByField[fieldPath] from 0 (guess) to 1 (verbatim from doc). Use the dotted path conventions from the schema (e.g. "property.name", "buildings[0].street", "units[3].sizeSqm").
+12. Confidence (REQUIRED, NOT OPTIONAL): for EVERY field you populate, you MUST add an entry to confidenceByField using the dotted path convention from the schema (e.g. "property.name", "buildings[0].street", "units[3].sizeSqm"). Score from 0 (guess) to 1 (verbatim from doc). Returning an empty confidenceByField is wrong — the UI renders every field as "Unverified" and the user loses trust in the extraction. If you populated 30 fields, this map must have ~30 entries.
 
-13. Source span: where useful, copy the verbatim line of the document into sourceSpansByField[fieldPath] so the user can verify.
+13. Source span (REQUIRED for verbatim values): for every field whose value appears literally in the document, you MUST copy the verbatim line into sourceSpansByField using the same dotted-path key. The value MUST match a substring of the document text exactly (the server runs indexOf to verify; mismatched spans are silently dropped). Skip the entry only when the value is normalised (e.g. German "1.000" → 1000) or computed (e.g. management type derived from § 8 WEG).
 
 14. Warnings: emit warnings[] for:
     - MEA_MISMATCH: if you can compute that the unit MEA shares do not sum to property.totalMea (typical sample: 900/1000 = 100 unaccounted).

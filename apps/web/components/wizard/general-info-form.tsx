@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
-import { AlertCircle, CheckCircle2, Loader2, Sparkles, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Info, Loader2, Sparkles, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -408,10 +408,20 @@ export function GeneralInfoForm() {
       <Field
         label={t('managementType.label')}
         htmlFor={ids.managementType}
-        description={t('managementType.help')}
         required
         adornment={<FieldChip path="property.managementType" fieldLabel={t('managementType.label')} />}
       >
+        {/* Management type drives whether the AI upload zone appears, so
+            promote this help text out of the muted-grey description slot
+            and into an explicit info callout. Without it the
+            WEG/MV distinction reads like an arbitrary radio choice. */}
+        <p className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground/80">
+          <Info
+            className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <span>{t('managementType.help')}</span>
+        </p>
         <Controller
           control={control}
           name="general.managementType"
