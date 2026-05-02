@@ -182,7 +182,7 @@ export function UnitTable() {
       {
         id: 'type',
         header: t('columns.type'),
-        size: 130,
+        size: 150,
         cell: ({ row }) => (
           <CellWithChip path={`units[${row.index}].type`} label={t('columns.type')}>
             <TypeCell rowIndex={row.index} onEdit={onEdit(row.index, 'type')} />
@@ -286,7 +286,7 @@ export function UnitTable() {
       {
         id: 'yearBuilt',
         header: t('columns.year'),
-        size: 90,
+        size: 110,
         cell: ({ row }) => (
           <CellWithChip path={`units[${row.index}].yearBuilt`} label={t('columns.year')}>
             <input
@@ -532,7 +532,11 @@ export function UnitTable() {
                       className="border-b border-border last:border-0"
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="px-3 py-2 align-middle">
+                        <td
+                          key={cell.id}
+                          style={{ width: cell.column.getSize() }}
+                          className="px-3 py-2 align-middle"
+                        >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
@@ -549,7 +553,11 @@ export function UnitTable() {
               rowModel.rows.map((row) => (
                 <tr key={row.id} className="border-b border-border last:border-0">
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-3 py-2 align-middle">
+                    <td
+                      key={cell.id}
+                      style={{ width: cell.column.getSize() }}
+                      className="px-3 py-2 align-middle"
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
