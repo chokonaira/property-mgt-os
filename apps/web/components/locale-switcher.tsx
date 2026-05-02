@@ -1,5 +1,6 @@
 'use client';
 
+import { Fragment } from 'react';
 import { useLocale } from 'next-intl';
 import { useTransition } from 'react';
 import { usePathname, useRouter } from '@/i18n/navigation';
@@ -21,33 +22,40 @@ export function LocaleSwitcher() {
     <div
       role="group"
       aria-label="Locale"
-      className="inline-flex items-center rounded-md border border-input bg-background"
+      className={cn(
+        'inline-flex items-center gap-1 text-xs uppercase tracking-wide',
+        isPending && 'opacity-60',
+      )}
     >
       {locales.map((code, idx) => {
         const isActive = code === active;
         return (
-          <button
-            key={code}
-            type="button"
-            disabled={isPending || isActive}
-            aria-pressed={isActive}
-            aria-label={fullName[code]}
-            onClick={() => {
-              startTransition(() => {
-                router.replace(pathname, { locale: code });
-              });
-            }}
-            className={cn(
-              'h-9 px-2.5 text-xs uppercase tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
-              idx === 0 ? 'rounded-l-md' : 'rounded-r-md',
-              isActive
-                ? 'cursor-default font-bold text-foreground'
-                : 'cursor-pointer font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
-              isPending && 'opacity-60',
-            )}
-          >
-            {code.toUpperCase()}
-          </button>
+          <Fragment key={code}>
+            {idx > 0 ? (
+              <span aria-hidden="true" className="text-muted-foreground/40">
+                /
+              </span>
+            ) : null}
+            <button
+              type="button"
+              disabled={isPending || isActive}
+              aria-pressed={isActive}
+              aria-label={fullName[code]}
+              onClick={() => {
+                startTransition(() => {
+                  router.replace(pathname, { locale: code });
+                });
+              }}
+              className={cn(
+                'rounded-sm px-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                isActive
+                  ? 'cursor-default font-bold text-foreground'
+                  : 'cursor-pointer font-medium text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {code.toUpperCase()}
+            </button>
+          </Fragment>
         );
       })}
     </div>
