@@ -137,7 +137,7 @@ function PropertyRow({ property }: { property: PropertyListItem }) {
 function PropertiesTableSkeleton() {
   return (
     <div
-      className="overflow-hidden rounded-lg border border-border bg-card"
+      className="overflow-x-auto rounded-lg border border-border bg-card"
       aria-hidden="true"
       data-testid="properties-skeleton"
     >
