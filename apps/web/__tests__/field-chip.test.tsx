@@ -50,14 +50,23 @@ describe('FieldChip', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders nothing when the path was edited since accept', () => {
+  it('hides the chip (without unmounting) when the path was edited since accept', () => {
+    // The Radix Popover inside SourceSpanPopover portals to body; an
+    // unmount during typing raced with portal cleanup and crashed the
+    // tree. Hiding via aria-hidden + invisible keeps the subtree
+    // mounted so the user-facing affordance disappears, but the
+    // Popover lifecycle stays in React's hands.
     wizardState.meta = {
       confidenceByField: { 'property.name': 0.92 },
       sourceSpansByField: { 'property.name': 'Parkview Residences Berlin' },
       editedFields: new Set(['property.name']),
     };
     const { container } = render(withIntl(<FieldChip path="property.name" fieldLabel="Name" />));
-    expect(container.firstChild).toBeNull();
+    const wrapper = container.firstChild as HTMLElement | null;
+    expect(wrapper).not.toBeNull();
+    expect(wrapper?.getAttribute('aria-hidden')).toBe('true');
+    expect(wrapper?.className).toMatch(/invisible/);
+    expect(wrapper?.className).toMatch(/opacity-0/);
   });
 
   it('renders nothing when the path has neither confidence nor a source span', () => {
