@@ -59,8 +59,20 @@ export function useWizardPersistence(
   // saved" before the user has typed anything.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const subscription = methods.watch((value) => {
-      if (!methods.formState.isDirty) return;
+    const subscription = methods.watch((value, info) => {
+      // RHF emits a watch tick on every state change, including its
+      // own methods.reset() pass during hydration. Restrict persistence
+      // (and the "Draft saved" indicator) to actual user edits by
+      // checking info.type — RHF emits 'change' only for register'd
+      // onChange events. Restore/reset passes carry no type, so a
+      // freshly hydrated form doesn't claim "Draft saved just now".
+      if (info?.type !== 'change') {
+        // Form is back to a clean baseline (Discard, hydration restore).
+        // Drop the timestamp so the indicator doesn't reference a draft
+        // that no longer matches what the user is looking at.
+        if (!methods.formState.isDirty) setLastSavedAt(null);
+        return;
+      }
       if (writeTimer.current) clearTimeout(writeTimer.current);
       writeTimer.current = setTimeout(() => {
         try {
