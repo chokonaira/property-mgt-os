@@ -77,16 +77,21 @@ jobs:
       - name: Build shared + web
         run: pnpm --filter @buena/shared build && pnpm --filter @buena/web build
 
-      - name: Start web in background
-        run: pnpm --filter @buena/web start -- -p 3000 &
+      - name: Start web + wait + run responsive e2e
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001
-
-      - name: Wait for web
-        run: npx -y wait-on http://localhost:3000 -t 60000
-
-      - name: Run responsive e2e
-        run: pnpm --filter @buena/web exec playwright test e2e/responsive.spec.ts --reporter=list
+        run: |
+          set -euo pipefail
+          pnpm --filter @buena/web start > /tmp/web.log 2>&1 &
+          WEB_PID=$!
+          trap "kill $WEB_PID 2>/dev/null || true" EXIT
+          npx -y wait-on http://localhost:3000 -t 60000 || {
+            echo "::group::web.log"
+            cat /tmp/web.log || true
+            echo "::endgroup::"
+            exit 1
+          }
+          pnpm --filter @buena/web exec playwright test e2e/responsive.spec.ts --reporter=list
 
       - name: Upload Playwright report on failure
         if: failure()
