@@ -31,7 +31,7 @@ The MEA invariant runs everywhere it can fail: live in the wizard footer as the 
 - **Bulk unit table.** TanStack Table headless, inline editing, full keyboard navigation, paste TSV/CSV, "Generate N units" with auto-`Start at` (max existing + 1) and hard-blocked range collisions, **Import units from PDF** (Replace / Merge / Discard preview against existing rows), duplicate row + bulk-duplicate that auto-advance past existing numbers, multi-select bulk delete, sticky MEA invariant bar (green / amber / red), click-to-jump validation summary banner, virtualised past 50 rows.
 - **Edit + audit history.** Inline pencil-edit on the property header (name, unique number) hits `PATCH /properties/:id`; every diff lands in the AuditLog and shows up in the "Last modified by …" pill (newest 5) + the full timeline modal.
 - **AI Review Panel.** Per-field confidence chips (≥ 0.85 green, 0.6–0.85 amber, < 0.6 red) + source-span popovers + prominent warnings. Server-side `verifySpans` drops hallucinated citations before the response leaves the API. Inline chips persist on the form post-accept and clear when the user edits a field. Pre-LLM **doc-type guard** rejects non-Teilungserklärung uploads with a clear message — saves the cost + spares the user a junk extraction.
-- **Production-grade write defenses.** `POST /properties` accepts an `X-Idempotency-Key` header — duplicate POSTs (double-clicked Save, retried fetch) replay the original response instead of creating a second property. Soft-delete with a 30-second Undo toast (Stripe pattern); archived rows stay restorable, the dashboard hides them. CI gates a per-route **First Load JS budget** (240 kB) so a bundle regression breaks the PR, not the user.
+- **Production-grade write defenses.** `POST /properties` accepts an `X-Idempotency-Key` header — duplicate POSTs (double-clicked Save, retried fetch) replay the original response instead of creating a second property. Delete is implemented as soft-delete: the row's `deletedAt` is set, the dashboard hides it, and the post-delete toast carries an Undo action for 30 seconds (Stripe pattern). The `POST /properties/:id/restore` endpoint exists for the v1.1 archived-properties admin view; once the toast dismisses there's no UI to re-find the row, so a 30-day cron purge keeps the archived set bounded. CI gates a per-route **First Load JS budget** (240 kB) so a bundle regression breaks the PR, not the user.
 - **OpenAPI 3.1** at `/openapi.json` generated from the same Zod schemas the form uses.
 - **Error boundaries** at `app/[locale]/error.tsx`, `not-found.tsx`, `global-error.tsx` — localised copy + Retry / Back-to-dashboard.
 - **i18n** via `next-intl`; default `de` (unprefixed URL), opt-in `/en`. Domain terms stay German.
@@ -141,6 +141,11 @@ Scope cuts, not architectural debt. Each item lists what exists today, what woul
 - _Today_: Create + Delete + property-level inline edit (name, unique number) are wired via `PATCH /properties/:id`. Each diff lands in the AuditLog automatically and surfaces in the "Last modified by …" pill.
 - _v1.1_: reopen the wizard against an existing property to edit buildings + units with the same RHF + Zod schemas the create flow uses, with per-field diffing.
 - _Cost_: ~half-day on top of the existing wizard.
+
+**Archived-properties admin view**
+- _Today_: Delete is soft (sets `deletedAt`); restore is a one-click Undo on the post-delete toast for 30 seconds. The `POST /properties/:id/restore` endpoint exists; the dashboard filters archived rows out.
+- _v1.1_: dedicated `/properties/archived` page listing soft-deleted rows with Restore + per-row "X days until purge" + a 30-day cron that hard-deletes past the window for GDPR-grade erasure.
+- _Cost_: ~1.5 h for the page + restore wiring; ~30 min for the cron.
 
 **Contact (Property Manager / Accountant) edit + delete**
 - _Today_: Create is wired via the wizard's inline combobox modal.

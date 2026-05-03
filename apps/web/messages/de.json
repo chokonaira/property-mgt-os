@@ -284,13 +284,13 @@
   "propertyDetail": {
     "delete": {
       "cta": "Löschen",
-      "title": "Diese Immobilie archivieren?",
-      "description": "„{name}\" wird mitsamt aller Gebäude, Einheiten und der hochgeladenen Teilungserklärung archiviert. Sie haben 30 Sekunden, um die Aktion über den Toast rückgängig zu machen.",
-      "confirmLabel": "Immobilie archivieren",
-      "toast": "Immobilie archiviert.",
+      "title": "Diese Immobilie löschen?",
+      "description": "Beim Löschen von „{name}\" wird die Immobilie zusammen mit allen Gebäuden, Einheiten und der hochgeladenen Teilungserklärung vom Dashboard entfernt. Sie haben 30 Sekunden, um die Aktion über den Toast rückgängig zu machen.",
+      "confirmLabel": "Immobilie löschen",
+      "toast": "Immobilie gelöscht.",
       "undo": "Rückgängig",
       "restored": "Immobilie wiederhergestellt.",
-      "errorToast": "Archivieren fehlgeschlagen. Bitte erneut versuchen.",
+      "errorToast": "Löschen fehlgeschlagen. Bitte erneut versuchen.",
       "restoreErrorToast": "Wiederherstellung fehlgeschlagen. Bitte erneut versuchen."
     },
     "notFound": {
