@@ -29,6 +29,7 @@ import { FieldChip } from '@/components/ai-extraction-review';
 import { useStepValidator, useWizard } from '@/components/wizard/wizard-context';
 import { FloorCell } from '@/components/unit-table/floor-cell';
 import { GenerateUnitsDialog } from '@/components/unit-table/generate-units-dialog';
+import { ImportUnitsFromFileDialog } from '@/components/unit-table/import-units-from-file-dialog';
 import { useCellNavigation } from '@/components/unit-table/use-cell-navigation';
 import { parsePastedRows, shouldHandleAsBulkPaste } from '@/lib/parse-tsv';
 import { findNextAvailableNumber } from '@/lib/duplicate-unit-number';
@@ -148,7 +149,7 @@ export function UnitTable() {
     trigger,
     formState: { errors },
   } = useFormContext<WizardDraftInput>();
-  const { fields, append, remove, insert, move } = useFieldArray({ control, name: 'units' });
+  const { fields, append, remove, insert, move, replace } = useFieldArray({ control, name: 'units' });
   const buildingsWatch = useWatch({ control, name: 'buildings' });
   const buildings = useMemo(() => buildingsWatch ?? [], [buildingsWatch]);
   const unitsWatch = useWatch({ control, name: 'units' });
@@ -939,6 +940,19 @@ export function UnitTable() {
         <Button type="button" variant="outline" onClick={() => append(EMPTY_UNIT)}>
           + {t('addRow')}
         </Button>
+        <ImportUnitsFromFileDialog
+          onApply={(next, summary) => {
+            // `replace` swaps the entire field array in one mutation,
+            // which preserves RHF's update batching + keeps the
+            // duplicate-detector / step-validator from running on a
+            // half-applied state. The dialog has already filtered the
+            // list per the user's chosen mode (Replace / Merge), so
+            // we just install the result here.
+            replace(next);
+            const startIndex = summary.mode === 'replace' ? 0 : Math.max(0, next.length - summary.added);
+            if (summary.added > 0) flashRange(startIndex, summary.added);
+          }}
+        />
         <GenerateUnitsDialog
           onGenerate={({ rows, skipped }) => {
             // Pristine seed → replace; otherwise append.

@@ -185,6 +185,34 @@
         "successAll": "{count, plural, one {# Einheit eingefügt.} other {# Einheiten eingefügt.}}",
         "successPartial": "{count, plural, one {# Einheit eingefügt.} other {# Einheiten eingefügt.}} {errors, plural, one {# Zeile mit Fehlern.} other {# Zeilen mit Fehlern.}}"
       },
+      "import": {
+        "cta": "Aus PDF importieren",
+        "title": "Einheiten aus Teilungserklärung importieren",
+        "description": "PDF hochladen — wir lesen die Einheitenliste aus. Sie prüfen die Treffer, bevor etwas übernommen wird.",
+        "pickLabel": "PDF hierher ziehen oder klicken",
+        "pickHint": "Bis zu 10 MB. Gleiche Engine wie die Extraktion in Schritt 1.",
+        "extractingLabel": "Dokument wird gelesen…",
+        "errorTooLarge": "Datei größer als 10 MB. Bitte kleinere Variante hochladen.",
+        "errorWrongType": "Nur PDF-Dateien werden hier unterstützt.",
+        "errorExtraction": "Einheiten konnten aus diesem Dokument nicht gelesen werden.",
+        "retry": "Erneut versuchen",
+        "clear": "Andere Datei wählen",
+        "previewIncoming": "Im PDF gefunden",
+        "previewMatched": "Einem Gebäude zugeordnet",
+        "previewNew": "Neu",
+        "previewConflicts": "Bereits vorhanden",
+        "droppedNote": "{count, plural, one {# Einheit} other {# Einheiten}} konnten keinem Ihrer {buildings, plural, one {# Gebäude} other {# Gebäude}} zugeordnet werden und wurden ausgelassen.",
+        "conflictHeading": "{count, plural, one {# Nummer ist bereits in Ihrer Tabelle:} other {# Nummern sind bereits in Ihrer Tabelle:}}",
+        "conflictMore": " · +{remaining, plural, one {# weitere} other {# weitere}}",
+        "discard": "Verwerfen",
+        "merge": "Zusammenführen",
+        "replace": "Alles ersetzen",
+        "toastApplied": {
+          "merge": "{count, plural, one {# Einheit importiert.} other {# Einheiten importiert.}}",
+          "mergeWithConflicts": "{added, plural, one {# Einheit importiert;} other {# Einheiten importiert;}} {conflicts, plural, one {# bestehende bei Konflikt beibehalten.} other {# bestehende bei Konflikt beibehalten.}}",
+          "replace": "{count, plural, one {Ersetzt durch # Einheit.} other {Ersetzt durch # Einheiten.}}"
+        }
+      },
       "generate": {
         "cta": "Einheiten generieren",
         "title": "Einheiten generieren",
