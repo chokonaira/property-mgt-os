@@ -28,7 +28,8 @@ The MEA invariant runs everywhere it can fail: live in the wizard footer as the 
 
 - **Dashboard + property detail.** WEG / MV listing with type badges; create CTA with optimistic insertion + rollback. Detail view groups units by building with the MEA bar pinned at the top.
 - **3-step wizard** (General Info → Buildings → Units). One RHF `FormProvider`, auto-saves draft to `localStorage` every 500 ms, "Saved 30 s ago" footer indicator.
-- **Bulk unit table.** TanStack Table headless, inline editing, full keyboard navigation, paste TSV/CSV, "Generate N units" (parking-block case), duplicate row, multi-select bulk delete, sticky MEA invariant bar (green / amber / red), virtualised past 50 rows.
+- **Bulk unit table.** TanStack Table headless, inline editing, full keyboard navigation, paste TSV/CSV, "Generate N units" with auto-`Start at` (max existing + 1) and hard-blocked range collisions, **Import units from PDF** (Replace / Merge / Discard preview against existing rows), duplicate row + bulk-duplicate that auto-advance past existing numbers, multi-select bulk delete, sticky MEA invariant bar (green / amber / red), click-to-jump validation summary banner, virtualised past 50 rows.
+- **Edit + audit history.** Inline pencil-edit on the property header (name, unique number) hits `PATCH /properties/:id`; every diff lands in the AuditLog and shows up in the "Last modified by …" pill (newest 5) + the full timeline modal.
 - **AI Review Panel.** Per-field confidence chips (≥ 0.85 green, 0.6–0.85 amber, < 0.6 red) + source-span popovers + prominent warnings. Server-side `verifySpans` drops hallucinated citations before the response leaves the API. Inline chips persist on the form post-accept and clear when the user edits a field.
 - **OpenAPI 3.1** at `/openapi.json` generated from the same Zod schemas the form uses.
 - **Error boundaries** at `app/[locale]/error.tsx`, `not-found.tsx`, `global-error.tsx` — localised copy + Retry / Back-to-dashboard.
