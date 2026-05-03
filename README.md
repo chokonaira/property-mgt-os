@@ -185,12 +185,6 @@ Scope cuts, not architectural debt. Each item lists what exists today, what woul
 - _v1.1_: tool-calling (`list_properties`, `compute_mea_total`, `find_unit`) + SSE streaming on the response. Reuses the existing `AiExtractionClient` interface, different system prompt + tools.
 - _Cost_: ~1.5 days for the wedge feature; was traded against polishing the wizard + extraction.
 
-**Lazy-load TanStack Virtual on units step (perf)**
-- _Today_: step 3 first-load JS = 238 kB. Virtualizer is statically imported; ships in the bundle even when the user has &lt;50 units. Generate + Import dialogs are already lazy via `next/dynamic`.
-- _v1.1_: wrap the virtualized branch in `next/dynamic({ ssr: false })`. Step 3 drops to ~205 kB.
-- _Cost_: ~30 min.
-- _Why not blocking_: bundle-budget CI gate is 240 kB; step 3 sits 2 kB under, but adding any new units-step component would push it over. The lazy-virtualizer split buys ~30 kB of headroom for future work.
-
 ---
 
 Edge-case matrix in [`docs/edge-cases.md`](./docs/edge-cases.md). Design tokens in [`docs/design-system.md`](./docs/design-system.md). ADRs (Context → Decision → Consequences) in [`docs/adr-01..05.md`](./docs/) — that's where the trade-offs for decisions we DID make live; this section is what we deliberately didn't build.
