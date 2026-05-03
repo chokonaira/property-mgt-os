@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, FilePlus2, FileX2, Pencil } from 'lucide-react';
+import { ChevronDown, ChevronUp, FilePlus2, FileX2, Loader2, Pencil } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
   Dialog,
@@ -11,8 +11,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import type { AuditAction, AuditEntity, AuditLogEntry } from '@buena/shared';
-import { HISTORY_PAGE_SIZE, usePropertyHistory } from '@/lib/hooks/use-property-history';
+import {
+  HISTORY_DIALOG_PAGE_SIZE,
+  usePropertyHistory,
+} from '@/lib/hooks/use-property-history';
 import { cn } from '@/lib/utils';
 
 interface PropertyHistoryDialogProps {
@@ -21,11 +25,12 @@ interface PropertyHistoryDialogProps {
   onOpenChange: (next: boolean) => void;
 }
 
-// Single source of truth — the hook owns the default page size + a
-// hard ceiling so a misuse can't request hundreds of rows in one
-// shot. The dialog reads HISTORY_PAGE_SIZE so "load more" math
-// stays in sync with what was actually fetched.
-const PAGE_SIZE = HISTORY_PAGE_SIZE;
+// Dialog uses a larger page than the pill preview — power users
+// reviewing the audit shouldn't paginate every 5 rows. Load More
+// fetches the next page via a higher `take`; React Query's
+// keepPreviousData keeps already-shown rows on screen during
+// the in-flight refetch.
+const PAGE_SIZE = HISTORY_DIALOG_PAGE_SIZE;
 
 /**
  * Full audit timeline for a property + every building + every unit
@@ -43,13 +48,19 @@ const PAGE_SIZE = HISTORY_PAGE_SIZE;
  */
 export function PropertyHistoryDialog({ propertyId, open, onOpenChange }: PropertyHistoryDialogProps) {
   const t = useTranslations('history');
-  const { data, isPending, isError } = usePropertyHistory(propertyId, {
-    take: PAGE_SIZE,
+  // `take` grows by PAGE_SIZE per Load More click. React Query
+  // sees a new key + fetches the larger page; placeholderData
+  // keepPreviousData keeps the already-rendered rows on screen
+  // during the swap so the timeline doesn't flash a skeleton.
+  const [take, setTake] = useState(PAGE_SIZE);
+  const { data, isPending, isError, isFetching } = usePropertyHistory(propertyId, {
+    take,
     enabled: open,
   });
 
   const total = data?.total ?? 0;
   const items = data?.items ?? [];
+  const hasMore = total > items.length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -83,10 +94,26 @@ export function PropertyHistoryDialog({ propertyId, open, onOpenChange }: Proper
           )}
         </div>
 
-        {total > PAGE_SIZE ? (
+        {hasMore ? (
+          <div className="flex-shrink-0 border-t border-border px-5 py-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setTake((t) => t + PAGE_SIZE)}
+              disabled={isFetching}
+              className="w-full"
+            >
+              {isFetching ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : null}
+              {t('loadMore', { remaining: total - items.length })}
+            </Button>
+          </div>
+        ) : items.length > 0 ? (
           <div className="flex-shrink-0 border-t border-border px-5 py-2 text-center">
             <p className="text-[11px] text-muted-foreground">
-              {t('capNote', { shown: items.length, total })}
+              {t('allShown', { count: items.length })}
             </p>
           </div>
         ) : null}

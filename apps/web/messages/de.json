@@ -381,6 +381,7 @@
     "description": "{total, plural, =0 {Noch keine Änderungen erfasst.} one {# Änderung} other {# Änderungen}} an dieser Immobilie und ihren Gebäuden + Einheiten.",
     "loadMore": "{remaining, plural, one {# weiteren Eintrag} other {# weitere Einträge}} laden",
     "capNote": "Zeigt die {shown, plural, one {# neueste Änderung} other {# neuesten Änderungen}} von insgesamt {total}.",
+    "allShown": "{count, plural, one {# Eintrag angezeigt — das ist alles.} other {Alle # Einträge angezeigt.}}",
     "viewAll": "Alle {total, plural, one {# Änderung} other {# Änderungen}} ansehen",
     "error": "Verlauf konnte nicht geladen werden. Bitte erneut versuchen.",
     "empty": "Für diese Immobilie wurden noch keine Änderungen erfasst.",

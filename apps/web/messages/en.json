@@ -381,6 +381,7 @@
     "description": "{total, plural, =0 {No changes recorded yet.} one {# change} other {# changes}} across this property and its buildings + units.",
     "loadMore": "Load {remaining, plural, one {# more entry} other {# more entries}}",
     "capNote": "Showing the {shown, plural, one {# most recent change} other {# most recent changes}} of {total} total.",
+    "allShown": "{count, plural, one {# entry shown — that's all.} other {All # entries shown.}}",
     "viewAll": "View all {total, plural, one {# change} other {# changes}}",
     "error": "Couldn't load history. Try again in a moment.",
     "empty": "No changes recorded yet for this property.",

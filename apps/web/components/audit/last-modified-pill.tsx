@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { AuditAction, AuditEntity } from '@buena/shared';
-import { usePropertyHistory } from '@/lib/hooks/use-property-history';
+import { HISTORY_PILL_SIZE, usePropertyHistory } from '@/lib/hooks/use-property-history';
 import { PropertyHistoryDialog } from './property-history-dialog';
 import { cn } from '@/lib/utils';
 
@@ -16,7 +16,7 @@ interface LastModifiedPillProps {
   className?: string;
 }
 
-const PREVIEW_COUNT = 5;
+const PREVIEW_COUNT = HISTORY_PILL_SIZE;
 
 /**
  * Compact "Last modified by X · 5 min ago" pill for the property

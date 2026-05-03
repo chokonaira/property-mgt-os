@@ -4,18 +4,28 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { AuditLogListResponseSchema, type AuditLogListResponse } from '@buena/shared';
 import { apiFetch } from '@/lib/api-client';
 
-// Product cap: the change-history surfaces (pill popover + full
-// dialog) only ever show the most recent 5 entries. Keeping the cap
-// low prevents the modal from growing into a wall of audit noise
-// that nobody reads, keeps the network payload trivial, and matches
-// the "Last modified by …" pill's role as a quick recency hint
-// rather than a forensic log.
-export const HISTORY_PAGE_SIZE = 5;
+// Pill popover preview — the recency hint that lives next to the
+// title. 5 fits one viewport without scrolling and matches the
+// pill's role as a quick "what changed lately" glance.
+export const HISTORY_PILL_SIZE = 5;
 
-// Hard ceiling so a misuse / typo in the caller can't request more
-// than the product cap. Both surfaces fetch with `take=5`; this
-// safety net guards against accidental drift.
-export const HISTORY_MAX_TAKE = 5;
+// Full-timeline dialog page. Larger than the pill so a power user
+// reviewing the audit doesn't paginate every 5 rows. Load More
+// pages another 25 at a time.
+export const HISTORY_DIALOG_PAGE_SIZE = 25;
+
+// Per-request safety net so a typo in the caller can't pull
+// thousands of rows in one shot. Server enforces its own bound; this
+// guards the client.
+export const HISTORY_MAX_TAKE = 100;
+
+/**
+ * @deprecated Kept for backwards-compatibility while the prefetch
+ * in usePropertyDetail still imports it. Use HISTORY_PILL_SIZE for
+ * the pill preview and HISTORY_DIALOG_PAGE_SIZE for the full
+ * timeline dialog.
+ */
+export const HISTORY_PAGE_SIZE = HISTORY_PILL_SIZE;
 
 export function usePropertyHistory(
   propertyId: string,
