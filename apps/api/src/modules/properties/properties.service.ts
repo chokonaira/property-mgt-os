@@ -13,6 +13,7 @@ import type {
   PropertyListQuery,
   PropertyListResponse,
   Unit,
+  UpdateProperty,
 } from '@buena/shared';
 import { AppException } from '../../shared/exceptions';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- runtime value: Nest DI reads constructor param metadata
@@ -203,6 +204,90 @@ export class PropertiesService {
       }
       return mapPropertyDetail(detail);
     });
+  }
+
+  /**
+   * Partial property update — accepts any subset of the create-time
+   * fields and persists only what was supplied. Tenant scope is
+   * enforced by a pre-flight findFirst against `(id, tenantId)`; the
+   * subsequent `update({ where: { id } })` is safe because we proved
+   * ownership server-side. Contact-id refs (propertyManager /
+   * accountant) re-run the same tenant ownership check the create
+   * path uses.
+   *
+   * Audit history (Property updated, with field-level diff) is
+   * written automatically by the Prisma audit middleware — no
+   * explicit emit here, which keeps "what gets logged" co-located
+   * with "what gets written."
+   *
+   * `uniqueNumber` collisions surface as P2002 → 409 via the
+   * PrismaExceptionFilter, mirroring the create flow's behavior so
+   * the form pins the same inline error.
+   */
+  async update(
+    tenantId: string,
+    id: string,
+    dto: UpdateProperty,
+  ): Promise<PropertyDetail> {
+    const existing = await this.prisma.property.findFirst({
+      where: { id, tenantId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new AppException('NOT_FOUND', `Property ${id} not found.`, HttpStatus.NOT_FOUND);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      if (dto.propertyManagerId !== undefined || dto.accountantId !== undefined) {
+        await assertTenantOwnsContacts(tx, tenantId, [
+          { path: 'propertyManagerId', id: dto.propertyManagerId },
+          { path: 'accountantId', id: dto.accountantId },
+        ]);
+      }
+
+      // Build the patch set explicitly so we never pass an undefined
+      // through to Prisma (which Prisma treats as "no change", but
+      // mixing it with other fields invites accidental nulls). Each
+      // optional column collapses null when the caller sent the
+      // empty string equivalent on the wire so downstream reads
+      // don't have to special-case "blanked-out by edit."
+      const data: Prisma.PropertyUpdateInput = {};
+      if (dto.name !== undefined) data.name = dto.name;
+      if (dto.uniqueNumber !== undefined) data.uniqueNumber = dto.uniqueNumber;
+      if (dto.managementType !== undefined) data.managementType = dto.managementType;
+      if (dto.totalMea !== undefined) data.totalMea = dto.totalMea ?? null;
+      if (dto.notarialRollNo !== undefined) data.notarialRollNo = dto.notarialRollNo ?? null;
+      if (dto.notarizedAt !== undefined) data.notarizedAt = dto.notarizedAt ?? null;
+      if (dto.declarationFileId !== undefined) {
+        data.declarationFile = dto.declarationFileId
+          ? { connect: { id: dto.declarationFileId } }
+          : { disconnect: true };
+      }
+      if (dto.grundbuchOffice !== undefined) data.grundbuchOffice = dto.grundbuchOffice ?? null;
+      if (dto.grundbuchSheet !== undefined) data.grundbuchSheet = dto.grundbuchSheet ?? null;
+      if (dto.gemarkung !== undefined) data.gemarkung = dto.gemarkung ?? null;
+      if (dto.flur !== undefined) data.flur = dto.flur ?? null;
+      if (dto.flurstueck !== undefined) data.flurstueck = dto.flurstueck ?? null;
+      if (dto.totalAreaSqm !== undefined) data.totalAreaSqm = dto.totalAreaSqm ?? null;
+      if (dto.propertyManagerId !== undefined) {
+        data.propertyManager = dto.propertyManagerId
+          ? { connect: { id: dto.propertyManagerId } }
+          : { disconnect: true };
+      }
+      if (dto.accountantId !== undefined) {
+        data.accountant = dto.accountantId
+          ? { connect: { id: dto.accountantId } }
+          : { disconnect: true };
+      }
+
+      // Skip the round-trip when the caller sent an empty body — no
+      // audit row, no row mutation, just return the unchanged record.
+      if (Object.keys(data).length > 0) {
+        await tx.property.update({ where: { id }, data });
+      }
+    });
+
+    return this.getById(tenantId, id);
   }
 
   /**

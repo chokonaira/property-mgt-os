@@ -244,14 +244,27 @@ export function GenerateUnitsDialog({ onGenerate }: GenerateUnitsDialogProps) {
               id={ids.count}
               type="number"
               inputMode="numeric"
+              required
               min={1}
               max={GENERATE_MAX_COUNT}
-              value={count}
+              // Render empty when count is 0 so a backspace-to-clear
+              // doesn't leave a sticky "0" the user has to delete
+              // around. The Generate button is already disabled while
+              // count <= 0, so empty + required input + disabled CTA
+              // form a coherent "type a number" cue.
+              value={count === 0 ? '' : count}
+              aria-invalid={count <= 0 || undefined}
               onChange={(e) => {
-                const raw = Number(e.target.value) || 0;
+                const raw = e.target.value.trim();
+                if (raw === '') {
+                  setCount(0);
+                  return;
+                }
+                const n = Number(raw);
+                if (!Number.isFinite(n)) return;
                 // Clamp on input — `max` on the <input> only fires
                 // on form submission, which we don't use here.
-                setCount(Math.min(GENERATE_MAX_COUNT, Math.max(0, raw)));
+                setCount(Math.min(GENERATE_MAX_COUNT, Math.max(0, Math.floor(n))));
               }}
             />
           </Field>

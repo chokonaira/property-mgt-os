@@ -14,6 +14,11 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { GeneralInfo } from './general-info';
 import { BuildingsSection } from './buildings-section';
 import { UnitsSection } from './units-section';
+import {
+  EditableHeading,
+  NAME_SCHEMA,
+  UNIQUE_NUMBER_SCHEMA,
+} from './editable-heading';
 import { LastModifiedPill } from '@/components/audit/last-modified-pill';
 
 interface DetailViewProps {
@@ -96,10 +101,32 @@ export function PropertyDetailView({ id }: DetailViewProps) {
                 <span>{tErr('backToDashboard')}</span>
               </Link>
             </Button>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-              {property.name}
-            </h1>
-            <p className="font-mono text-[11px] text-muted-foreground">{property.uniqueNumber}</p>
+            <EditableHeading
+              propertyId={property.id}
+              field="name"
+              value={property.name}
+              schema={NAME_SCHEMA}
+              ariaLabel={t('edit.editName')}
+              inputClassName="text-xl font-semibold sm:text-2xl"
+              display={
+                <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                  {property.name}
+                </h1>
+              }
+            />
+            <EditableHeading
+              propertyId={property.id}
+              field="uniqueNumber"
+              value={property.uniqueNumber}
+              schema={UNIQUE_NUMBER_SCHEMA}
+              ariaLabel={t('edit.editUniqueNumber')}
+              inputClassName="font-mono text-xs"
+              display={
+                <p className="font-mono text-[11px] text-muted-foreground">
+                  {property.uniqueNumber}
+                </p>
+              }
+            />
             <div className="mt-1">
               <LastModifiedPill propertyId={property.id} />
             </div>

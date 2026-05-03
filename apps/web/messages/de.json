@@ -265,6 +265,15 @@
       "title": "Immobilie nicht gefunden",
       "description": "Diese Immobilie wurde möglicherweise gelöscht oder der Link ist fehlerhaft."
     },
+    "edit": {
+      "editName": "Name bearbeiten",
+      "editUniqueNumber": "Eindeutige Nummer bearbeiten",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "saved": "Gespeichert.",
+      "errorToast": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+      "invalid": "Ungültiger Wert."
+    },
     "general": {
       "title": "Allgemeine Angaben",
       "uniqueNumber": "Objektnummer",

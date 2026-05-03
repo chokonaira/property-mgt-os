@@ -265,6 +265,15 @@
       "title": "Property not found",
       "description": "This property may have been deleted, or the link is incorrect."
     },
+    "edit": {
+      "editName": "Edit name",
+      "editUniqueNumber": "Edit unique number",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Saved.",
+      "errorToast": "Couldn't save. Try again in a moment.",
+      "invalid": "Invalid value."
+    },
     "general": {
       "title": "General info",
       "uniqueNumber": "Unique number",
