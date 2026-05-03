@@ -147,36 +147,49 @@ export function LastModifiedPill({ propertyId, className }: LastModifiedPillProp
               <li className="px-3 py-2 text-xs text-muted-foreground">{t('empty')}</li>
             ) : (
               previewItems.map((entry) => (
-                <li
-                  key={entry.id}
-                  className="flex items-start gap-2 border-b border-border px-3 py-2 text-xs last:border-0"
-                >
-                  <ActionDot action={entry.action} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-foreground">
-                      <span className="font-medium">{entry.actor.name}</span>{' '}
-                      <span className="text-muted-foreground">
-                        {t(`actions.${entry.action}`) as string}
-                      </span>{' '}
-                      <Badge variant="outline" className="ml-1 font-normal">
-                        {t(`entities.${entry.entity as AuditEntity}`) as string}
-                      </Badge>
-                    </p>
-                    {entry.changedFields.length > 0 ? (
-                      <p className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
-                        {entry.changedFields
-                          .slice(0, 3)
-                          .map((c) => c.field)
-                          .join(', ')}
-                        {entry.changedFields.length > 3
-                          ? ` +${entry.changedFields.length - 3}`
-                          : ''}
+                <li key={entry.id} className="border-b border-border last:border-0">
+                  {/* Each row is a button so hover/focus communicates
+                      'this is interactive' AND clicking anywhere in
+                      the row opens the full timeline (matches the
+                      explicit View-all CTA below). Keeps the
+                      affordance discoverable without forcing the
+                      user to aim at the small footer button. */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPopoverOpen(false);
+                      setDialogOpen(true);
+                    }}
+                    className="flex w-full items-start gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-accent/10 focus-visible:bg-accent/10 focus-visible:outline-none"
+                    aria-label={t('viewAll', { total })}
+                  >
+                    <ActionDot action={entry.action} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-foreground">
+                        <span className="font-medium">{entry.actor.name}</span>{' '}
+                        <span className="text-muted-foreground">
+                          {t(`actions.${entry.action}`) as string}
+                        </span>{' '}
+                        <Badge variant="outline" className="ml-1 font-normal">
+                          {t(`entities.${entry.entity as AuditEntity}`) as string}
+                        </Badge>
                       </p>
-                    ) : null}
-                  </div>
-                  <span className="whitespace-nowrap text-[10px] text-muted-foreground">
-                    {relativeTime(t, entry.createdAt)}
-                  </span>
+                      {entry.changedFields.length > 0 ? (
+                        <p className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
+                          {entry.changedFields
+                            .slice(0, 3)
+                            .map((c) => c.field)
+                            .join(', ')}
+                          {entry.changedFields.length > 3
+                            ? ` +${entry.changedFields.length - 3}`
+                            : ''}
+                        </p>
+                      ) : null}
+                    </div>
+                    <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+                      {relativeTime(t, entry.createdAt)}
+                    </span>
+                  </button>
                 </li>
               ))
             )}
