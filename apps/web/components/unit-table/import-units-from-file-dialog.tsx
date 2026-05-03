@@ -19,7 +19,7 @@ import { useUploadDocument } from '@/lib/hooks/use-upload-document';
 import { useExtractDocument } from '@/lib/hooks/use-extract-document';
 import {
   buildImportPlan,
-  mergeKeepExisting,
+  mergeKeepBoth,
   replaceAll,
   type ImportPlan,
 } from '@/lib/import-units-from-extraction';
@@ -170,19 +170,21 @@ export function ImportUnitsFromFileDialog({ onApply }: ImportUnitsFromFileDialog
 
   const handleMerge = useCallback(() => {
     if (!plan) return;
-    const next = mergeKeepExisting(units as WizardUnitDraft[], plan);
-    const added = plan.matched.length - plan.conflicts.length;
+    const { units: next, renamed } = mergeKeepBoth(units as WizardUnitDraft[], plan);
     onApply(next, {
       mode: 'merge',
-      added,
+      added: plan.matched.length,
       kept: units.length,
       conflicts: plan.conflicts.length,
       dropped: plan.droppedCount,
     });
     toast.success(
-      plan.conflicts.length > 0
-        ? t('toastApplied.mergeWithConflicts', { added, conflicts: plan.conflicts.length })
-        : t('toastApplied.merge', { count: added }),
+      renamed.length > 0
+        ? t('toastApplied.mergeWithRenames', {
+            added: plan.matched.length,
+            renamed: renamed.length,
+          })
+        : t('toastApplied.merge', { count: plan.matched.length }),
     );
     close();
   }, [plan, units, onApply, close, t]);
@@ -356,13 +358,16 @@ function PlanPreview({
         </p>
       ) : null}
       {plan.conflicts.length > 0 ? (
-        <p className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-foreground">
-          <span className="font-medium">{t('conflictHeading', { count: plan.conflicts.length })}</span>{' '}
-          {sample.join(', ')}
-          {plan.conflicts.length > sample.length
-            ? t('conflictMore', { remaining: plan.conflicts.length - sample.length })
-            : null}
-        </p>
+        <div className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-foreground space-y-1">
+          <p>
+            <span className="font-medium">{t('conflictHeading', { count: plan.conflicts.length })}</span>{' '}
+            {sample.join(', ')}
+            {plan.conflicts.length > sample.length
+              ? t('conflictMore', { remaining: plan.conflicts.length - sample.length })
+              : null}
+          </p>
+          <p className="text-muted-foreground">{t('conflictMergeHint')}</p>
+        </div>
       ) : null}
     </div>
   );

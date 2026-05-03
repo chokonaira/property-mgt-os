@@ -204,12 +204,13 @@
         "droppedNote": "{count, plural, one {# Einheit} other {# Einheiten}} konnten keinem Ihrer {buildings, plural, one {# Gebäude} other {# Gebäude}} zugeordnet werden und wurden ausgelassen.",
         "conflictHeading": "{count, plural, one {# Nummer ist bereits in Ihrer Tabelle:} other {# Nummern sind bereits in Ihrer Tabelle:}}",
         "conflictMore": " · +{remaining, plural, one {# weitere} other {# weitere}}",
+        "conflictMergeHint": "Zusammenführen behält beide — kollidierende Nummern werden automatisch auf den nächsten freien Wert hochgezählt (z. B. 01 → 15).",
         "discard": "Verwerfen",
-        "merge": "Zusammenführen",
+        "merge": "Zusammenführen — beide behalten",
         "replace": "Alles ersetzen",
         "toastApplied": {
           "merge": "{count, plural, one {# Einheit importiert.} other {# Einheiten importiert.}}",
-          "mergeWithConflicts": "{added, plural, one {# Einheit importiert;} other {# Einheiten importiert;}} {conflicts, plural, one {# bestehende bei Konflikt beibehalten.} other {# bestehende bei Konflikt beibehalten.}}",
+          "mergeWithRenames": "{added, plural, one {# Einheit importiert;} other {# Einheiten importiert;}} {renamed, plural, one {# Konflikt automatisch umbenannt.} other {# Konflikte automatisch umbenannt.}}",
           "replace": "{count, plural, one {Ersetzt durch # Einheit.} other {Ersetzt durch # Einheiten.}}"
         }
       },

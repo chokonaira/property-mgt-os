@@ -1,4 +1,5 @@
 import type { ExtractionResult } from '@buena/shared';
+import { findNextAvailableNumber } from '@/lib/duplicate-unit-number';
 import type {
   WizardBuildingDraft,
   WizardUnitDraft,
@@ -112,21 +113,73 @@ export function buildImportPlan(
   };
 }
 
+export interface MergeApplied {
+  units: WizardUnitDraft[];
+  /**
+   * Per-row record of any auto-renames the merge performed, in
+   * source-order of `plan.matched`. The dialog uses this to render
+   * the "renamed 01 → 15" toast + the preview hint.
+   */
+  renamed: ReadonlyArray<{ from: string; to: string; buildingIndex: number }>;
+}
+
 /**
- * Merge: keep every existing row, append only matched units that
- * don't collide. The conflicting numbers are reported so the dialog
- * can surface "X kept, Y added, Z skipped because they collide."
+ * Merge — git-style "keep both". Append every matched unit; when a
+ * unit's `(buildingIndex, number)` would collide with an existing
+ * row, advance the number to the next available value in the same
+ * building. Existing rows are never touched, every PDF unit lands.
+ *
+ * The previous "skip on conflict" semantics produced a confusing
+ * "Imported 0 units" outcome when the user re-imported the same PDF
+ * — visually identical to "did nothing." Auto-rename gives a
+ * net-positive result every time, mirroring the Replace path's
+ * "you'll see new rows after this click" promise.
+ *
+ * Renames are surfaced in the returned `renamed` array so the UI
+ * can preview / toast them; nothing is silently mutated without a
+ * line item the user can read.
  */
+export function mergeKeepBoth(
+  existing: ReadonlyArray<WizardUnitDraft>,
+  plan: ImportPlan,
+): MergeApplied {
+  const baseExisting =
+    isPristineSeed(existing) && plan.matched.length > 0 ? [] : existing.slice();
+  const takenByBuilding = new Map<number, Set<string>>();
+  for (const u of baseExisting) {
+    const set = takenByBuilding.get(u.buildingIndex) ?? new Set<string>();
+    const n = (u.number ?? '').trim();
+    if (n) set.add(n);
+    takenByBuilding.set(u.buildingIndex, set);
+  }
+  const conflictRowSet = new Set(plan.conflicts.map((c) => c.rowIndex));
+  const additions: WizardUnitDraft[] = [];
+  const renamed: Array<{ from: string; to: string; buildingIndex: number }> = [];
+  for (let i = 0; i < plan.matched.length; i += 1) {
+    const u = plan.matched[i];
+    if (!u) continue;
+    const taken = takenByBuilding.get(u.buildingIndex) ?? new Set<string>();
+    let next = u.number;
+    if (conflictRowSet.has(i) || taken.has(next)) {
+      next = findNextAvailableNumber(u.number, taken);
+      renamed.push({ from: u.number, to: next, buildingIndex: u.buildingIndex });
+    }
+    taken.add(next);
+    takenByBuilding.set(u.buildingIndex, taken);
+    additions.push({ ...u, number: next } as WizardUnitDraft);
+  }
+  return { units: [...baseExisting, ...additions], renamed };
+}
+
+/** @deprecated kept for tests that still cover the skip semantic. */
 export function mergeKeepExisting(
   existing: ReadonlyArray<WizardUnitDraft>,
   plan: ImportPlan,
 ): WizardUnitDraft[] {
   const conflictRowSet = new Set(plan.conflicts.map((c) => c.rowIndex));
   const additions = plan.matched.filter((_u, i) => !conflictRowSet.has(i));
-  // Strip the wizard's seeded empty-row stub if it's the only existing
-  // row + the import has anything to add — otherwise the table opens
-  // with a stale empty row above the imported block.
-  const baseExisting = isPristineSeed(existing) && additions.length > 0 ? [] : existing.slice();
+  const baseExisting =
+    isPristineSeed(existing) && additions.length > 0 ? [] : existing.slice();
   return [...baseExisting, ...additions];
 }
 

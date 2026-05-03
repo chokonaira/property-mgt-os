@@ -204,12 +204,13 @@
         "droppedNote": "{count, plural, one {# unit} other {# units}} couldn't be matched to any of your {buildings, plural, one {# building} other {# buildings}} and were left out.",
         "conflictHeading": "{count, plural, one {# number already in your table:} other {# numbers already in your table:}}",
         "conflictMore": " · +{remaining, plural, one {# more} other {# more}}",
+        "conflictMergeHint": "Merge keeps both — colliding numbers will be auto-advanced to the next available value (e.g. 01 → 15).",
         "discard": "Discard",
-        "merge": "Merge",
+        "merge": "Merge — keep both",
         "replace": "Replace all",
         "toastApplied": {
           "merge": "{count, plural, one {Imported # unit.} other {Imported # units.}}",
-          "mergeWithConflicts": "{added, plural, one {Imported # unit;} other {Imported # units;}} {conflicts, plural, one {kept # existing on conflict.} other {kept # existing on conflict.}}",
+          "mergeWithRenames": "{added, plural, one {Imported # unit;} other {Imported # units;}} {renamed, plural, one {auto-renamed # collision.} other {auto-renamed # collisions.}}",
           "replace": "{count, plural, one {Replaced with # unit.} other {Replaced with # units.}}"
         }
       },

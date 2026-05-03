@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ExtractionResult } from '@buena/shared';
 import {
   buildImportPlan,
+  mergeKeepBoth,
   mergeKeepExisting,
   replaceAll,
 } from '@/lib/import-units-from-extraction';
@@ -184,6 +185,88 @@ describe('mergeKeepExisting', () => {
     );
     const result = mergeKeepExisting(seeded, plan);
     expect(result).toHaveLength(1);
+  });
+});
+
+describe('mergeKeepBoth (git-style "keep both")', () => {
+  it('returns every matched unit unchanged when nothing collides', () => {
+    const existing: WizardUnitDraft[] = [
+      { type: 'APARTMENT', buildingIndex: 0, number: '01' } as WizardUnitDraft,
+    ];
+    const plan = buildImportPlan(
+      makeExtraction({ units: [apartment('Haus A', '02'), apartment('Haus A', '03')] }),
+      [HAUS_A],
+      existing.map((u) => ({ buildingIndex: u.buildingIndex, number: u.number ?? '' })),
+    );
+    const { units, renamed } = mergeKeepBoth(existing, plan);
+    expect(units.map((u) => u.number)).toEqual(['01', '02', '03']);
+    expect(renamed).toEqual([]);
+  });
+
+  it('auto-renames colliding incoming numbers to the next available', () => {
+    // Existing has 01..05; PDF brings 01..05 — merge produces 06..10
+    // and reports five renames so the dialog can show the user.
+    const existing: WizardUnitDraft[] = ['01', '02', '03', '04', '05'].map(
+      (n) => ({ type: 'APARTMENT', buildingIndex: 0, number: n }) as WizardUnitDraft,
+    );
+    const plan = buildImportPlan(
+      makeExtraction({
+        units: ['01', '02', '03', '04', '05'].map((n) => apartment('Haus A', n)),
+      }),
+      [HAUS_A],
+      existing.map((u) => ({ buildingIndex: u.buildingIndex, number: u.number ?? '' })),
+    );
+    const { units, renamed } = mergeKeepBoth(existing, plan);
+    expect(units.map((u) => u.number)).toEqual([
+      '01',
+      '02',
+      '03',
+      '04',
+      '05',
+      '06',
+      '07',
+      '08',
+      '09',
+      '10',
+    ]);
+    expect(renamed).toHaveLength(5);
+    expect(renamed[0]).toEqual({ from: '01', to: '06', buildingIndex: 0 });
+    expect(renamed[4]).toEqual({ from: '05', to: '10', buildingIndex: 0 });
+  });
+
+  it('renames per-building independently', () => {
+    // Same number in two buildings is two identities — collisions in
+    // Haus A must not affect available numbers in Haus B.
+    const existing: WizardUnitDraft[] = [
+      { type: 'APARTMENT', buildingIndex: 0, number: '01' } as WizardUnitDraft,
+    ];
+    const plan = buildImportPlan(
+      makeExtraction({
+        units: [apartment('Haus A', '01'), apartment('Haus B', '01')],
+      }),
+      [HAUS_A, HAUS_B],
+      existing.map((u) => ({ buildingIndex: u.buildingIndex, number: u.number ?? '' })),
+    );
+    const { units, renamed } = mergeKeepBoth(existing, plan);
+    expect(units.map((u) => `${u.buildingIndex}:${u.number}`)).toEqual([
+      '0:01',
+      '0:02', // renamed (collided with existing 0:01)
+      '1:01', // untouched (Haus B has nothing yet)
+    ]);
+    expect(renamed).toEqual([{ from: '01', to: '02', buildingIndex: 0 }]);
+  });
+
+  it('strips the pristine seed row when the merge has anything to add', () => {
+    const seeded: WizardUnitDraft[] = [
+      { type: 'APARTMENT', buildingIndex: 0, number: '' } as WizardUnitDraft,
+    ];
+    const plan = buildImportPlan(
+      makeExtraction({ units: [apartment('Haus A', '01')] }),
+      [HAUS_A],
+      [],
+    );
+    const { units } = mergeKeepBoth(seeded, plan);
+    expect(units.map((u) => u.number)).toEqual(['01']);
   });
 });
 
