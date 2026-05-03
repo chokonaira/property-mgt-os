@@ -289,6 +289,7 @@
     "save": "Save units",
     "toastSaved": "Units saved.",
     "toastInvalid": "Fix the highlighted rows before saving.",
+    "toastDuplicates": "{count, plural, one {# unit number} other {# unit numbers}} duplicated within the same building. Each number must be unique per building.",
     "toastError": "Couldn't save units. Try again in a moment.",
     "notFound": {
       "title": "Property not found",

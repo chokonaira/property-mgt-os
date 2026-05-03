@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { type ReplaceUnitWithId } from '@buena/shared';
 import { ApiError } from '@/lib/api-client';
+import { findAllDuplicateUnitRows } from '@/lib/duplicate-units';
 import { usePropertyDetail } from '@/lib/hooks/use-property-detail';
 import { useReplaceUnits } from '@/lib/hooks/use-replace-units';
 import {
@@ -111,17 +112,28 @@ export function EditUnitsView({ id }: EditUnitsViewProps) {
   const property = detail.data;
 
   async function handleSave() {
-    const ok = await methods.trigger('units');
+    // Two layers of pre-flight: Zod schema (covers per-row required
+    // fields like rooms / size / mea) AND the cross-row uniqueness
+    // invariant (same `(buildingIndex, number)` can't appear twice
+    // — DB enforces it via @@unique([buildingId, number]), the form
+    // mirrors it client-side so the user sees the offending rows
+    // before the request goes out instead of decoding a 409).
+    const draft = methods.getValues();
+    const duplicates = findAllDuplicateUnitRows(draft.units, draft.buildings);
+    const schemaOk = await methods.trigger('units');
 
-    if (!ok) {
+    if (!schemaOk || duplicates.size > 0) {
       setErrorsFlashed(true);
-      toast.error(t('toastInvalid'));
+      toast.error(
+        duplicates.size > 0
+          ? t('toastDuplicates', { count: duplicates.size })
+          : t('toastInvalid'),
+      );
       return;
     }
 
     setErrorsFlashed(false);
 
-    const draft = methods.getValues();
     const payload: ReplaceUnitWithId[] = (draft.units as WizardUnitDraft[]).map(
       wizardUnitToReplacePayload,
     );

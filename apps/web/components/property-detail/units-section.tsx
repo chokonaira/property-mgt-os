@@ -65,7 +65,7 @@ export function UnitsSection({ buildings, totalMea }: UnitsSectionProps) {
               prefer the building-level path since it's defined even
               when the property has zero units. */}
           {buildings[0]?.propertyId ? (
-            <Button asChild variant="outline" size="sm">
+            <Button asChild size="sm">
               <Link
                 href={`/properties/${buildings[0].propertyId}/edit/units`}
                 onClick={() => {
