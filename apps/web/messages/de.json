@@ -13,6 +13,7 @@
     "title": "Immobilien",
     "subtitle": "Alle verwalteten Immobilien Ihres Mandanten.",
     "createCta": "Neue Immobilie anlegen",
+    "createCtaShort": "Neu",
     "empty": "Noch keine Immobilien. Legen Sie Ihre erste an.",
     "rowAriaLabel": "{name} öffnen",
     "savingRow": "{name} wird gespeichert…",
@@ -171,7 +172,14 @@
       },
       "buildingFallback": "Gebäude {index}",
       "errors": {
-        "duplicateNumber": "Duplikat von Zeile {row} in {building}. Innerhalb eines Gebäudes muss jede Einheitsnummer eindeutig sein."
+        "duplicateNumber": "Duplikat von Zeile {row} in {building}. Innerhalb eines Gebäudes muss jede Einheitsnummer eindeutig sein.",
+        "summaryTitle": "{count, plural, one {# Einheit benötigt Aufmerksamkeit} other {# Einheiten benötigen Aufmerksamkeit}} vor dem Speichern",
+        "summaryHint": "Klicken Sie unten auf eine Zeile, um dorthin zu springen, oder beheben Sie das Problem direkt.",
+        "summaryRowLabel": "Zeile {row}",
+        "summaryMore": "+{count, plural, one {# weiteres Problem} other {# weitere Probleme}}",
+        "summaryFieldDuplicate": "Duplikat-Nummer — Konflikt mit Zeile {row} in {building}",
+        "summaryFieldMissing": "{label} ist erforderlich",
+        "summaryFieldInvalid": "{label}: {message}"
       },
       "paste": {
         "successAll": "{count, plural, one {# Einheit eingefügt.} other {# Einheiten eingefügt.}}",
@@ -185,6 +193,7 @@
         "building": "Gebäude",
         "count": "Anzahl",
         "startAt": "Startnummer",
+        "startAtCollision": "{count, plural, one {# Nummer in diesem Bereich existiert bereits} other {# Nummern in diesem Bereich existieren bereits}} (z. B. {sample}). Erhöhen Sie den Startwert oder reduzieren Sie die Anzahl, um Konflikte zu vermeiden.",
         "prefix": "Nummern-Präfix",
         "prefixHelp": "Standard: \"{defaultPrefix}\". Für eigene Schemata überschreiben.",
         "sizeSqm": "Fläche (m²) — optional",
@@ -312,6 +321,7 @@
     "title": "Änderungsverlauf",
     "description": "{total, plural, =0 {Noch keine Änderungen erfasst.} one {# Änderung} other {# Änderungen}} an dieser Immobilie und ihren Gebäuden + Einheiten.",
     "loadMore": "{remaining, plural, one {# weiteren Eintrag} other {# weitere Einträge}} laden",
+    "capNote": "Zeigt die {shown, plural, one {# neueste Änderung} other {# neuesten Änderungen}} von insgesamt {total}.",
     "viewAll": "Alle {total, plural, one {# Änderung} other {# Änderungen}} ansehen",
     "error": "Verlauf konnte nicht geladen werden. Bitte erneut versuchen.",
     "empty": "Für diese Immobilie wurden noch keine Änderungen erfasst.",

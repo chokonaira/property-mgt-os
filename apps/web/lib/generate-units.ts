@@ -44,6 +44,70 @@ export function formatGeneratedNumber(prefix: string, seq: number, padWidth: num
   return `${prefix}${String(seq).padStart(padWidth, '0')}`;
 }
 
+function escapeRegex(literal: string): string {
+  return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Reports the formatted numbers in [startAt, startAt+count) that
+ * collide with `existingNumbers`. Used by the Generate-units dialog
+ * to BLOCK a Generate click whose range would land on top of rows
+ * the user already has — without this, the generator's skip-and-
+ * advance loop would silently shift the produced numbers past the
+ * collision and the dialog's preview would lie about the result.
+ *
+ * Returns an empty array when there's no overlap, and is safe to
+ * call with an undefined existing set (e.g. fresh wizard / fresh
+ * building) — that path short-circuits to "no collisions".
+ */
+export function findStartAtCollisions(
+  existingNumbers: ReadonlySet<string> | undefined,
+  startAt: number,
+  count: number,
+  prefix: string,
+  padWidth: number = DEFAULT_PAD_WIDTH,
+): string[] {
+  if (count <= 0 || !existingNumbers || existingNumbers.size === 0) return [];
+  const out: string[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const candidate = formatGeneratedNumber(prefix, startAt + i, padWidth);
+    if (existingNumbers.has(candidate)) out.push(candidate);
+  }
+  return out;
+}
+
+/**
+ * Computes the next sequence number to seed the dialog's `startAt`
+ * input so a user clicking Generate immediately gets fresh numbers
+ * past whatever already exists, instead of always starting at 1 and
+ * relying on the skip-and-advance loop to dig out from under existing
+ * rows.
+ *
+ * Parses any number in `existingNumbers` that matches the active
+ * prefix followed by a numeric tail (e.g. prefix="TG-" matches
+ * "TG-01", "TG-9", "TG-100"; pad width is incidental — the parse
+ * reads digits, not width). Returns max+1, or 1 when no match exists.
+ *
+ * Empty / null / non-matching strings are skipped so a building that
+ * mixes APARTMENT (bare integers) with PARKING ("TG-NN") rows can ask
+ * each prefix independently and get the right next-sequence.
+ */
+export function nextSequenceForPrefix(
+  existingNumbers: ReadonlySet<string> | undefined,
+  prefix: string,
+): number {
+  if (!existingNumbers || existingNumbers.size === 0) return 1;
+  const re = new RegExp(`^${escapeRegex(prefix)}(\\d+)$`);
+  let max = 0;
+  for (const raw of existingNumbers) {
+    const match = raw.trim().match(re);
+    if (!match) continue;
+    const n = Number(match[1]);
+    if (Number.isFinite(n) && n > max) max = n;
+  }
+  return max + 1;
+}
+
 export interface GenerateUnitsResult {
   /** Unit drafts ready to push into the field array. */
   rows: WizardUnitDraft[];

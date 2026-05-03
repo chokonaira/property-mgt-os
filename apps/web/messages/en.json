@@ -13,6 +13,7 @@
     "title": "Properties",
     "subtitle": "All managed properties across your tenant.",
     "createCta": "Create new property",
+    "createCtaShort": "New",
     "empty": "No properties yet. Create your first.",
     "rowAriaLabel": "Open {name}",
     "savingRow": "Saving {name}…",
@@ -171,7 +172,14 @@
       },
       "buildingFallback": "Building {index}",
       "errors": {
-        "duplicateNumber": "Duplicate of row {row} in {building}. Each unit number must be unique within a building."
+        "duplicateNumber": "Duplicate of row {row} in {building}. Each unit number must be unique within a building.",
+        "summaryTitle": "{count, plural, one {# unit needs attention} other {# units need attention}} before saving",
+        "summaryHint": "Click a row below to jump to it, or fix it inline.",
+        "summaryRowLabel": "Row {row}",
+        "summaryMore": "+{count, plural, one {# more issue} other {# more issues}}",
+        "summaryFieldDuplicate": "Duplicate number — collides with row {row} in {building}",
+        "summaryFieldMissing": "{label} is required",
+        "summaryFieldInvalid": "{label}: {message}"
       },
       "paste": {
         "successAll": "{count, plural, one {Pasted # unit.} other {Pasted # units.}}",
@@ -185,6 +193,7 @@
         "building": "Building",
         "count": "How many",
         "startAt": "Start at",
+        "startAtCollision": "{count, plural, one {# number in this range already exists} other {# numbers in this range already exist}} (e.g. {sample}). Bump the start or shrink the count to avoid clashing with existing units.",
         "prefix": "Number prefix",
         "prefixHelp": "Default: \"{defaultPrefix}\". Override for custom schemes.",
         "sizeSqm": "Size (m²) — optional",
@@ -312,6 +321,7 @@
     "title": "Change history",
     "description": "{total, plural, =0 {No changes recorded yet.} one {# change} other {# changes}} across this property and its buildings + units.",
     "loadMore": "Load {remaining, plural, one {# more entry} other {# more entries}}",
+    "capNote": "Showing the {shown, plural, one {# most recent change} other {# most recent changes}} of {total} total.",
     "viewAll": "View all {total, plural, one {# change} other {# changes}}",
     "error": "Couldn't load history. Try again in a moment.",
     "empty": "No changes recorded yet for this property.",

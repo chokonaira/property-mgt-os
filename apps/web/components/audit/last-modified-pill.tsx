@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Clock, History } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -40,14 +40,41 @@ export function LastModifiedPill({ propertyId, className }: LastModifiedPillProp
   const previewItems = data?.items ?? [];
   const total = data?.total ?? 0;
 
+  // Hover handoff between the pill and the popover used to flicker:
+  // a mouse-leave from the pill fired BEFORE mouse-enter on the
+  // popover content (the two elements have a 1-2px DOM gap even with
+  // sideOffset=0), so the popover briefly closed before reopening.
+  // Buffering the close in a 120ms timer that any subsequent enter
+  // cancels gives the cursor a comfortable bridge — fast enough that
+  // a real "I'm done" leave still closes promptly, slow enough to
+  // absorb the cross-element gap.
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelClose = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+  const openNow = useCallback(() => {
+    cancelClose();
+    setPopoverOpen(true);
+  }, [cancelClose]);
+  const scheduleClose = useCallback(() => {
+    cancelClose();
+    closeTimerRef.current = setTimeout(() => setPopoverOpen(false), 120);
+  }, [cancelClose]);
+  useEffect(() => () => cancelClose(), [cancelClose]);
+
   return (
     <>
       <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"
-            onMouseEnter={() => setPopoverOpen(true)}
-            onMouseLeave={() => setPopoverOpen(false)}
+            onMouseEnter={openNow}
+            onMouseLeave={scheduleClose}
+            onFocus={openNow}
+            onBlur={scheduleClose}
             className={cn(
               'inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground transition-colors',
               'hover:border-accent/40 hover:bg-accent/10 hover:text-foreground',
@@ -74,11 +101,17 @@ export function LastModifiedPill({ propertyId, className }: LastModifiedPillProp
         <PopoverContent
           align="start"
           side="bottom"
-          sideOffset={8}
-          // Keep popover open when the user moves into it — otherwise
-          // hover-leave from pill closes before they can click View all.
-          onMouseEnter={() => setPopoverOpen(true)}
-          onMouseLeave={() => setPopoverOpen(false)}
+          // sideOffset=2 keeps a faint visual separation between
+          // pill + popover but is small enough that the cursor
+          // can cross it within the close-timer's grace window.
+          sideOffset={2}
+          // Don't auto-focus the first focusable child on open —
+          // a focus shift while the user is hovering ricochets
+          // through onFocus/onBlur of the pill and re-triggers the
+          // open/close cycle.
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onMouseEnter={openNow}
+          onMouseLeave={scheduleClose}
           className="w-96 max-w-[calc(100vw-2rem)] p-0"
         >
           <div className="border-b border-border px-3 py-2">

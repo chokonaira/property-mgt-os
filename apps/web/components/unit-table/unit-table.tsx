@@ -31,7 +31,7 @@ import { FloorCell } from '@/components/unit-table/floor-cell';
 import { GenerateUnitsDialog } from '@/components/unit-table/generate-units-dialog';
 import { useCellNavigation } from '@/components/unit-table/use-cell-navigation';
 import { parsePastedRows, shouldHandleAsBulkPaste } from '@/lib/parse-tsv';
-import { nextNumber } from '@/lib/duplicate-unit-number';
+import { findNextAvailableNumber } from '@/lib/duplicate-unit-number';
 import { findAllDuplicateUnitRows, type DuplicateRowInfo } from '@/lib/duplicate-units';
 import {
   EMPTY_UNIT,
@@ -48,6 +48,29 @@ const AREA_METRIC_BY_TYPE: Record<WizardUnitType, 'WOHN' | 'NUTZ' | 'NUTZ' | 'GR
   PARKING: 'NUTZ',
   GARDEN: 'GROUND',
 };
+
+// Schema field-name → translation key under `wizard.units.columns.*`,
+// so the validation summary can name the offending field with the
+// same label the user sees on the table header. Fields whose i18n
+// key isn't a column header (e.g. `number` shown as "#") fall back
+// to the raw field name in the summary; that's intentional — the
+// header is a special case in the markup, not a translatable label.
+const FIELD_LABELS: Record<string, string> = {
+  buildingIndex: 'building',
+  floor: 'floor',
+  entranceLabel: 'entrance',
+  sizeSqm: 'size',
+  rooms: 'rooms',
+  meaShare: 'mea',
+  yearBuilt: 'year',
+  description: 'description',
+};
+
+// Caps the inline summary at a readable height. Past this we collapse
+// the rest into a "+N more" hint — the user has already been
+// nudged to fix the visible rows; piling another 50 entries on the
+// banner just buries them.
+const ERROR_SUMMARY_MAX = 8;
 
 interface RowMeta {
   rowIndex: number;
@@ -118,7 +141,13 @@ function RowSelectCheckbox({ rowId, ariaLabel }: { rowId: string; ariaLabel: str
 
 export function UnitTable() {
   const t = useTranslations('wizard.units');
-  const { control, register, getValues, trigger } = useFormContext<WizardDraftInput>();
+  const {
+    control,
+    register,
+    getValues,
+    trigger,
+    formState: { errors },
+  } = useFormContext<WizardDraftInput>();
   const { fields, append, remove, insert, move } = useFieldArray({ control, name: 'units' });
   const buildingsWatch = useWatch({ control, name: 'buildings' });
   const buildings = useMemo(() => buildingsWatch ?? [], [buildingsWatch]);
@@ -134,7 +163,7 @@ export function UnitTable() {
     [unitsWatch, buildingsWatch],
   );
   const { containerRef, onKeyDown, onFocus } = useCellNavigation();
-  const { markFieldEdited } = useWizard();
+  const { markFieldEdited, errorsVisible } = useWizard();
   const onEdit = useCallback(
     (rowIndex: number, key: string) => () => markFieldEdited(`units[${rowIndex}].${key}`),
     [markFieldEdited],
@@ -181,6 +210,7 @@ export function UnitTable() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
@@ -219,7 +249,20 @@ export function UnitTable() {
   const duplicateRow = useCallback(
     (rowIndex: number) => {
       const current = (getValues(`units.${rowIndex}`) ?? {}) as WizardUnitDraft;
-      const copy = { ...current, number: nextNumber(current.number) } as WizardUnitDraft;
+      // Build the per-building set of in-use numbers so the next-
+      // available helper can advance past existing rows. Without
+      // this, duplicating "01" against existing 01..03 produced
+      // "02" — a fresh duplicate that immediately collides.
+      const taken = new Set<string>();
+      for (const u of (getValues('units') ?? []) as WizardUnitDraft[]) {
+        if (u.buildingIndex !== current.buildingIndex) continue;
+        const n = (u.number ?? '').trim();
+        if (n) taken.add(n);
+      }
+      const copy = {
+        ...current,
+        number: findNextAvailableNumber(current.number, taken),
+      } as WizardUnitDraft;
       insert(rowIndex + 1, copy, { shouldFocus: false });
       // The new row sits directly below the source with the same data
       // and a bumped number. Without a toast users couldn't tell the
@@ -255,6 +298,80 @@ export function UnitTable() {
   }, [trigger, duplicateRows]);
   useStepValidator('units', stepValidator);
 
+  // Re-trigger schema validation on every edit ONCE the user has hit
+  // Save and surfaced errors. Without this, the user fixes the
+  // missing field but the inline banner keeps shouting "Size is
+  // required" because RHF (default mode) only re-validates on the
+  // next submit. Live re-trigger keeps the summary in lock-step
+  // with what the user is typing — schema-pass rows drop off the
+  // list immediately, schema-fail rows light up as soon as a value
+  // becomes invalid. Gated on errorsVisible so a freshly opened
+  // table doesn't burn cycles validating a blank state.
+  useEffect(() => {
+    if (!errorsVisible) return;
+    void trigger('units');
+  }, [errorsVisible, unitsWatch, trigger]);
+
+  // Aggregated, click-to-jump error summary. Combines schema issues
+  // (missing #, size, MEA, rooms etc.) with the cross-row duplicate
+  // detector so the user gets one unified "fix these N things"
+  // panel instead of scanning the table for red borders. Schema
+  // entries are gated on `errorsVisible` (flips after the first
+  // failed Save attempt) so a freshly opened blank table doesn't
+  // shout at the user before they've had a chance to type.
+  // Duplicates show unconditionally — they're a pure cross-row
+  // statement that the user can act on with no prior submission.
+  type SummaryItem = { rowIndex: number; message: string };
+  const errorSummary = useMemo<SummaryItem[]>(() => {
+    const items: SummaryItem[] = [];
+    if (errorsVisible) {
+      const unitsErrors = errors.units as Record<string, Record<string, { message?: string }>> | undefined;
+      if (unitsErrors && typeof unitsErrors === 'object') {
+        for (const [key, fieldErrs] of Object.entries(unitsErrors)) {
+          const rowIndex = Number(key);
+          if (!Number.isFinite(rowIndex) || !fieldErrs) continue;
+          for (const [field, err] of Object.entries(fieldErrs)) {
+            if (field === 'type' || field === 'root') continue;
+            const message = err?.message;
+            if (!message) continue;
+            const label = FIELD_LABELS[field] ? t(`columns.${FIELD_LABELS[field]}`) : field;
+            items.push({
+              rowIndex,
+              message: t('errors.summaryFieldInvalid', { label, message }),
+            });
+          }
+        }
+      }
+    }
+    for (const [rowIndex, info] of duplicateRows) {
+      items.push({
+        rowIndex,
+        message: t('errors.summaryFieldDuplicate', {
+          row: info.duplicateOf + 1,
+          building: info.buildingLabel,
+        }),
+      });
+    }
+    items.sort((a, b) => a.rowIndex - b.rowIndex);
+    return items;
+  }, [errorsVisible, errors, duplicateRows, t]);
+
+  const scrollToRow = useCallback(
+    (rowIndex: number) => {
+      const root = containerRef.current;
+      if (!root) return;
+      const target =
+        root.querySelector<HTMLElement>(`tr[data-index="${rowIndex}"]`) ??
+        root.querySelectorAll<HTMLElement>('tbody tr')[rowIndex] ??
+        null;
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Flip focus into the # cell of the target row so a keyboard
+      // user can start typing the fix immediately.
+      target?.querySelector<HTMLInputElement>('input[data-cell-col="number"]')?.focus();
+    },
+    [containerRef],
+  );
+
   const duplicateSelected = useCallback(() => {
     if (liveSelectedCount === 0) return;
     // Build copies in the user's visual order so the duplicates land at
@@ -262,11 +379,28 @@ export function UnitTable() {
     // source index would shift later indices mid-loop and tangle which
     // copies belong to which sources — appending at the bottom keeps
     // the operation predictable, and drag-to-reorder is the recovery.
+    //
+    // Per-building "taken" sets seed from the current rows AND grow as
+    // we mint copies, so duplicating five rows that all read "01"
+    // produces "02"…"06" instead of five colliding "02"s. Each new
+    // copy reserves its number against the next iteration.
+    const allUnits = (getValues('units') ?? []) as WizardUnitDraft[];
+    const takenByBuilding = new Map<number, Set<string>>();
+    for (const u of allUnits) {
+      const set = takenByBuilding.get(u.buildingIndex) ?? new Set<string>();
+      const n = (u.number ?? '').trim();
+      if (n) set.add(n);
+      takenByBuilding.set(u.buildingIndex, set);
+    }
     const copies: WizardUnitDraft[] = [];
     fields.forEach((f, idx) => {
       if (!selectedIds.has(f.id)) return;
       const current = (getValues(`units.${idx}`) ?? {}) as WizardUnitDraft;
-      copies.push({ ...current, number: nextNumber(current.number) });
+      const taken = takenByBuilding.get(current.buildingIndex) ?? new Set<string>();
+      const number = findNextAvailableNumber(current.number, taken);
+      taken.add(number);
+      takenByBuilding.set(current.buildingIndex, taken);
+      copies.push({ ...current, number });
     });
     const startIndex = fields.length;
     for (const copy of copies) append(copy, { shouldFocus: false });
@@ -606,6 +740,39 @@ export function UnitTable() {
       onPaste={handlePaste}
       className="flex flex-col gap-3"
     >
+      {errorSummary.length > 0 ? (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm"
+        >
+          <p className="font-medium text-destructive">
+            {t('errors.summaryTitle', { count: errorSummary.length })}
+          </p>
+          <p className="mt-0.5 text-xs text-destructive/80">{t('errors.summaryHint')}</p>
+          <ul className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
+            {errorSummary.slice(0, ERROR_SUMMARY_MAX).map((item, i) => (
+              <li key={`${item.rowIndex}-${i}`} className="leading-tight">
+                <button
+                  type="button"
+                  onClick={() => scrollToRow(item.rowIndex)}
+                  className="text-left text-destructive underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40 rounded px-1 -mx-1"
+                >
+                  <span className="font-medium">
+                    {t('errors.summaryRowLabel', { row: item.rowIndex + 1 })}
+                  </span>
+                  <span className="text-destructive/85"> — {item.message}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {errorSummary.length > ERROR_SUMMARY_MAX ? (
+            <p className="mt-2 text-xs text-destructive/70">
+              {t('errors.summaryMore', { count: errorSummary.length - ERROR_SUMMARY_MAX })}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       {liveSelectedCount > 0 ? (
         <div className="sticky top-2 z-30 flex flex-col-reverse items-stretch gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 shadow-sm backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-foreground">
@@ -643,81 +810,78 @@ export function UnitTable() {
           </div>
         </div>
       ) : null}
-      <div
-        ref={tableScrollRef}
-        className={cn(
-          'overflow-x-auto rounded-lg border border-border bg-card',
-          // Vertical virtualization needs a scrollable container.
-          // Engage only past the AC threshold so small lists render
-          // as a native table with no virtualization overhead.
-          isVirtualized && 'overflow-y-auto max-h-[640px]',
-        )}
-      >
-        <table className="w-full min-w-[1200px] table-fixed caption-bottom text-sm">
-          <thead className="sticky top-0 z-10 border-b border-border bg-muted/30">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    style={{ width: header.column.getSize() }}
-                    className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
-                  >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                  </th>
+      {(() => {
+        // The table itself is identical in both branches; only the
+        // body content differs. Extracting it keeps the conditional
+        // wrapper (DndContext when not virtualized) from forcing two
+        // copies of <table> + <thead>, which was easy to drift.
+        const tableEl = (
+          <div
+            ref={tableScrollRef}
+            className={cn(
+              'overflow-x-auto rounded-lg border border-border bg-card',
+              // Vertical virtualization needs a scrollable container.
+              // Engage only past the AC threshold so small lists render
+              // as a native table with no virtualization overhead.
+              isVirtualized && 'overflow-y-auto max-h-[640px]',
+            )}
+          >
+            <table className="w-full min-w-[1200px] table-fixed caption-bottom text-sm">
+              <thead className="sticky top-0 z-10 border-b border-border bg-muted/30">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        style={{ width: header.column.getSize() }}
+                        className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                      >
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                      </th>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {isVirtualized ? (
-              <>
-                {/* Inline `style={{ height }}` is unavoidable here:
-                    the spacer height is dynamic per scroll position,
-                    so a Tailwind utility class can't express it. */}
-                {paddingTop > 0 ? (
-                  <tr aria-hidden="true">
-                    <td colSpan={columns.length} style={{ height: paddingTop, padding: 0 }} />
-                  </tr>
-                ) : null}
-                {virtualRows.map((virtualRow) => {
-                  const row = rowModel.rows[virtualRow.index];
-                  if (!row) return null;
-                  return (
-                    <tr
-                      key={row.id}
-                      data-index={virtualRow.index}
-                      className="border-b border-border last:border-0"
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td
-                          key={cell.id}
-                          style={{ width: cell.column.getSize() }}
-                          className="px-3 py-2 align-middle"
+              </thead>
+              <tbody>
+                {isVirtualized ? (
+                  <>
+                    {/* Inline `style={{ height }}` is unavoidable here:
+                        the spacer height is dynamic per scroll position,
+                        so a Tailwind utility class can't express it. */}
+                    {paddingTop > 0 ? (
+                      <tr aria-hidden="true">
+                        <td colSpan={columns.length} style={{ height: paddingTop, padding: 0 }} />
+                      </tr>
+                    ) : null}
+                    {virtualRows.map((virtualRow) => {
+                      const row = rowModel.rows[virtualRow.index];
+                      if (!row) return null;
+                      return (
+                        <tr
+                          key={row.id}
+                          data-index={virtualRow.index}
+                          className="border-b border-border last:border-0"
                         >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-                {paddingBottom > 0 ? (
-                  <tr aria-hidden="true">
-                    <td colSpan={columns.length} style={{ height: paddingBottom, padding: 0 }} />
-                  </tr>
-                ) : null}
-              </>
-            ) : (
-              <DndContext
-                sensors={dndSensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={fields.map((f) => f.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {rowModel.rows.map((row) => (
+                          {row.getVisibleCells().map((cell) => (
+                            <td
+                              key={cell.id}
+                              style={{ width: cell.column.getSize() }}
+                              className="px-3 py-2 align-middle"
+                            >
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
+                    {paddingBottom > 0 ? (
+                      <tr aria-hidden="true">
+                        <td colSpan={columns.length} style={{ height: paddingBottom, padding: 0 }} />
+                      </tr>
+                    ) : null}
+                  </>
+                ) : (
+                  rowModel.rows.map((row) => (
                     <SortableRow
                       key={row.id}
                       rowId={(row.original as { id?: string }).id ?? row.id}
@@ -733,13 +897,44 @@ export function UnitTable() {
                         </td>
                       ))}
                     </SortableRow>
-                  ))}
-                </SortableContext>
-              </DndContext>
-            )}
-          </tbody>
-        </table>
-      </div>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        );
+        // DndContext renders accessibility helpers as sibling <div>s
+        // alongside its children. Mounting it inside <tbody> made
+        // those <div>s direct children of a <tbody> — invalid HTML
+        // and a hydration mismatch. Hoisting the provider outside
+        // the table fixes the structure without affecting the
+        // sortable rows themselves (each <SortableRow> still uses
+        // useSortable from the same DndContext via React context).
+        //
+        // The explicit `id` prop pins dnd-kit's
+        // aria-describedby/-roledescription IDs to a stable string
+        // instead of letting the library's module-level counter
+        // hand out different numbers on the SSR vs. CSR pass.
+        // Without it, the sortable handle hydrates with mismatched
+        // aria-describedby="DndDescribedBy-N" values.
+        return isVirtualized ? (
+          tableEl
+        ) : (
+          <DndContext
+            id="unit-table-dnd"
+            sensors={dndSensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={fields.map((f) => f.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {tableEl}
+            </SortableContext>
+          </DndContext>
+        );
+      })()}
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="outline" onClick={() => append(EMPTY_UNIT)}>
           + {t('addRow')}

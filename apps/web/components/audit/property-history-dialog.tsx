@@ -11,9 +11,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import type { AuditAction, AuditEntity, AuditLogEntry } from '@buena/shared';
-import { usePropertyHistory } from '@/lib/hooks/use-property-history';
+import { HISTORY_PAGE_SIZE, usePropertyHistory } from '@/lib/hooks/use-property-history';
 import { cn } from '@/lib/utils';
 
 interface PropertyHistoryDialogProps {
@@ -22,7 +21,11 @@ interface PropertyHistoryDialogProps {
   onOpenChange: (next: boolean) => void;
 }
 
-const PAGE_SIZE = 50;
+// Single source of truth — the hook owns the default page size + a
+// hard ceiling so a misuse can't request hundreds of rows in one
+// shot. The dialog reads HISTORY_PAGE_SIZE so "load more" math
+// stays in sync with what was actually fetched.
+const PAGE_SIZE = HISTORY_PAGE_SIZE;
 
 /**
  * Full audit timeline for a property + every building + every unit
@@ -40,16 +43,13 @@ const PAGE_SIZE = 50;
  */
 export function PropertyHistoryDialog({ propertyId, open, onOpenChange }: PropertyHistoryDialogProps) {
   const t = useTranslations('history');
-  const [page, setPage] = useState(0);
   const { data, isPending, isError } = usePropertyHistory(propertyId, {
     take: PAGE_SIZE,
-    skip: page * PAGE_SIZE,
     enabled: open,
   });
 
   const total = data?.total ?? 0;
   const items = data?.items ?? [];
-  const hasMore = total > (page + 1) * PAGE_SIZE;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -75,7 +75,7 @@ export function PropertyHistoryDialog({ propertyId, open, onOpenChange }: Proper
           ) : items.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">{t('empty')}</p>
           ) : (
-            <ol className="relative ml-3 space-y-6 border-l border-border pl-6">
+            <ol className="relative ml-2.5 space-y-3 border-l border-border pl-5">
               {items.map((entry) => (
                 <TimelineEntry key={entry.id} entry={entry} />
               ))}
@@ -83,20 +83,11 @@ export function PropertyHistoryDialog({ propertyId, open, onOpenChange }: Proper
           )}
         </div>
 
-        {/* Footer pagination. Single "Load more" button — feels
-            lighter than full pagination on a timeline + matches the
-            GitHub history pattern. */}
-        {hasMore ? (
-          <div className="flex-shrink-0 border-t border-border px-5 py-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => p + 1)}
-              className="w-full"
-            >
-              {t('loadMore', { remaining: total - (page + 1) * PAGE_SIZE })}
-            </Button>
+        {total > PAGE_SIZE ? (
+          <div className="flex-shrink-0 border-t border-border px-5 py-2 text-center">
+            <p className="text-[11px] text-muted-foreground">
+              {t('capNote', { shown: items.length, total })}
+            </p>
           </div>
         ) : null}
       </DialogContent>
@@ -106,12 +97,12 @@ export function PropertyHistoryDialog({ propertyId, open, onOpenChange }: Proper
 
 function Skeleton() {
   return (
-    <ol className="relative ml-3 space-y-6 border-l border-border pl-6">
+    <ol className="relative ml-2.5 space-y-3 border-l border-border pl-5">
       {[0, 1, 2].map((i) => (
-        <li key={i} className="space-y-2">
-          <div className="h-3 w-32 animate-pulse rounded bg-muted" />
-          <div className="h-3 w-48 animate-pulse rounded bg-muted" />
-          <div className="h-3 w-64 animate-pulse rounded bg-muted" />
+        <li key={i} className="space-y-1.5">
+          <div className="h-2.5 w-32 animate-pulse rounded bg-muted" />
+          <div className="h-2.5 w-48 animate-pulse rounded bg-muted" />
+          <div className="h-2.5 w-64 animate-pulse rounded bg-muted" />
         </li>
       ))}
     </ol>
@@ -150,15 +141,15 @@ function TimelineEntry({ entry }: { entry: AuditLogEntry }) {
       {/* Marker dot on the timeline rail */}
       <span
         className={cn(
-          'absolute -left-9 top-0 inline-flex h-6 w-6 items-center justify-center rounded-full ring-1 ring-inset',
+          'absolute -left-7 top-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full ring-1 ring-inset',
           tone,
         )}
         aria-hidden="true"
       >
-        <Icon className="h-3 w-3" />
+        <Icon className="h-2.5 w-2.5" />
       </span>
 
-      <div className="space-y-2 rounded-lg border border-border bg-card p-3">
+      <div className="space-y-1.5 rounded-md border border-border bg-card p-2.5">
         {/* Header row: actor + entity + timestamp. Wraps on narrow screens. */}
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">

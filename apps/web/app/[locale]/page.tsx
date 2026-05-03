@@ -26,29 +26,30 @@ function Dashboard() {
           full-bleed sticky container; the inner div re-applies the
           page's max width + padding so the row still looks centred. */}
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-4 lg:px-8">
-          {/* On mobile: title + primary CTA share a row, subtitle wraps
-              underneath the title; theme + locale move to the row below.
-              On sm+, `sm:contents` flattens this wrapper so the children
-              participate in the outer flex row alongside theme + locale,
-              with the Create button reordered to the far right. */}
-          <div className="flex items-center justify-between gap-3 sm:contents">
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                {t('title')}
-              </h1>
-              <p className="text-xs text-muted-foreground sm:text-sm">{t('subtitle')}</p>
-            </div>
-            <Button asChild size="default" className="shrink-0 sm:order-last">
-              <Link href="/properties/new">
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                <span>{t('createCta')}</span>
-              </Link>
-            </Button>
+        {/* Single horizontal row at every breakpoint so mobile shows
+            title + theme + locale + Create on one line. The CTA
+            shrinks to an icon + "New" on narrow screens (the title
+            already says "Properties", so the redundant "property"
+            word is the easiest character budget to recover). */}
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4 lg:px-8">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <h1 className="truncate text-lg font-semibold tracking-tight text-foreground sm:text-2xl">
+              {t('title')}
+            </h1>
+            <p className="hidden text-xs text-muted-foreground sm:block sm:text-sm">
+              {t('subtitle')}
+            </p>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             <ThemeToggle />
             <LocaleSwitcher />
+            <Button asChild className="h-8 px-2.5 text-xs sm:h-9 sm:px-4 sm:text-sm">
+              <Link href="/properties/new" aria-label={t('createCta')}>
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                <span className="sm:hidden">{t('createCtaShort')}</span>
+                <span className="hidden sm:inline">{t('createCta')}</span>
+              </Link>
+            </Button>
           </div>
         </div>
       </header>

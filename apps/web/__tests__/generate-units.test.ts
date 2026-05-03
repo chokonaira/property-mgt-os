@@ -3,8 +3,10 @@ import {
   DEFAULT_PAD_WIDTH,
   DEFAULT_PREFIX_BY_TYPE,
   GENERATE_MAX_COUNT,
+  findStartAtCollisions,
   formatGeneratedNumber,
   generateUnits,
+  nextSequenceForPrefix,
 } from '@/lib/generate-units';
 
 describe('generateUnits', () => {
@@ -159,6 +161,141 @@ describe('generateUnits', () => {
       expect(rows.map((r) => r.number)).toEqual(['06', '07', '08', '09', '10']);
       expect(skipped).toBe(5);
     });
+  });
+});
+
+// nextSequenceForPrefix — seeds the dialog's startAt input so the
+// preview text matches reality. The user-visible promise: clicking
+// Generate twice in a row, with no edits to startAt, must produce
+// contiguous, non-colliding rows on every click.
+describe('nextSequenceForPrefix', () => {
+  it('returns 1 for an empty / undefined existingNumbers set', () => {
+    expect(nextSequenceForPrefix(undefined, '')).toBe(1);
+    expect(nextSequenceForPrefix(new Set<string>(), '')).toBe(1);
+    expect(nextSequenceForPrefix(new Set<string>(), 'TG-')).toBe(1);
+  });
+
+  it('returns max + 1 over zero-padded apartment numbers', () => {
+    expect(nextSequenceForPrefix(new Set(['01', '02', '03']), '')).toBe(4);
+  });
+
+  it('treats padded and unpadded numbers as the same sequence', () => {
+    // "1" and "01" both parse to 1 — the user-visible numeric
+    // identity is what counts; padding is presentation.
+    expect(nextSequenceForPrefix(new Set(['1', '02', '003']), '')).toBe(4);
+  });
+
+  it('only counts numbers that match the active prefix', () => {
+    // PARKING (TG-NN) and APARTMENT (bare integer) coexist in the
+    // same building — a fresh PARKING run shouldn't think "07"
+    // counts toward TG- numbering.
+    const mixed = new Set(['01', '02', 'TG-05', 'TG-06', 'G-99']);
+    expect(nextSequenceForPrefix(mixed, '')).toBe(3);
+    expect(nextSequenceForPrefix(mixed, 'TG-')).toBe(7);
+    expect(nextSequenceForPrefix(mixed, 'G-')).toBe(100);
+  });
+
+  it('ignores entries that do not parse as prefix + digits', () => {
+    // Free-text numbers (parking signs like "Hobby" or "1.1")
+    // shouldn't poison the next-sequence calc.
+    expect(nextSequenceForPrefix(new Set(['01', 'Hobby', '1.1', '02']), '')).toBe(3);
+  });
+
+  it('handles whitespace around the stored number', () => {
+    expect(nextSequenceForPrefix(new Set(['  05  ', '07']), '')).toBe(8);
+  });
+
+  it('handles a prefix containing regex metacharacters safely', () => {
+    // A user-supplied custom prefix like "[A]." must be matched
+    // literally, not interpreted as a character class. The escape
+    // behavior is the production safety net here.
+    expect(nextSequenceForPrefix(new Set(['[A].01', '[A].02']), '[A].')).toBe(3);
+  });
+
+  it('returns 1 when no entry matches the prefix', () => {
+    expect(nextSequenceForPrefix(new Set(['01', '02']), 'TG-')).toBe(1);
+  });
+
+  it('scales to large existing sets without mis-counting (60 + 100 row case)', () => {
+    // The brief: a user with 60 existing apartments hits Generate
+    // for 100 more and should land at 61..160 — not 1..100 (which
+    // would collide), and not skip-and-advance into the void.
+    const sixty = new Set<string>();
+    for (let i = 1; i <= 60; i += 1) sixty.add(String(i).padStart(2, '0'));
+    expect(nextSequenceForPrefix(sixty, '')).toBe(61);
+
+    const hundred = new Set<string>();
+    for (let i = 1; i <= 100; i += 1) hundred.add(String(i).padStart(2, '0'));
+    expect(nextSequenceForPrefix(hundred, '')).toBe(101);
+  });
+
+  it('agrees with the generator: starting at next-sequence produces no skips', () => {
+    // Round-trip: existing 01..05 → next is 6 → generating 5 from 6
+    // hits no collisions, so skipped === 0. This is the contract that
+    // makes the dialog's preview honest.
+    const existing = new Set(['01', '02', '03', '04', '05']);
+    const start = nextSequenceForPrefix(existing, '');
+    const { rows, skipped } = generateUnits(
+      { type: 'APARTMENT', buildingIndex: 0, count: 5, startAt: start },
+      existing,
+    );
+    expect(rows.map((r) => r.number)).toEqual(['06', '07', '08', '09', '10']);
+    expect(skipped).toBe(0);
+  });
+
+  it('agrees with the generator at scale: 60 existing → bulk 100 lands cleanly', () => {
+    const existing = new Set<string>();
+    for (let i = 1; i <= 60; i += 1) existing.add(String(i).padStart(2, '0'));
+    const start = nextSequenceForPrefix(existing, '');
+    const { rows, skipped } = generateUnits(
+      { type: 'APARTMENT', buildingIndex: 0, count: 100, startAt: start },
+      existing,
+    );
+    expect(rows).toHaveLength(100);
+    expect(rows[0]?.number).toBe('61');
+    expect(rows[rows.length - 1]?.number).toBe('160');
+    expect(skipped).toBe(0);
+  });
+});
+
+// findStartAtCollisions — feeds the dialog's "Start at" inline
+// validation. Generate is disabled when this returns a non-empty
+// list so a user can never queue up rows that would collide on save.
+describe('findStartAtCollisions', () => {
+  it('returns [] when count is zero', () => {
+    expect(findStartAtCollisions(new Set(['01']), 1, 0, '')).toEqual([]);
+  });
+
+  it('returns [] when there are no existing numbers', () => {
+    expect(findStartAtCollisions(undefined, 1, 5, '')).toEqual([]);
+    expect(findStartAtCollisions(new Set(), 1, 5, '')).toEqual([]);
+  });
+
+  it('returns the formatted numbers that collide', () => {
+    expect(findStartAtCollisions(new Set(['02', '03']), 1, 5, '')).toEqual(['02', '03']);
+  });
+
+  it('reports the entire overlap, not just the first hit', () => {
+    expect(
+      findStartAtCollisions(new Set(['03', '04', '05']), 1, 10, ''),
+    ).toEqual(['03', '04', '05']);
+  });
+
+  it('respects the prefix when matching against existing numbers', () => {
+    // "03" exists as APARTMENT, but the user is generating PARKING
+    // (TG-NN). No collision, even though the integer overlaps.
+    expect(findStartAtCollisions(new Set(['03']), 1, 5, 'TG-')).toEqual([]);
+    expect(
+      findStartAtCollisions(new Set(['TG-03']), 1, 5, 'TG-'),
+    ).toEqual(['TG-03']);
+  });
+
+  it('respects an explicit pad width', () => {
+    expect(findStartAtCollisions(new Set(['001']), 1, 3, '', 3)).toEqual(['001']);
+  });
+
+  it('returns [] when the start is comfortably past the existing block', () => {
+    expect(findStartAtCollisions(new Set(['01', '02', '03']), 4, 3, '')).toEqual([]);
   });
 });
 

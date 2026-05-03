@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Plus, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useFormContext, useWatch } from 'react-hook-form';
@@ -20,8 +20,10 @@ import {
   DEFAULT_PAD_WIDTH,
   DEFAULT_PREFIX_BY_TYPE,
   GENERATE_MAX_COUNT,
+  findStartAtCollisions,
   formatGeneratedNumber,
   generateUnits,
+  nextSequenceForPrefix,
 } from '@/lib/generate-units';
 import {
   WIZARD_UNIT_TYPES,
@@ -72,7 +74,12 @@ export function GenerateUnitsDialog({ onGenerate }: GenerateUnitsDialogProps) {
   const [type, setType] = useState<WizardUnitType>('APARTMENT');
   const [buildingIndex, setBuildingIndex] = useState(0);
   const [count, setCount] = useState(5);
-  const [startAt, setStartAt] = useState(1);
+  // Null = use the auto-derived next sequence (max existing + 1).
+  // Number = the user typed an explicit override; we honor it and
+  // only reset back to auto when the type / building / prefix
+  // changes (those rotate the "current sequence" out from under the
+  // override, so a stale value would be misleading).
+  const [startAtOverride, setStartAtOverride] = useState<number | null>(null);
   const [prefixOverride, setPrefixOverride] = useState<string | null>(null);
   const [sizeSqm, setSizeSqm] = useState<string>('');
   const [meaShare, setMeaShare] = useState<string>('');
@@ -90,6 +97,31 @@ export function GenerateUnitsDialog({ onGenerate }: GenerateUnitsDialogProps) {
   };
 
   const effectivePrefix = prefixOverride ?? DEFAULT_PREFIX_BY_TYPE[type];
+
+  // Auto-derive the next sequence after the highest existing number
+  // that matches the active prefix in the selected building. Seeds
+  // the visible startAt so the preview text matches what the
+  // generator will actually produce — the user never sees "Will
+  // create rows 01–05" and end up with 06–10 because the skip-and-
+  // advance loop dug past existing rows silently.
+  const autoStartAt = useMemo(
+    () => nextSequenceForPrefix(existingByBuilding.get(buildingIndex), effectivePrefix),
+    [existingByBuilding, buildingIndex, effectivePrefix],
+  );
+  const startAt = startAtOverride ?? autoStartAt;
+  // Reset the user override whenever the inputs that define "what's
+  // the next sequence" change. Without this, switching from
+  // APARTMENT to PARKING would carry the apartment-side override
+  // forward and recreate the very confusion this fix removes.
+  const sequenceKey = `${type}|${buildingIndex}|${effectivePrefix}`;
+  const lastSequenceKeyRef = useRef(sequenceKey);
+  useEffect(() => {
+    if (lastSequenceKeyRef.current !== sequenceKey) {
+      lastSequenceKeyRef.current = sequenceKey;
+      setStartAtOverride(null);
+    }
+  }, [sequenceKey]);
+
   // Preview reads from the same formatter the generator uses so the
   // pre-submit text never disagrees with the rows that land in the
   // table. DEFAULT_PAD_WIDTH stays in sync if the generator default
@@ -101,11 +133,31 @@ export function GenerateUnitsDialog({ onGenerate }: GenerateUnitsDialogProps) {
       ? formatGeneratedNumber(effectivePrefix, startAt + count - 1, DEFAULT_PAD_WIDTH)
       : '';
 
+  // Hard-block any [startAt, startAt+count) range that overlaps an
+  // existing unit number in the same building + prefix. The
+  // generator's skip-and-advance loop would silently produce
+  // post-collision numbers, but that hides the user's mistake — they
+  // typed "Start at 03" expecting "03..07" and we'd hand back
+  // "06..10" with no explanation. Surface the collision inline,
+  // disable Generate, and tell them which numbers clash so they can
+  // either bump the start or shrink the count themselves.
+  const collidingNumbers = useMemo(
+    () =>
+      findStartAtCollisions(
+        existingByBuilding.get(buildingIndex),
+        startAt,
+        count,
+        effectivePrefix,
+      ),
+    [existingByBuilding, buildingIndex, effectivePrefix, startAt, count],
+  );
+  const hasCollision = collidingNumbers.length > 0;
+
   const reset = () => {
     setType('APARTMENT');
     setBuildingIndex(0);
     setCount(5);
-    setStartAt(1);
+    setStartAtOverride(null);
     setPrefixOverride(null);
     setSizeSqm('');
     setMeaShare('');
@@ -203,14 +255,29 @@ export function GenerateUnitsDialog({ onGenerate }: GenerateUnitsDialogProps) {
               }}
             />
           </Field>
-          <Field htmlFor={ids.startAt} label={t('startAt')}>
+          <Field
+            htmlFor={ids.startAt}
+            label={t('startAt')}
+            description={
+              hasCollision
+                ? t('startAtCollision', {
+                    count: collidingNumbers.length,
+                    sample: collidingNumbers.slice(0, 3).join(', '),
+                  })
+                : undefined
+            }
+          >
             <Input
               id={ids.startAt}
               type="number"
               inputMode="numeric"
               min={1}
               value={startAt}
-              onChange={(e) => setStartAt(Math.max(1, Number(e.target.value) || 1))}
+              aria-invalid={hasCollision || undefined}
+              onChange={(e) =>
+                setStartAtOverride(Math.max(1, Number(e.target.value) || 1))
+              }
+              className={hasCollision ? 'border-destructive focus-visible:ring-destructive' : undefined}
             />
           </Field>
           <Field
@@ -271,7 +338,7 @@ export function GenerateUnitsDialog({ onGenerate }: GenerateUnitsDialogProps) {
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>
             {t('cancel')}
           </Button>
-          <Button type="button" onClick={handleSubmit} disabled={count <= 0}>
+          <Button type="button" onClick={handleSubmit} disabled={count <= 0 || hasCollision}>
             <Plus className="h-4 w-4" aria-hidden="true" />
             {t('generate')}
           </Button>
