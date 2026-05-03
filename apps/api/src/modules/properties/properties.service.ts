@@ -330,7 +330,7 @@ export class PropertiesService {
   ): Promise<PropertyDetail> {
     type WithBuildings = Prisma.PropertyGetPayload<{
       include: {
-        buildings: { include: { units: { select: { id: true } } } };
+        buildings: { include: { units: true } };
       };
     }>;
     const property = (await this.prisma.property.findFirst({
@@ -340,9 +340,16 @@ export class PropertiesService {
         // generation time so ordering by id matches the wizard's
         // create-time order (the same order the buildings array was
         // posted in).
+        //
+        // Full unit data (not just id) so we can diff incoming
+        // payload against existing rows + skip Prisma updates when
+        // nothing changed. Skipping the no-op write is what keeps
+        // the audit log honest — an update call always emits a
+        // log entry via the middleware, even if Prisma's resulting
+        // SQL is a no-op.
         buildings: {
           orderBy: { id: 'asc' },
-          include: { units: { select: { id: true } } },
+          include: { units: true },
         },
       },
     })) as WithBuildings | null;
@@ -372,7 +379,13 @@ export class PropertiesService {
     }
 
     const existingUnitIds = new Set<string>();
-    for (const b of property.buildings) for (const u of b.units) existingUnitIds.add(u.id);
+    const existingUnitsById = new Map<string, UnitRow>();
+    for (const b of property.buildings) {
+      for (const u of b.units) {
+        existingUnitIds.add(u.id);
+        existingUnitsById.set(u.id, u);
+      }
+    }
     const referencedIds = new Set<string>();
     for (const u of units) if (u.id) referencedIds.add(u.id);
 
@@ -410,6 +423,15 @@ export class PropertiesService {
         if (!buildingId) continue;
         const data = unitToData(u);
         if (u.id) {
+          // Skip the update entirely when the row data is byte-
+          // for-byte the same as what's already stored. The audit
+          // middleware fires on every update call regardless of
+          // whether Prisma's generated SQL is a no-op, so without
+          // this guard a Save with one edited row produces N
+          // identical 'updated Unit' entries — exactly the
+          // confusing audit pattern this change fixes.
+          const existing = existingUnitsById.get(u.id);
+          if (existing && unitDataMatches(existing, data, buildingId)) continue;
           await tx.unit.update({ where: { id: u.id }, data });
         } else {
           await tx.unit.create({ data: { buildingId, ...data } });
@@ -511,6 +533,46 @@ async function assertTenantOwnsContacts(
       code: 'invalid_reference',
     })),
   );
+}
+
+/**
+ * Compares an existing unit row against the data we're about to
+ * write. When the two are byte-for-byte equivalent we skip the
+ * Prisma update entirely — otherwise the audit middleware would
+ * emit a noise row for every unedited unit on every Save (Prisma
+ * doesn't dedupe identical updates; the middleware fires on the
+ * call, not on the resulting row diff).
+ *
+ * Decimal fields compare via `.toString()` because `Prisma.Decimal`
+ * instances aren't `===` even when numerically equal.
+ */
+function unitDataMatches(
+  existing: UnitRow,
+  next: Omit<Prisma.UnitUncheckedCreateInput, 'buildingId'>,
+  buildingId: string,
+): boolean {
+  if (existing.buildingId !== buildingId) return false;
+  if (existing.type !== next.type) return false;
+  if (existing.number !== next.number) return false;
+  const decEq = (
+    a: Prisma.Decimal | null | undefined,
+    b: Prisma.Decimal | null | undefined,
+  ): boolean => {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    return a.toString() === b.toString();
+  };
+  if (!decEq(existing.meaShare, next.meaShare as Prisma.Decimal)) return false;
+  if (!decEq(existing.sizeSqm, next.sizeSqm as Prisma.Decimal)) return false;
+  if ((existing.rooms ?? null) !== (next.rooms ?? null)) return false;
+  if ((existing.floorKind ?? null) !== (next.floorKind ?? null)) return false;
+  if ((existing.floorLevel ?? null) !== (next.floorLevel ?? null)) return false;
+  if ((existing.floorQualifier ?? null) !== (next.floorQualifier ?? null)) return false;
+  if ((existing.entranceLabel ?? null) !== (next.entranceLabel ?? null)) return false;
+  if ((existing.yearBuilt ?? null) !== (next.yearBuilt ?? null)) return false;
+  if ((existing.description ?? null) !== (next.description ?? null)) return false;
+  if ((existing.subCategory ?? null) !== (next.subCategory ?? null)) return false;
+  return true;
 }
 
 function unitToData(
