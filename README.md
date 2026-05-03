@@ -1,10 +1,10 @@
 # A Buena Case Study
 
 [![CI](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml/badge.svg)](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-506_passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-532_passing-brightgreen)](#testing)
 [![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](./tsconfig.base.json)
 [![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?logo=openapiinitiative&logoColor=white)](https://api-henry-buena.chuka.io/openapi.json)
-[![First Load JS](https://img.shields.io/badge/first_load_JS-≤230_kB-blue)](#performance)
+[![First Load JS](https://img.shields.io/badge/first_load_JS-≤240_kB-blue)](#performance)
 
 > Property dashboard with a guided creation flow + AI-powered Teilungserklärung extraction.
 > Senior product engineer take-home for Buena Tech.
@@ -30,11 +30,12 @@ The MEA invariant runs everywhere it can fail: live in the wizard footer as the 
 - **3-step wizard** (General Info → Buildings → Units). One RHF `FormProvider`, auto-saves draft to `localStorage` every 500 ms, "Saved 30 s ago" footer indicator.
 - **Bulk unit table.** TanStack Table headless, inline editing, full keyboard navigation, paste TSV/CSV, "Generate N units" with auto-`Start at` (max existing + 1) and hard-blocked range collisions, **Import units from PDF** (Replace / Merge / Discard preview against existing rows), duplicate row + bulk-duplicate that auto-advance past existing numbers, multi-select bulk delete, sticky MEA invariant bar (green / amber / red), click-to-jump validation summary banner, virtualised past 50 rows.
 - **Edit + audit history.** Inline pencil-edit on the property header (name, unique number) hits `PATCH /properties/:id`; every diff lands in the AuditLog and shows up in the "Last modified by …" pill (newest 5) + the full timeline modal.
-- **AI Review Panel.** Per-field confidence chips (≥ 0.85 green, 0.6–0.85 amber, < 0.6 red) + source-span popovers + prominent warnings. Server-side `verifySpans` drops hallucinated citations before the response leaves the API. Inline chips persist on the form post-accept and clear when the user edits a field.
+- **AI Review Panel.** Per-field confidence chips (≥ 0.85 green, 0.6–0.85 amber, < 0.6 red) + source-span popovers + prominent warnings. Server-side `verifySpans` drops hallucinated citations before the response leaves the API. Inline chips persist on the form post-accept and clear when the user edits a field. Pre-LLM **doc-type guard** rejects non-Teilungserklärung uploads with a clear message — saves the cost + spares the user a junk extraction.
+- **Production-grade write defenses.** `POST /properties` accepts an `X-Idempotency-Key` header — duplicate POSTs (double-clicked Save, retried fetch) replay the original response instead of creating a second property. Soft-delete with a 30-second Undo toast (Stripe pattern); archived rows stay restorable, the dashboard hides them. CI gates a per-route **First Load JS budget** (240 kB) so a bundle regression breaks the PR, not the user.
 - **OpenAPI 3.1** at `/openapi.json` generated from the same Zod schemas the form uses.
 - **Error boundaries** at `app/[locale]/error.tsx`, `not-found.tsx`, `global-error.tsx` — localised copy + Retry / Back-to-dashboard.
 - **i18n** via `next-intl`; default `de` (unprefixed URL), opt-in `/en`. Domain terms stay German.
-- **Dark mode**, **506 tests** across three packages.
+- **Dark mode**, **532 tests** across three packages.
 
 ---
 
@@ -99,11 +100,11 @@ pnpm lint              # ESLint
 pnpm build             # Next + Nest production builds
 ```
 
-Workspace runs **506 tests** across three packages (72 shared schemas, 155 API services, 279 web utilities + components). RTL + jsdom power the panel render tests; the rest run in node for speed. Coverage is intentional rather than complete: discriminated unions, MEA invariant, TSV / CSV parser, AI pipeline (verify-spans, token budget, idempotency cache, response-schema shape per provider, SDK error wrapping for both Anthropic and OpenAI, controller error mapping), and the wizard's accept-translation logic each have dedicated suites.
+Workspace runs **532 tests** across three packages (72 shared schemas, 181 API services, 279 web utilities + components). RTL + jsdom power the panel render tests; the rest run in node for speed. Coverage is intentional rather than complete: discriminated unions, MEA invariant, TSV / CSV parser, AI pipeline (verify-spans, token budget, idempotency cache, response-schema shape per provider, SDK error wrapping for both Anthropic and OpenAI, controller error mapping), and the wizard's accept-translation logic each have dedicated suites.
 
 ## Performance
 
-First-load JS from `pnpm build`: shared chunks **102 kB** · dashboard **165 kB** · property detail **174 kB** · wizard step 2 **187 kB** · wizard step 1 **211 kB** · wizard step 3 **223 kB** (carries TanStack Virtual, engages past 50 rows). The AI Review Panel is loaded via `next/dynamic` so its body only ships when extraction succeeds; deps it shares with always-present components (Radix Popover, ConfidenceChip) stay in step 1. Badge cap **230 kB** with reviewer-visible headroom; lazy-loading TanStack Virtual on step 3 is queued as a v1.1 cut.
+First-load JS from `pnpm build`: shared chunks **102 kB** · dashboard **165 kB** · property detail **205 kB** · wizard step 2 **188 kB** · wizard step 1 **212 kB** · wizard step 3 **238 kB** (carries TanStack Virtual + Table + dnd-kit, engages past 50 rows). The AI Review Panel + the units-step Generate / Import dialogs all load via `next/dynamic` so their bodies only ship on demand; deps they share with always-present components (Radix Popover, ConfidenceChip) stay in step 1. Badge cap **240 kB** is enforced by `scripts/check-bundle-budget.mjs` in CI — every PR's `pnpm build` output is parsed and a route over budget fails the job. Lazy-loading TanStack Virtual on step 3 is queued as a v1.1 cut for ~30 kB headroom.
 
 ## OpenAPI
 
@@ -136,11 +137,10 @@ Scope cuts, not architectural debt. Each item lists what exists today, what woul
 - _Cost_: ~half-day. No schema change.
 - _Unblocks_: real per-user rate-limit keys, contact CRUD permission model, audit log gets real `actorId` instead of the seeded `demo-user`.
 
-**Edit flow for saved properties / buildings / units**
-- _Today_: Create + Delete are wired. No PATCH; the dashboard view is read-only.
-- _v1.1_: reuse the wizard's RHF + Zod schemas in an "edit" mode against `PATCH /properties/:id`, with per-field diffing.
-- _Cost_: ~half-day on top of the existing schemas.
-- _Notes_: audit log already wired — every PATCH that lands will write a row into the existing `AuditLog` table automatically.
+**Edit flow for saved buildings + units (wizard-mode)**
+- _Today_: Create + Delete + property-level inline edit (name, unique number) are wired via `PATCH /properties/:id`. Each diff lands in the AuditLog automatically and surfaces in the "Last modified by …" pill.
+- _v1.1_: reopen the wizard against an existing property to edit buildings + units with the same RHF + Zod schemas the create flow uses, with per-field diffing.
+- _Cost_: ~half-day on top of the existing wizard.
 
 **Contact (Property Manager / Accountant) edit + delete**
 - _Today_: Create is wired via the wizard's inline combobox modal.
@@ -153,11 +153,11 @@ Scope cuts, not architectural debt. Each item lists what exists today, what woul
 - _Cost_: ~half-day. No DB schema change.
 - _Production-blocker_: anything that horizontally scales the API needs this.
 
-**Redis-backed rate-limit + idempotency cache**
-- _Today_: rate-limit bucket is an in-process `Map`. Restart wipes counters; multi-pod = each pod has its own counter (10 pods × 5/min cap = effective 50/min). Idempotency cache reads Postgres so it's already multi-instance safe.
-- _v1.1_: Redis-backed bucket behind the same `RateLimitGuard` interface.
+**Redis-backed rate-limit + write-idempotency cache**
+- _Today_: rate-limit bucket is an in-process `Map`. The new `POST /properties` write-idempotency cache (5-min TTL, composite key actor:tenant:method:path:key) is also in-process. Restart wipes both; multi-pod = per-pod counters + per-pod idempotency stores. The AI extraction-cache (per-document) is Postgres-backed and already multi-instance safe.
+- _v1.1_: swap the in-process Maps for Redis behind the same `RateLimitGuard` + `IdempotencyStore` interfaces.
 - _Cost_: ~half-day. No service-call-site change.
-- _Production-blocker_: same as above — horizontal scale.
+- _Production-blocker_: anything that horizontally scales the API needs this.
 
 **OCR for scanned PDFs**
 - _Today_: text extraction is `unpdf` (primary) → `pdfjs-dist` (fallback). Both fail on scanned PDFs (image bitmaps, no text layer).
@@ -186,10 +186,10 @@ Scope cuts, not architectural debt. Each item lists what exists today, what woul
 - _Cost_: ~1.5 days for the wedge feature; was traded against polishing the wizard + extraction.
 
 **Lazy-load TanStack Virtual on units step (perf)**
-- _Today_: step 3 first-load JS = 223 kB. Virtualizer is statically imported; ships in the bundle even when the user has &lt;50 units.
-- _v1.1_: wrap the virtualized branch in `next/dynamic({ ssr: false })`. Step 3 drops to ~190 kB.
+- _Today_: step 3 first-load JS = 238 kB. Virtualizer is statically imported; ships in the bundle even when the user has &lt;50 units. Generate + Import dialogs are already lazy via `next/dynamic`.
+- _v1.1_: wrap the virtualized branch in `next/dynamic({ ssr: false })`. Step 3 drops to ~205 kB.
 - _Cost_: ~30 min.
-- _Why not blocking_: badge cap is 230 kB; step 3 has 7 kB headroom. AI Review Panel was the bigger bundle win and already ships lazy.
+- _Why not blocking_: bundle-budget CI gate is 240 kB; step 3 sits 2 kB under, but adding any new units-step component would push it over. The lazy-virtualizer split buys ~30 kB of headroom for future work.
 
 ---
 

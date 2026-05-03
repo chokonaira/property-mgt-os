@@ -39,6 +39,9 @@ How the system behaves when things go sideways. Each entry: trigger → handling
 | Token limit exceeded for a long PDF      | Pre-call guard: if estimated tokens > 25K, fail fast with `ExtractionError('document_too_large')`; banner: "This document exceeds the v1 size limit. Please fill the form manually." Never silently truncate. | Service.              |
 | Hallucinated source span                 | Server runs `indexOf(span)` against original PDF text post-call; mismatches are dropped and the chip flips to "Unverified" (grey). The model cannot fabricate citations.                                      | Service.              |
 | Cached extraction served                 | Re-uploading the same document returns the cached `ExtractionRun` with `cached: true` and `durationMs: 0`. Bypass with `?force=true`.                                                                         | Service + UI chip.    |
+| Wrong document uploaded (non-Teilungserklärung) | Pre-LLM `checkDocumentType()` heuristic rejects with `EXTRACTION_NOT_TEILUNGSERKLARUNG` (422). Banner names the expected document + the legal markers it looks for. No model spend.                       | Service.              |
+| Double-clicked Save / retried network    | `POST /properties` honours `X-Idempotency-Key`; the client sends one UUID per mutation attempt, the server replays the original 201 response (with `X-Idempotent-Replayed: true`) instead of creating a duplicate. | API interceptor.      |
+| Accidental delete                        | Soft-delete: row stays in DB with `deletedAt` set, list / detail queries hide it. The post-delete toast carries an Undo action for 30 s; click → `POST /properties/:id/restore` clears `deletedAt`.        | Service + UI toast.   |
 
 ---
 

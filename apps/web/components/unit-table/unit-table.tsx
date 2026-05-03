@@ -28,8 +28,26 @@ import { Badge } from '@/components/ui/badge';
 import { FieldChip } from '@/components/ai-extraction-review';
 import { useStepValidator, useWizard } from '@/components/wizard/wizard-context';
 import { FloorCell } from '@/components/unit-table/floor-cell';
-import { GenerateUnitsDialog } from '@/components/unit-table/generate-units-dialog';
-import { ImportUnitsFromFileDialog } from '@/components/unit-table/import-units-from-file-dialog';
+import dynamic from 'next/dynamic';
+// Lazy-load the two action dialogs — both are modal-only surfaces
+// the user opens by intent, so paying ~30-40 kB of upfront First
+// Load JS to have them eager-loaded on the units step doesn't
+// earn its weight. Lazy import keeps the units route under the
+// 230 kB First Load budget enforced by the bundle-budget CI gate.
+const GenerateUnitsDialog = dynamic(
+  () =>
+    import('@/components/unit-table/generate-units-dialog').then(
+      (m) => m.GenerateUnitsDialog,
+    ),
+  { ssr: false },
+);
+const ImportUnitsFromFileDialog = dynamic(
+  () =>
+    import('@/components/unit-table/import-units-from-file-dialog').then(
+      (m) => m.ImportUnitsFromFileDialog,
+    ),
+  { ssr: false },
+);
 import { useCellNavigation } from '@/components/unit-table/use-cell-navigation';
 import { parsePastedRows, shouldHandleAsBulkPaste } from '@/lib/parse-tsv';
 import { findNextAvailableNumber } from '@/lib/duplicate-unit-number';

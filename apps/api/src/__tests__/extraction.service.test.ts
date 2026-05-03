@@ -24,7 +24,13 @@ const MODEL_RESULT: ExtractionResult = {
   warnings: [],
 };
 
+// Includes the literal "Teilungserklärung" + WEG markers so the
+// pre-LLM doc-type guard accepts the fixture. Without these the
+// service short-circuits on `not_teilungserklarung` before any of
+// the downstream paths these tests cover get a chance to run.
 const SOURCE_TEXT = `
+TEILUNGSERKLÄRUNG (gemäß § 8 Wohnungseigentumsgesetz - WEG)
+
 Parkview Residences Berlin steht für ...
 Das Eigentum am Grundstück wird in 1.000 Miteigentumsanteile (MEA) zerlegt.
 `;
@@ -149,9 +155,12 @@ describe('ExtractionService.run', () => {
   });
 
   it('rejects with too_large + persists a failed run when budget exceeded', async () => {
+    // Include the Teilungserklärung marker so the doc-type guard
+    // accepts the fixture; only then does control reach the
+    // token-budget check this test asserts on.
     const harness = makeHarness({
       pdfText: {
-        text: 'x'.repeat(200_000),
+        text: `TEILUNGSERKLÄRUNG\n${'x'.repeat(200_000)}`,
         pages: [],
         extractor: 'unpdf',
       },

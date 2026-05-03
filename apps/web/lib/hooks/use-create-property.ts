@@ -12,6 +12,21 @@ import { OPTIMISTIC_PROPERTY_PREFIX } from '@/lib/optimistic-id';
 
 const PROPERTIES_LIST_KEY = ['properties', 'list'] as const;
 
+/**
+ * Generates an opaque idempotency token. crypto.randomUUID is the
+ * preferred path (universal in modern browsers + Node 19+); a
+ * Math.random fallback covers any obscure runtime where
+ * crypto.randomUUID is missing — the key only needs to be
+ * unguessable to the OTHER tabs of the same user, not to the
+ * cryptographic adversary.
+ */
+function generateIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `k-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 interface OptimisticContext {
   previous: PropertyListResponse | undefined;
   tempId: string;
@@ -37,11 +52,21 @@ interface OptimisticContext {
 export function useCreateProperty() {
   const queryClient = useQueryClient();
   return useMutation<PropertyDetail, ApiError, CreatePropertyRequest, OptimisticContext>({
-    mutationFn: (body) =>
-      apiFetch('/properties', PropertyDetailSchema, {
+    mutationFn: (body) => {
+      // One idempotency key per mutation attempt — generated here,
+      // not at the call site, so the wizard's Save button doesn't
+      // have to thread the value. React Query retries inside the
+      // SAME attempt reuse the same key (we generate once per
+      // mutationFn invocation), which is exactly the contract
+      // a server-side idempotency layer expects: "this is the same
+      // logical write, here it is again."
+      const idempotencyKey = generateIdempotencyKey();
+      return apiFetch('/properties', PropertyDetailSchema, {
         method: 'POST',
         body,
-      }),
+        headers: { 'x-idempotency-key': idempotencyKey },
+      });
+    },
     onMutate: async (variables) => {
       await queryClient.cancelQueries({ queryKey: PROPERTIES_LIST_KEY });
       const previous = queryClient.getQueryData<PropertyListResponse>(PROPERTIES_LIST_KEY);

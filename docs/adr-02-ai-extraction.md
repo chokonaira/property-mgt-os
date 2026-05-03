@@ -26,6 +26,8 @@ Hard requirements:
 
 **Token-budget guard (pre-call).** PDFs over 25 K tokens (BPE-counted via `gpt-tokenizer` — Anthropic and OpenAI tokenisers are close enough at extraction-doc scale that the same heuristic works for either provider) short-circuit with `EXTRACTION_TOO_LARGE` before the LLM call. The user sees the banner; we don't pay for the request.
 
+**Doc-type guard (pre-LLM).** After PDF text extraction, before any model call, the service runs `checkDocumentType()` — a heuristic regex pass that requires at least one strong Teilungserklärung signal (literal term, OR `WEG` + `Miteigentumsanteil` legal frame, OR §-numbered sections + `Aufteilungsplan`). Non-matching documents (rental contracts, invoices, OCR-empty PDFs) are rejected as `EXTRACTION_NOT_TEILUNGSERKLARUNG` (422) with a clear banner pointing the user at the right input — no LLM cost, no junk schema-fit output.
+
 **Idempotency cache.** Before calling the active provider, the orchestrator looks up the most recent successful `ExtractionRun` for the same `documentId`. Cache hit returns instantly with `cached: true` and `durationMs: 0` unless `?force=true`. Always-on, survives independent of the rate-limit ticket.
 
 **MEA invariant.** Server-side `ensureMeaWarning` recomputes the sum-of-shares vs declared total (0.01 tolerance). If the model didn't already emit a `MEA_MISMATCH` warning, the orchestrator injects one before returning. Same tolerance the wizard's MEA bar uses, so client and server agree.
@@ -36,7 +38,7 @@ Hard requirements:
 
 ## Consequences
 
-**Positive.** Hallucinated citations cannot reach the UI — `verifySpans` runs server-side and drops them before the response is sent. Schema validation across the same Zod shape means the AI output drops cleanly into the wizard with no transformation layer. Idempotency cache prevents accidental double-spend on identical re-uploads. Failure modes are localised (`EXTRACTION_TIMEOUT`, `EXTRACTION_PARSE_FAILED`, `EXTRACTION_TOO_LARGE`, `SERVICE_UNAVAILABLE`, `RATE_LIMITED`) with friendly banners.
+**Positive.** Hallucinated citations cannot reach the UI — `verifySpans` runs server-side and drops them before the response is sent. Schema validation across the same Zod shape means the AI output drops cleanly into the wizard with no transformation layer. Idempotency cache prevents accidental double-spend on identical re-uploads. The pre-LLM doc-type guard catches wrong-document uploads before any model spend. Failure modes are localised (`EXTRACTION_NOT_TEILUNGSERKLARUNG`, `EXTRACTION_TIMEOUT`, `EXTRACTION_PARSE_FAILED`, `EXTRACTION_TOO_LARGE`, `SERVICE_UNAVAILABLE`, `RATE_LIMITED`) with friendly banners.
 
 **Negative.** No OCR for scanned-only PDFs (unpdf only reads embedded text). `tesseract.js` server-side as a 3rd fallback is queued for v1.1. The 25 K-token cap is conservative; documents past that hit the manual-entry banner.
 

@@ -16,6 +16,7 @@ describe('ErrorCodeSchema', () => {
       'EXTRACTION_TIMEOUT',
       'EXTRACTION_PARSE_FAILED',
       'EXTRACTION_TOO_LARGE',
+      'EXTRACTION_NOT_TEILUNGSERKLARUNG',
       'SERVICE_UNAVAILABLE',
       'INTERNAL',
       'UNKNOWN',

@@ -1,6 +1,4 @@
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type {
   Building,
@@ -40,16 +38,26 @@ interface PropertiesServiceConfig {
 
 @Injectable()
 export class PropertiesService {
-  private readonly logger = new Logger(PropertiesService.name);
-
   constructor(
     private readonly prisma: PrismaService,
+    // Config is preserved for the v1.1 hard-purge endpoint that
+    // will need the upload-dir to clean storage. Soft-delete itself
+    // doesn't touch disk, so the field is unused on the current
+    // delete path — keeping it on the constructor avoids churning
+    // every test harness once hard-purge lands.
     private readonly config: PropertiesServiceConfig = { uploadDir: './uploads' },
   ) {}
 
   async list(tenantId: string, query: PropertyListQuery): Promise<PropertyListResponse> {
     const { take, skip, uniqueNumber } = query;
-    const where = { tenantId, ...(uniqueNumber ? { uniqueNumber } : {}) };
+    // `deletedAt: null` filter hides soft-deleted properties from the
+    // dashboard. Restoring sets it back to null so the property
+    // re-appears in subsequent list reads with no extra invalidation.
+    const where = {
+      tenantId,
+      deletedAt: null,
+      ...(uniqueNumber ? { uniqueNumber } : {}),
+    };
 
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.property.findMany({
@@ -74,7 +82,10 @@ export class PropertiesService {
 
   async getById(tenantId: string, id: string): Promise<PropertyDetail> {
     const row = await this.prisma.property.findFirst({
-      where: { id, tenantId },
+      // `deletedAt: null` mirrors the list filter — direct-URL access
+      // to a soft-deleted property 404s like a hard-delete would, so
+      // a stale dashboard tab can't keep editing an archived row.
+      where: { id, tenantId, deletedAt: null },
       include: {
         propertyManager: true,
         accountant: true,
@@ -291,47 +302,63 @@ export class PropertiesService {
   }
 
   /**
-   * Atomic delete with cascade. Schema-level `onDelete: Cascade` handles
-   * Building → Property and Unit → Building, but the Document attached
-   * via `declarationFileId` is referenced from Property and survives a
-   * naive Property delete (orphan row + orphan PDF on disk + orphan
-   * ExtractionRun rows pointing at the document). This service deletes
-   * the Property row first (DB cascade collects its buildings + units),
-   * then the document's extraction-run history, then the document row,
-   * inside one transaction. Storage cleanup runs best-effort after
-   * commit so a transient FS error doesn't undo the DB delete.
+   * Soft-delete: set `deletedAt = NOW()` on the property row.
+   * Buildings + units + the declaration document stay intact so
+   * `restore()` is a single-row update with full data recovery.
+   *
+   * Trade-off vs the previous hard-delete:
+   *   - Pro: undo is trivial, no orphan-storage paranoia, the
+   *     audit trail stays referentially intact (audit rows still
+   *     point at a real entityId).
+   *   - Con: a tenant who really wants the row + PDF gone (GDPR
+   *     erasure) needs the v1.1 hard-purge endpoint, which a cron
+   *     would also call after the 30-day window expires.
+   *
+   * 404 if the property is already soft-deleted — calling delete
+   * twice on the same id is a no-op the controller would otherwise
+   * silently swallow.
    */
   async delete(tenantId: string, id: string): Promise<void> {
     const property = await this.prisma.property.findFirst({
-      where: { id, tenantId },
-      select: { id: true, declarationFileId: true },
+      where: { id, tenantId, deletedAt: null },
+      select: { id: true },
     });
     if (!property) {
       throw new AppException('NOT_FOUND', `Property ${id} not found.`, HttpStatus.NOT_FOUND);
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.property.delete({ where: { id: property.id } });
-      if (property.declarationFileId) {
-        await tx.extractionRun.deleteMany({
-          where: { documentId: property.declarationFileId },
-        });
-        await tx.document.delete({ where: { id: property.declarationFileId } });
-      }
+    await this.prisma.property.update({
+      where: { id: property.id },
+      data: { deletedAt: new Date() },
     });
+  }
 
-    if (property.declarationFileId) {
-      const storageKey = path.join(tenantId, `${property.declarationFileId}.pdf`);
-      const absolutePath = path.join(this.config.uploadDir, storageKey);
-      fs.unlink(absolutePath).catch((err: unknown) => {
-        // The DB row is gone; storage residue is best-effort. Log so
-        // operators can sweep stale files later but never rollback.
-        this.logger.warn(
-          { storageKey, err: err instanceof Error ? err.message : String(err) },
-          'properties.delete_storage_unlink_failed',
-        );
-      });
+  /**
+   * Restores a soft-deleted property by clearing `deletedAt`. Called
+   * by the dashboard's Undo toast (within ~30 s of delete) and by
+   * the future "archived properties" admin view.
+   *
+   * The query intentionally targets ONLY soft-deleted rows — calling
+   * restore on a live property would be a no-op the caller probably
+   * didn't mean, so 404 keeps the contract honest.
+   */
+  async restore(tenantId: string, id: string): Promise<PropertyDetail> {
+    const property = await this.prisma.property.findFirst({
+      where: { id, tenantId, deletedAt: { not: null } },
+      select: { id: true },
+    });
+    if (!property) {
+      throw new AppException(
+        'NOT_FOUND',
+        `Property ${id} not found or not archived.`,
+        HttpStatus.NOT_FOUND,
+      );
     }
+    await this.prisma.property.update({
+      where: { id: property.id },
+      data: { deletedAt: null },
+    });
+    return this.getById(tenantId, property.id);
   }
 }
 

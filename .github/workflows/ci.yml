@@ -49,7 +49,13 @@ jobs:
         run: pnpm test
 
       - name: Build
-        run: pnpm build
+        run: pnpm build 2>&1 | tee /tmp/build.log
+
+      - name: Bundle budget
+        # Fails the job if any route's First Load JS exceeds the
+        # ceiling defined in scripts/check-bundle-budget.mjs. Catches
+        # heavy-component imports at PR time before they ship.
+        run: node scripts/check-bundle-budget.mjs /tmp/build.log
 
   e2e-responsive:
     runs-on: ubuntu-latest

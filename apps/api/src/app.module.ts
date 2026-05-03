@@ -8,6 +8,7 @@ import { ExtractionModule } from './modules/extraction/extraction.module';
 import { OpenApiModule } from './modules/openapi/openapi.module';
 import { PropertiesModule } from './modules/properties/properties.module';
 import { PrismaModule } from './shared/prisma.module';
+import { IdempotencyStore } from './shared/idempotency.interceptor';
 import { RATE_LIMIT_BUCKET, rateLimitBucket } from './shared/rate-limit';
 import { RateLimitGuard } from './shared/rate-limit.guard';
 import { requestIdMiddleware } from './shared/request-id.middleware';
@@ -52,8 +53,15 @@ import { ActorContextMiddleware } from './shared/actor-context.middleware';
     OpenApiModule,
   ],
   controllers: [HealthController],
-  providers: [{ provide: RATE_LIMIT_BUCKET, useValue: rateLimitBucket }, RateLimitGuard],
-  exports: [RateLimitGuard, RATE_LIMIT_BUCKET],
+  providers: [
+    { provide: RATE_LIMIT_BUCKET, useValue: rateLimitBucket },
+    RateLimitGuard,
+    // Single-instance store so every request that hits the
+    // IdempotencyInterceptor sees the same cache. Production swaps
+    // this for a Redis-backed implementation behind the same shape.
+    IdempotencyStore,
+  ],
+  exports: [RateLimitGuard, RATE_LIMIT_BUCKET, IdempotencyStore],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

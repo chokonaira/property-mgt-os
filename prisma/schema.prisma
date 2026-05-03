@@ -115,10 +115,17 @@ model Property {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  // Soft-delete sentinel. NULL = live; a timestamp = archived (the
+  // Stripe pattern). The list + getById queries filter rows where
+  // this is non-null so archived properties disappear from the
+  // dashboard but remain restorable for 30 days. A v1.1 cron purges
+  // rows past the window — same shape as `deletedAt < now() - 30d`.
+  deletedAt DateTime?
 
   @@unique([tenantId, uniqueNumber])
   @@unique([declarationFileId])
   @@index([tenantId])
+  @@index([tenantId, deletedAt])
 }
 
 model Building {

@@ -77,6 +77,16 @@ function mapExtractionError(error: ExtractionError): AppException {
       return new AppException('EXTRACTION_TIMEOUT', error.message, HttpStatus.GATEWAY_TIMEOUT);
     case 'parse_failed':
       return new AppException('EXTRACTION_PARSE_FAILED', error.message, HttpStatus.BAD_GATEWAY);
+    case 'not_teilungserklarung':
+      // 422 — the upload is well-formed but isn't the kind of
+      // document this endpoint accepts. Distinct code so the
+      // form can render the specific "this isn't a Teilungs-
+      // erklärung" copy instead of a generic parse-failed banner.
+      return new AppException(
+        'EXTRACTION_NOT_TEILUNGSERKLARUNG',
+        error.message,
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
     default:
       return new AppException('INTERNAL', error.message, HttpStatus.INTERNAL_SERVER_ERROR);
   }

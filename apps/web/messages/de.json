@@ -284,11 +284,14 @@
   "propertyDetail": {
     "delete": {
       "cta": "Löschen",
-      "title": "Diese Immobilie löschen?",
-      "description": "„{name}\" zu löschen entfernt dauerhaft jedes Gebäude, jede Einheit und die hochgeladene Teilungserklärung. Dies kann nicht rückgängig gemacht werden.",
-      "confirmLabel": "Immobilie löschen",
-      "toast": "Immobilie gelöscht.",
-      "errorToast": "Löschen fehlgeschlagen. Bitte erneut versuchen."
+      "title": "Diese Immobilie archivieren?",
+      "description": "„{name}\" wird mitsamt aller Gebäude, Einheiten und der hochgeladenen Teilungserklärung archiviert. Sie haben 30 Sekunden, um die Aktion über den Toast rückgängig zu machen.",
+      "confirmLabel": "Immobilie archivieren",
+      "toast": "Immobilie archiviert.",
+      "undo": "Rückgängig",
+      "restored": "Immobilie wiederhergestellt.",
+      "errorToast": "Archivieren fehlgeschlagen. Bitte erneut versuchen.",
+      "restoreErrorToast": "Wiederherstellung fehlgeschlagen. Bitte erneut versuchen."
     },
     "notFound": {
       "title": "Immobilie nicht gefunden",
@@ -502,6 +505,7 @@
         "unreadable": "Diese Datei ist kein lesbares PDF.",
         "unavailable": "Dokumentenspeicher ist vorübergehend nicht verfügbar.",
         "rateLimited": "Aktuell ratenbegrenzt. Bitte in einem Moment erneut versuchen.",
+        "notTeilungserklarung": "Das sieht nicht nach einer Teilungserklärung aus. Bitte die notariell beurkundete Teilungserklärung hochladen — typischerweise 5–30 Seiten mit §-nummerierten Abschnitten wie § 1 Grundbuchstand und § 3 Aufteilungsplan.",
         "generic": "Wir konnten dieses Dokument nicht lesen.",
         "fallbackHint": "Sie können das Formular unten manuell ausfüllen."
       }

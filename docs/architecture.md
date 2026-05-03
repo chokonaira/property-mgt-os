@@ -378,11 +378,12 @@ REST, NestJS. Each endpoint validated with Zod via a global `ZodValidationPipe`.
 
 ```
 GET    /properties                      list (dashboard pagination)
-POST   /properties                      atomic create (property + buildings + units, single transaction)
+POST   /properties                      atomic create (property + buildings + units, single transaction; honours X-Idempotency-Key)
 GET    /properties/:id                  full detail
 GET    /properties/:id/history          audit timeline (paginated, newest first; covers the property + every building + every unit underneath)
-PATCH  /properties/:id                  partial update
-DELETE /properties/:id                  cascade delete
+PATCH  /properties/:id                  partial update (audit-logged per field)
+DELETE /properties/:id                  soft-delete (sets deletedAt; restorable)
+POST   /properties/:id/restore          clears deletedAt; 404 if not archived
 
 POST   /properties/:id/buildings        add building
 PATCH  /buildings/:id

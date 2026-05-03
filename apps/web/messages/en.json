@@ -284,11 +284,14 @@
   "propertyDetail": {
     "delete": {
       "cta": "Delete",
-      "title": "Delete this property?",
-      "description": "Deleting \"{name}\" will permanently remove every building, unit, and the uploaded Teilungserklärung. This cannot be undone.",
-      "confirmLabel": "Delete property",
-      "toast": "Property deleted.",
-      "errorToast": "Couldn't delete the property. Try again in a moment."
+      "title": "Archive this property?",
+      "description": "\"{name}\" will be archived along with every building, unit, and the uploaded Teilungserklärung. You'll have 30 seconds to undo from the toast that follows.",
+      "confirmLabel": "Archive property",
+      "toast": "Property archived.",
+      "undo": "Undo",
+      "restored": "Property restored.",
+      "errorToast": "Couldn't archive the property. Try again in a moment.",
+      "restoreErrorToast": "Couldn't restore the property. Try again in a moment."
     },
     "notFound": {
       "title": "Property not found",
@@ -502,6 +505,7 @@
         "unreadable": "This file isn't a readable PDF.",
         "unavailable": "Document storage is temporarily unavailable.",
         "rateLimited": "We're rate-limited right now. Try again in a moment.",
+        "notTeilungserklarung": "This doesn't look like a Teilungserklärung. Upload the notarised deed of division — typically 5–30 pages with §-numbered sections like § 1 Grundbuchstand and § 3 Aufteilungsplan.",
         "generic": "We couldn't read this document.",
         "fallbackHint": "You can fill the form manually below."
       }

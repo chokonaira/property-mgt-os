@@ -4,6 +4,7 @@ import type { ExtractionResult } from '@buena/shared';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- runtime value: Nest DI reads constructor param metadata
 import { PrismaService } from '../../shared/prisma.service';
 import { ExtractionError } from './extraction-error';
+import { checkDocumentType } from './lib/document-type-guard';
 import { findCachedExtractionRun, type CachedExtractionRun } from './lib/extraction-cache';
 import { ensureMeaWarning } from './lib/mea-invariant';
 import { checkTokenBudget, type Encoder } from './lib/token-budget';
@@ -66,6 +67,22 @@ export class ExtractionService {
 
     const extracted = await this.pdfText.extractTextWithSpans(documentId);
     const sourceText = extracted.text;
+
+    // Doc-type guard. Pre-LLM pass that rejects PDFs that aren't a
+    // Teilungserklärung — burning a model call only to return
+    // schema-fitted nonsense for a rental contract is worse than
+    // refusing fast with a clear message. See document-type-guard
+    // for the matched-signal heuristic.
+    const docCheck = checkDocumentType(sourceText);
+    if (!docCheck.ok) {
+      await this.persistFailed(documentId, 'EXTRACTION_NOT_TEILUNGSERKLARUNG', {
+        matchedSignals: docCheck.matchedSignals,
+      });
+      throw new ExtractionError(
+        'not_teilungserklarung',
+        docCheck.reason ?? 'Document is not a Teilungserklärung.',
+      );
+    }
 
     const budget = checkTokenBudget(sourceText, this.config.maxTokens, this.config.encode);
     if (budget.exceeds) {

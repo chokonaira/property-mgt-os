@@ -7,6 +7,7 @@ export type ExtractionErrorKey =
   | 'unreadable'
   | 'unavailable'
   | 'rateLimited'
+  | 'notTeilungserklarung'
   | 'generic';
 
 /**
@@ -24,6 +25,8 @@ export function extractionErrorKey(error: unknown): ExtractionErrorKey {
         return 'timeout';
       case 'EXTRACTION_PARSE_FAILED':
         return 'parseFailed';
+      case 'EXTRACTION_NOT_TEILUNGSERKLARUNG':
+        return 'notTeilungserklarung';
       case 'VALIDATION_FAILED':
       case 'UNSUPPORTED_MEDIA_TYPE':
         return 'unreadable';

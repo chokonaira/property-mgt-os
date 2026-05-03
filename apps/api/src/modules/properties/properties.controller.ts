@@ -9,7 +9,9 @@ import {
   Patch,
   Post,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
+import { IdempotencyInterceptor } from '../../shared/idempotency.interceptor';
 import {
   CreatePropertyRequestSchema,
   PropertyListQuerySchema,
@@ -44,6 +46,11 @@ export class PropertiesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  // Idempotency interceptor lets a client send `X-Idempotency-Key`
+  // and have a duplicate POST replay the original response instead
+  // of creating a second property. Defends against double-clicked
+  // Save buttons + retried network errors.
+  @UseInterceptors(IdempotencyInterceptor)
   create(
     @Body(new ZodValidationPipe(CreatePropertyRequestSchema)) body: CreatePropertyRequest,
   ): Promise<PropertyDetail> {
@@ -62,5 +69,11 @@ export class PropertiesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string): Promise<void> {
     return this.properties.delete(TENANT_ID, id);
+  }
+
+  @Post(':id/restore')
+  @HttpCode(HttpStatus.OK)
+  restore(@Param('id') id: string): Promise<PropertyDetail> {
+    return this.properties.restore(TENANT_ID, id);
   }
 }

@@ -41,6 +41,6 @@ Hosted demo and managed Postgres are deliberately **out** — the project runs l
 
 **Positive.** A new contributor can clone and `docker compose up` in <5 min. The shared Zod schema kills three drift surfaces in one (form ↔ wire ↔ AI output). Strict TypeScript across all three packages catches the bulk of integration regressions before tests run. Aligning on Buena's existing stack lets this codebase land as a normal pull request inside the production repo, not a parallel re-platform.
 
-**Negative.** No auth, no multi-tenant enforcement, no S3, no audit log. Documented in the README's "What's deferred" section. The wizard's units step (TanStack Table + Virtual) sits at 223 kB first-load; lazy-loading the virtualizer via `next/dynamic` is queued as v1.1. The AI Review Panel is already lazy-loaded.
+**Negative.** No auth, no multi-tenant enforcement, no S3. Documented in the README's "What's deferred" section. The wizard's units step (TanStack Table + Virtual + dnd-kit) sits at 238 kB first-load; lazy-loading the virtualizer via `next/dynamic` is queued as v1.1. The AI Review Panel + the units-step Generate / Import dialogs are already lazy-loaded. Audit log is wired (Prisma middleware + `AuditLog` table); every Property / Building / Unit / Contact write emits a row scoped to actor + tenant.
 
 **Neutral.** No state-management library beyond TanStack Query — wizard state lives in RHF + a small WizardContext, persisted to localStorage.

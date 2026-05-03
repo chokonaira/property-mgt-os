@@ -4,7 +4,8 @@ export type ExtractionFailure =
   | 'storage_missing'
   | 'timeout'
   | 'parse_failed'
-  | 'too_large';
+  | 'too_large'
+  | 'not_teilungserklarung';
 
 /**
  * Domain error for the extraction pipeline. Lives outside Nest's

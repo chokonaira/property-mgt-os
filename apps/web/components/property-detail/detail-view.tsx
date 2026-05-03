@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import { usePropertyDetail } from '@/lib/hooks/use-property-detail';
 import { useDeleteProperty } from '@/lib/hooks/use-delete-property';
+import { useRestoreProperty } from '@/lib/hooks/use-restore-property';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog, useConfirm } from '@/components/confirm-dialog';
@@ -31,6 +32,7 @@ export function PropertyDetailView({ id }: DetailViewProps) {
   const router = useRouter();
   const { data, isPending, isError, error, refetch, isFetching } = usePropertyDetail(id);
   const deleteProperty = useDeleteProperty();
+  const restoreProperty = useRestoreProperty();
   const { confirm, dialogProps } = useConfirm();
 
   async function handleDelete(propertyName: string) {
@@ -43,7 +45,26 @@ export function PropertyDetailView({ id }: DetailViewProps) {
     if (!ok) return;
     deleteProperty.mutate(id, {
       onSuccess: () => {
-        toast.success(t('delete.toast'));
+        // Stripe-style Undo: the toast carries an action button that
+        // restores the property in one click. The 30 s window
+        // matches the toast's auto-dismiss duration so the user has
+        // an honest visible deadline. Beyond that, the future v1.1
+        // archived-properties page is the recovery path.
+        toast.success(t('delete.toast'), {
+          action: {
+            label: t('delete.undo'),
+            onClick: () => {
+              restoreProperty.mutate(id, {
+                onSuccess: () => {
+                  toast.success(t('delete.restored'));
+                  router.replace(`/properties/${id}`);
+                },
+                onError: () => toast.error(t('delete.restoreErrorToast')),
+              });
+            },
+          },
+          duration: 30_000,
+        });
         router.replace('/');
       },
       onError: () => {
