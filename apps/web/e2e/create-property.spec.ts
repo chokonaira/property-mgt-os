@@ -49,8 +49,11 @@ test('wizard happy path: dashboard → create → 3 steps → save → see in de
 
   // 3. Step 2 — Buildings
   await expect(page).toHaveURL(/\/properties\/new\/buildings$/);
-  await page.getByLabel(/^Street$/i).fill('Hauptstraße');
-  await page.getByLabel(/House no\./i).fill('12');
+  // The label renders "Street*" (asterisk is the FieldRow's required
+  // marker, part of the same Label element). An anchored /^Street$/
+  // never matches; use the actual visible text instead.
+  await page.getByLabel('Street*').fill('Hauptstraße');
+  await page.getByLabel('House no.*').fill('12');
   await clickNext(page);
 
   // 4. Step 3 — Units (5 rows, MEA sums to 1000 to satisfy the
@@ -73,7 +76,10 @@ test('wizard happy path: dashboard → create → 3 steps → save → see in de
   // 6. Detail view assertions
   await expect(page.getByRole('heading', { name: propertyName })).toBeVisible();
   // Unit count summary shows "5 units" somewhere in the units section.
-  await expect(page.getByText(/5\s*units/i)).toBeVisible();
+  // Use .first() — the count appears in two places (the section header
+  // span + the tabpanel paragraph) and either being visible proves the
+  // round-trip wrote the units we expected.
+  await expect(page.getByText(/5\s*units/i).first()).toBeVisible();
   // MEA bar shows the matched-total status (the 200 × 5 = 1000 case).
   await expect(page.getByText(/Sum matches the declared total/i)).toBeVisible();
 

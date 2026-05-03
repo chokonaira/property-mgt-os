@@ -356,6 +356,7 @@
     "loading": "Loading history…",
     "noHistory": "No edits yet",
     "lastModified": "Last modified by {actor} · {when}",
+    "lastModifiedShort": "{actor} · {when}",
     "title": "Change history",
     "description": "{total, plural, =0 {No changes recorded yet.} one {# change} other {# changes}} across this property and its buildings + units.",
     "loadMore": "Load {remaining, plural, one {# more entry} other {# more entries}}",

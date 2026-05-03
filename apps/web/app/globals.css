@@ -14,7 +14,12 @@
     --popover-foreground: 222 13% 11%;
 
     --muted: 210 14% 95%;
-    --muted-foreground: 220 9% 46%;
+    /* 42% L (was 46%) lifts contrast on light tinted surfaces
+       (bg-primary/5, bg-warning/5, bg-success/5) above WCAG AA's
+       4.5:1 minimum without darkening the token enough to read as
+       primary body copy. Verified with axe-core on the wizard step 1
+       prefill section, which used to fail at 4.35:1. */
+    --muted-foreground: 220 9% 42%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;

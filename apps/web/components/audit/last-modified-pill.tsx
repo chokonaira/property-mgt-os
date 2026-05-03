@@ -85,14 +85,35 @@ export function LastModifiedPill({ propertyId, className }: LastModifiedPillProp
           >
             <Clock className="h-3 w-3" aria-hidden="true" />
             {isPending ? (
-              <span>{t('loading')}</span>
+              // Slim shimmer instead of a "Loading history…" word so
+              // the pill doesn't read as a status update on every
+              // mount. The bar is the same width the typical
+              // "Last modified by …" string occupies, so the pill
+              // doesn't reflow when the data lands.
+              <span
+                aria-label={t('loading')}
+                className="inline-block h-3 w-32 animate-pulse rounded bg-muted-foreground/20"
+              />
             ) : latest ? (
-              <span className="truncate">
-                {t('lastModified', {
-                  actor: latest.actor.name,
-                  when: relativeTime(t, latest.createdAt),
-                })}
-              </span>
+              <>
+                {/* Mobile: compact "Demo User · 48 min ago" — drops
+                    the redundant "Last modified by" prefix that
+                    would push the pill out of the header strip on
+                    sub-380 px screens. Desktop keeps the full
+                    sentence for clarity. */}
+                <span className="truncate sm:hidden">
+                  {t('lastModifiedShort', {
+                    actor: latest.actor.name,
+                    when: relativeTime(t, latest.createdAt),
+                  })}
+                </span>
+                <span className="hidden truncate sm:inline">
+                  {t('lastModified', {
+                    actor: latest.actor.name,
+                    when: relativeTime(t, latest.createdAt),
+                  })}
+                </span>
+              </>
             ) : (
               <span>{t('noHistory')}</span>
             )}

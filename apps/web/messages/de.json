@@ -356,6 +356,7 @@
     "loading": "Verlauf wird geladen…",
     "noHistory": "Noch keine Änderungen",
     "lastModified": "Zuletzt bearbeitet von {actor} · {when}",
+    "lastModifiedShort": "{actor} · {when}",
     "title": "Änderungsverlauf",
     "description": "{total, plural, =0 {Noch keine Änderungen erfasst.} one {# Änderung} other {# Änderungen}} an dieser Immobilie und ihren Gebäuden + Einheiten.",
     "loadMore": "{remaining, plural, one {# weiteren Eintrag} other {# weitere Einträge}} laden",
