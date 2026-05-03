@@ -89,4 +89,17 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* iOS Safari auto-zooms when an input's computed font-size is
+     under 16 px. Bumping form controls to 16 px on mobile only
+     suppresses the zoom without forcing maximum-scale: 1 on the
+     viewport (which also kills pinch-zoom, a11y regression).
+     Desktop keeps its tighter 14 px (`text-sm`) styling. */
+  @media (max-width: 640px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
 }

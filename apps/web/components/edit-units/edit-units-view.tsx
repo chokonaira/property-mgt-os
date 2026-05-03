@@ -7,13 +7,12 @@ import { useTranslations } from 'next-intl';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { type ReplaceUnitWithId } from '@buena/shared';
+import { type PropertyDetail, type ReplaceUnitWithId } from '@buena/shared';
 import { ApiError } from '@/lib/api-client';
 import { findAllDuplicateUnitRows } from '@/lib/duplicate-units';
 import { usePropertyDetail } from '@/lib/hooks/use-property-detail';
 import { useReplaceUnits } from '@/lib/hooks/use-replace-units';
 import {
-  WIZARD_DRAFT_DEFAULTS,
   WizardDraftSchema,
   type WizardDraft,
   type WizardDraftInput,
@@ -59,27 +58,7 @@ interface EditUnitsViewProps {
 export function EditUnitsView({ id }: EditUnitsViewProps) {
   const t = useTranslations('editUnits');
   const tErr = useTranslations('errors');
-  const router = useRouter();
   const detail = usePropertyDetail(id);
-  const replaceUnits = useReplaceUnits();
-
-  // Map the saved property into the wizard's draft input shape so
-  // the same UnitTable + dialogs render unchanged. Memoised on the
-  // detail data reference; React Query keeps that stable until a
-  // refetch lands.
-  const initialValues = useMemo<WizardDraftInput>(() => {
-    if (!detail.data) return WIZARD_DRAFT_DEFAULTS;
-    return propertyDetailToWizardDraft(detail.data);
-  }, [detail.data]);
-
-  const methods = useForm<WizardDraftInput, unknown, WizardDraft>({
-    defaultValues: initialValues,
-    values: initialValues,
-    resolver: zodResolver(WizardDraftSchema),
-    mode: 'onTouched',
-  });
-
-  const [errorsFlashed, setErrorsFlashed] = useState(false);
 
   if (detail.isPending) return <Loading />;
 
@@ -109,7 +88,45 @@ export function EditUnitsView({ id }: EditUnitsViewProps) {
     );
   }
 
-  const property = detail.data;
+  // Inner form mounts only AFTER detail.data is loaded, so useForm
+  // initializes ONCE with the real values. Without this split, a
+  // `values: initialValues` on useForm reactively re-syncs on
+  // every render — RHF rewrites every field's controlled value,
+  // which strips DOM focus from whichever input the user was
+  // typing into. The split is the canonical RHF v7 pattern for
+  // "load → mount form → never re-sync from outside."
+  return <EditUnitsForm id={id} property={detail.data} />;
+}
+
+interface EditUnitsFormProps {
+  id: string;
+  property: PropertyDetail;
+}
+
+function EditUnitsForm({ id, property }: EditUnitsFormProps) {
+  const t = useTranslations('editUnits');
+  const router = useRouter();
+  const replaceUnits = useReplaceUnits();
+  const [errorsFlashed, setErrorsFlashed] = useState(false);
+
+  // Frozen at first render of THIS component (which only mounts
+  // after the parent has loaded data) so RHF's defaultValues are
+  // the real values from the server. No `values` prop = no
+  // reactive resync = no focus loss while the user types.
+  const initialValues = useMemo<WizardDraftInput>(
+    () => propertyDetailToWizardDraft(property),
+    // Property is captured once on mount; intentional — see comment
+    // on the parent. eslint-disable-next-line is omitted because
+    // the rule isn't on, but the intent matches.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const methods = useForm<WizardDraftInput, unknown, WizardDraft>({
+    defaultValues: initialValues,
+    resolver: zodResolver(WizardDraftSchema),
+    mode: 'onTouched',
+  });
 
   async function handleSave() {
     // Two layers of pre-flight: Zod schema (covers per-row required
