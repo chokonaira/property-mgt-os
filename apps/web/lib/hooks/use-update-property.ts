@@ -33,10 +33,31 @@ export function useUpdateProperty() {
         method: 'PATCH',
         body: patch,
       }),
-    onSuccess: (data) => {
-      void queryClient.invalidateQueries({ queryKey: ['properties', 'detail', data.id] });
-      void queryClient.invalidateQueries({ queryKey: ['properties', data.id, 'history'] });
-      void queryClient.invalidateQueries({ queryKey: ['properties'] });
+    onSuccess: async (data) => {
+      // Awaiting the invalidations means the mutation's `isPending`
+      // stays true until the refetch lands. The Save button stays in
+      // its loader state for the extra ~50 ms it takes the API to
+      // return the new audit row, which is a much smaller jank than
+      // "Saved." flashing while the chip still shows the old data.
+      //
+      // refetchType: 'active' is the default, but we spell it for the
+      // history key — the LastModifiedPill is the only consumer and
+      // it IS active during the edit, so an in-place refetch is what
+      // we want here.
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['properties', 'detail', data.id],
+          refetchType: 'active',
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['properties', data.id, 'history'],
+          refetchType: 'all',
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['properties'],
+          refetchType: 'active',
+        }),
+      ]);
     },
   });
 }
