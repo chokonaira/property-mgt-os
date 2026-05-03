@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
+import { Pencil } from 'lucide-react';
 import type { Building, Unit } from '@buena/shared';
 import {
   Table,
@@ -12,6 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Link } from '@/i18n/navigation';
 import { formatFloor, formatNumber, formatSqm, sumMea } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { MeaBar } from './mea-bar';
@@ -53,9 +56,40 @@ export function UnitsSection({ buildings, totalMea }: UnitsSectionProps) {
         <h2 id="units-heading" className="text-lg font-semibold text-foreground">
           {t('title')}
         </h2>
-        <span className="text-sm text-muted-foreground">
-          {t('count', { count: allUnits.length })}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">
+            {t('count', { count: allUnits.length })}
+          </span>
+          {/* propertyId comes from any unit row (or the first
+              building). Either resolves to the same property; we
+              prefer the building-level path since it's defined even
+              when the property has zero units. */}
+          {buildings[0]?.propertyId ? (
+            <Button asChild variant="outline" size="sm">
+              <Link
+                href={`/properties/${buildings[0].propertyId}/edit/units`}
+                onClick={() => {
+                  // Persist the user's scroll position so the detail
+                  // page can restore it on return — going to the edit
+                  // page is a separate route, and Next's default
+                  // navigation scrolls to top on the new page AND on
+                  // back/programmatic-replace. The detail-view
+                  // useEffect reads this key + scrolls to it once
+                  // the property data has rendered.
+                  if (typeof window !== 'undefined' && buildings[0]?.propertyId) {
+                    sessionStorage.setItem(
+                      `property-detail-scroll:${buildings[0].propertyId}`,
+                      String(window.scrollY),
+                    );
+                  }
+                }}
+              >
+                <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                {t('editCta')}
+              </Link>
+            </Button>
+          ) : null}
+        </div>
       </div>
       <MeaBar sum={sum} total={totalMea} />
       {buildings.length > 1 ? (

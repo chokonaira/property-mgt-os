@@ -48,13 +48,25 @@ jobs:
       - name: Test
         run: pnpm test
 
-      - name: Build
-        run: pnpm build 2>&1 | tee /tmp/build.log
+      - name: Build api
+        run: |
+          set -euo pipefail
+          pnpm --filter @buena/shared build
+          pnpm --filter @buena/api build
+
+      - name: Build web and capture bundle output
+        run: |
+          set -euo pipefail
+          pnpm --filter @buena/web build 2>&1 | tee /tmp/build.log
+
+      - name: Print web build log on failure
+        if: failure()
+        run: |
+          echo "::group::web build log"
+          cat /tmp/build.log || true
+          echo "::endgroup::"
 
       - name: Bundle budget
-        # Fails the job if any route's First Load JS exceeds the
-        # ceiling defined in scripts/check-bundle-budget.mjs. Catches
-        # heavy-component imports at PR time before they ship.
         run: node scripts/check-bundle-budget.mjs /tmp/build.log
 
   e2e-responsive:
@@ -77,13 +89,16 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright (chromium only)
+      - name: Install Playwright chromium
         run: pnpm --filter @buena/web exec playwright install --with-deps chromium
 
-      - name: Build shared + web
-        run: pnpm --filter @buena/shared build && pnpm --filter @buena/web build
+      - name: Build shared and web
+        run: |
+          set -euo pipefail
+          pnpm --filter @buena/shared build
+          pnpm --filter @buena/web build
 
-      - name: Start web + wait + run responsive e2e
+      - name: Start web, wait, and run responsive e2e
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001
         run: |

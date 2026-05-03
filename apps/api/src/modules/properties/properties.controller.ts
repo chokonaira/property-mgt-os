@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseInterceptors,
 } from '@nestjs/common';
@@ -15,11 +16,13 @@ import { IdempotencyInterceptor } from '../../shared/idempotency.interceptor';
 import {
   CreatePropertyRequestSchema,
   PropertyListQuerySchema,
+  ReplaceUnitsRequestSchema,
   UpdatePropertySchema,
   type CreatePropertyRequest,
   type PropertyDetail,
   type PropertyListQuery,
   type PropertyListResponse,
+  type ReplaceUnitsRequest,
   type UpdateProperty,
 } from '@buena/shared';
 import { ZodValidationPipe } from '../../shared/zod-validation.pipe';
@@ -75,5 +78,17 @@ export class PropertiesController {
   @HttpCode(HttpStatus.OK)
   restore(@Param('id') id: string): Promise<PropertyDetail> {
     return this.properties.restore(TENANT_ID, id);
+  }
+
+  @Put(':id/units')
+  // Bulk-replace endpoint for the units edit flow. The body is the
+  // full units array as the user wants them post-save; the service
+  // diffs against existing rows and emits insert/update/delete via
+  // the audit middleware automatically.
+  replaceUnits(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(ReplaceUnitsRequestSchema)) body: ReplaceUnitsRequest,
+  ): Promise<PropertyDetail> {
+    return this.properties.replaceUnits(TENANT_ID, id, body.units);
   }
 }

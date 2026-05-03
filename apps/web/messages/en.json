@@ -281,6 +281,20 @@
       }
     }
   },
+  "editUnits": {
+    "title": "Edit units · {name}",
+    "subtitle": "Add, change, paste, generate, or import units. Each save writes one audit entry per touched unit.",
+    "back": "Back to property",
+    "cancel": "Cancel",
+    "save": "Save units",
+    "toastSaved": "Units saved.",
+    "toastInvalid": "Fix the highlighted rows before saving.",
+    "toastError": "Couldn't save units. Try again in a moment.",
+    "notFound": {
+      "title": "Property not found",
+      "description": "This property may have been deleted, or the link is incorrect."
+    }
+  },
   "propertyDetail": {
     "delete": {
       "cta": "Delete",
@@ -334,6 +348,7 @@
       "title": "Units",
       "count": "{count, plural, =0 {no units} one {# unit} other {# units}}",
       "rowCount": "{count, plural, =0 {no units} one {# unit} other {# units}}",
+      "editCta": "Edit units",
       "columns": {
         "number": "No.",
         "type": "Type",

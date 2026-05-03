@@ -10,6 +10,7 @@ import type {
   PropertyListItem,
   PropertyListQuery,
   PropertyListResponse,
+  ReplaceUnitWithId,
   Unit,
   UpdateProperty,
 } from '@buena/shared';
@@ -302,6 +303,124 @@ export class PropertiesService {
   }
 
   /**
+   * Bulk replace the units of an existing property. The payload is
+   * the full units list as the user wants them after the save:
+   *
+   *   - Entry with `id` matching an existing unit → UPDATE that row
+   *     in place if any field changed (no-op otherwise).
+   *   - Entry without `id` → INSERT as a new unit.
+   *   - Existing unit whose id doesn't appear in the payload → DELETE.
+   *
+   * One transaction. The audit middleware fires per touched row, so
+   * the timeline shows insert/update/delete entries the user can read.
+   *
+   * `buildingIndex` resolves against the property's CURRENT buildings
+   * array (sorted by createdAt to match the wizard's ordering); the
+   * service rejects out-of-range indexes with a 422 detail. Editing
+   * buildings themselves is out of scope for this endpoint; that's
+   * the v1.1 wizard-mode-edit ticket.
+   *
+   * Returns the refreshed PropertyDetail so the client can swap its
+   * cache without an extra GET.
+   */
+  async replaceUnits(
+    tenantId: string,
+    propertyId: string,
+    units: ReadonlyArray<ReplaceUnitWithId>,
+  ): Promise<PropertyDetail> {
+    type WithBuildings = Prisma.PropertyGetPayload<{
+      include: {
+        buildings: { include: { units: { select: { id: true } } } };
+      };
+    }>;
+    const property = (await this.prisma.property.findFirst({
+      where: { id: propertyId, tenantId, deletedAt: null },
+      include: {
+        // Building has no createdAt column; cuids are monotonic by
+        // generation time so ordering by id matches the wizard's
+        // create-time order (the same order the buildings array was
+        // posted in).
+        buildings: {
+          orderBy: { id: 'asc' },
+          include: { units: { select: { id: true } } },
+        },
+      },
+    })) as WithBuildings | null;
+    if (!property) {
+      throw new AppException(
+        'NOT_FOUND',
+        `Property ${propertyId} not found.`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const buildingIds = property.buildings.map((b) => b.id);
+    const offending = units
+      .map((u, i) => ({ i, idx: u.buildingIndex }))
+      .filter((row) => !Number.isInteger(row.idx) || row.idx < 0 || row.idx >= buildingIds.length);
+    if (offending.length > 0) {
+      throw new AppException(
+        'VALIDATION_FAILED',
+        'One or more units reference an out-of-range buildingIndex.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        offending.map((row) => ({
+          path: `units[${row.i}].buildingIndex`,
+          message: `Index ${row.idx} is outside the property's ${buildingIds.length} buildings.`,
+          code: 'out_of_range',
+        })),
+      );
+    }
+
+    const existingUnitIds = new Set<string>();
+    for (const b of property.buildings) for (const u of b.units) existingUnitIds.add(u.id);
+    const referencedIds = new Set<string>();
+    for (const u of units) if (u.id) referencedIds.add(u.id);
+
+    // Validate every supplied id actually belongs to this property —
+    // a stale tab editing a property whose units were already
+    // changed elsewhere would otherwise quietly delete THIS
+    // property's units in favour of foreign rows.
+    const foreignIds = [...referencedIds].filter((id) => !existingUnitIds.has(id));
+    if (foreignIds.length > 0) {
+      throw new AppException(
+        'VALIDATION_FAILED',
+        'One or more unit ids do not belong to this property.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        foreignIds.map((id) => ({
+          path: 'units',
+          message: `Unit id ${id} is not a unit of property ${propertyId}.`,
+          code: 'foreign_id',
+        })),
+      );
+    }
+
+    const toDelete = [...existingUnitIds].filter((id) => !referencedIds.has(id));
+
+    await this.prisma.$transaction(async (tx) => {
+      // Deletes first so a unit being deleted doesn't collide on the
+      // (buildingId, number) unique constraint with an incoming
+      // INSERT or UPDATE that wants to claim the same number.
+      if (toDelete.length > 0) {
+        for (const id of toDelete) {
+          await tx.unit.delete({ where: { id } });
+        }
+      }
+      for (const u of units) {
+        const buildingId = buildingIds[u.buildingIndex];
+        if (!buildingId) continue;
+        const data = unitToData(u);
+        if (u.id) {
+          await tx.unit.update({ where: { id: u.id }, data });
+        } else {
+          await tx.unit.create({ data: { buildingId, ...data } });
+        }
+      }
+    });
+
+    return this.getById(tenantId, propertyId);
+  }
+
+  /**
    * Soft-delete: set `deletedAt = NOW()` on the property row.
    * Buildings + units + the declaration document stay intact so
    * `restore()` is a single-row update with full data recovery.
@@ -395,7 +514,9 @@ async function assertTenantOwnsContacts(
 }
 
 function unitToData(
-  unit: CreateUnitWithBuildingIndex,
+  // Accepts both create-time + replace-time shapes — the latter
+  // adds an optional `id` we don't write into the row data.
+  unit: CreateUnitWithBuildingIndex | ReplaceUnitWithId,
 ): Omit<Prisma.UnitUncheckedCreateInput, 'buildingId'> {
   const floor = unit.floor;
   // Discriminated-union flatten: every variant collapses to the same

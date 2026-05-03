@@ -49,7 +49,7 @@ export interface WizardExtractionMeta {
   editedFields: ReadonlySet<string>;
 }
 
-interface WizardContextValue {
+export interface WizardContextValue {
   validity: StepValidityMap;
   registerValidator: (step: WizardStepId, fn: ValidatorFn | null) => void;
   setStepValid: (step: WizardStepId, valid: boolean) => void;
@@ -91,7 +91,11 @@ const initialValidity: StepValidityMap = {
   units: false,
 };
 
-const WizardContext = createContext<WizardContextValue | null>(null);
+// Exported so the EditUnitsProvider (used by the units-edit page)
+// can reuse the same context object — UnitTable's `useWizard()`
+// then resolves correctly under EITHER provider without any
+// per-component refactor.
+export const WizardContext = createContext<WizardContextValue | null>(null);
 
 export function WizardProvider({ children }: { children: ReactNode }) {
   // Single shared FormProvider for the wizard. Step-specific validation

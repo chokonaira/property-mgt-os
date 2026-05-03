@@ -281,6 +281,20 @@
       }
     }
   },
+  "editUnits": {
+    "title": "Einheiten bearbeiten · {name}",
+    "subtitle": "Einheiten hinzufügen, ändern, einfügen, generieren oder importieren. Jeder Speichervorgang erzeugt einen Audit-Eintrag pro berührter Einheit.",
+    "back": "Zurück zur Immobilie",
+    "cancel": "Abbrechen",
+    "save": "Einheiten speichern",
+    "toastSaved": "Einheiten gespeichert.",
+    "toastInvalid": "Beheben Sie die markierten Zeilen vor dem Speichern.",
+    "toastError": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+    "notFound": {
+      "title": "Immobilie nicht gefunden",
+      "description": "Diese Immobilie wurde möglicherweise gelöscht oder der Link ist fehlerhaft."
+    }
+  },
   "propertyDetail": {
     "delete": {
       "cta": "Löschen",
@@ -334,6 +348,7 @@
       "title": "Einheiten",
       "count": "{count, plural, =0 {keine Einheiten} one {# Einheit} other {# Einheiten}}",
       "rowCount": "{count, plural, =0 {keine Einheiten} one {# Einheit} other {# Einheiten}}",
+      "editCta": "Einheiten bearbeiten",
       "columns": {
         "number": "Nr.",
         "type": "Typ",

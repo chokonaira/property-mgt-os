@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { ArrowLeft, FileSearch, RefreshCw, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -34,6 +35,28 @@ export function PropertyDetailView({ id }: DetailViewProps) {
   const deleteProperty = useDeleteProperty();
   const restoreProperty = useRestoreProperty();
   const { confirm, dialogProps } = useConfirm();
+
+  // Restore the user's scroll position after a round-trip through
+  // the units-edit page. UnitsSection's Edit button writes the
+  // scrollY into sessionStorage just before navigation; this effect
+  // reads + applies it once the property data has rendered. Wrapped
+  // in two rAFs so the layout (header + sections + tables) has a
+  // chance to fully measure before we move the viewport.
+  useEffect(() => {
+    if (!data) return;
+    if (typeof window === 'undefined') return;
+    const key = `property-detail-scroll:${id}`;
+    const saved = sessionStorage.getItem(key);
+    if (!saved) return;
+    sessionStorage.removeItem(key);
+    const y = Number(saved);
+    if (!Number.isFinite(y) || y <= 0) return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: y, behavior: 'auto' });
+      });
+    });
+  }, [data, id]);
 
   async function handleDelete(propertyName: string) {
     const ok = await confirm({

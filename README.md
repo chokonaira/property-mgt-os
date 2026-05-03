@@ -1,7 +1,7 @@
 # A Buena Case Study
 
 [![CI](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml/badge.svg)](https://github.com/chokonaira/property-mgt-os/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-532_passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-545_passing-brightgreen)](#testing)
 [![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](./tsconfig.base.json)
 [![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?logo=openapiinitiative&logoColor=white)](https://api-henry-buena.chuka.io/openapi.json)
 [![First Load JS](https://img.shields.io/badge/first_load_JS-≤240_kB-blue)](#performance)
@@ -29,13 +29,13 @@ The MEA invariant runs everywhere it can fail: live in the wizard footer as the 
 - **Dashboard + property detail.** WEG / MV listing with type badges; create CTA with optimistic insertion + rollback. Detail view groups units by building with the MEA bar pinned at the top.
 - **3-step wizard** (General Info → Buildings → Units). One RHF `FormProvider`, auto-saves draft to `localStorage` every 500 ms, "Saved 30 s ago" footer indicator.
 - **Bulk unit table.** TanStack Table headless, inline editing, full keyboard navigation, paste TSV/CSV, "Generate N units" with auto-`Start at` (max existing + 1) and hard-blocked range collisions, **Import units from PDF** (Replace / Merge / Discard preview against existing rows), duplicate row + bulk-duplicate that auto-advance past existing numbers, multi-select bulk delete, sticky MEA invariant bar (green / amber / red), click-to-jump validation summary banner, virtualised past 50 rows.
-- **Edit + audit history.** Inline pencil-edit on the property header (name, unique number) hits `PATCH /properties/:id`; every diff lands in the AuditLog and shows up in the "Last modified by …" pill (newest 5) + the full timeline modal.
+- **Edit + audit history.** Inline pencil-edit on the property header (name, unique number) hits `PATCH /properties/:id`. Units have their own dedicated editor — `Edit units` button on the detail page opens the same bulk-entry surface (table + paste + generate + import + validation summary) pre-filled with current units; `PUT /properties/:id/units` diffs against the existing rows and emits one audit row per inserted / updated / deleted unit. Every diff surfaces in the "Last modified by …" pill (newest 5) + the full timeline modal. Scroll position survives the edit round-trip via sessionStorage so the user lands back where they left off.
 - **AI Review Panel.** Per-field confidence chips (≥ 0.85 green, 0.6–0.85 amber, < 0.6 red) + source-span popovers + prominent warnings. Server-side `verifySpans` drops hallucinated citations before the response leaves the API. Inline chips persist on the form post-accept and clear when the user edits a field. Pre-LLM **doc-type guard** rejects non-Teilungserklärung uploads with a clear message — saves the cost + spares the user a junk extraction.
 - **Production-grade write defenses.** `POST /properties` accepts an `X-Idempotency-Key` header — duplicate POSTs (double-clicked Save, retried fetch) replay the original response instead of creating a second property. Delete is implemented as soft-delete: the row's `deletedAt` is set, the dashboard hides it, and the post-delete toast carries an Undo action for 30 seconds (Stripe pattern). The `POST /properties/:id/restore` endpoint exists for the v1.1 archived-properties admin view; once the toast dismisses there's no UI to re-find the row, so a 30-day cron purge keeps the archived set bounded. CI gates a per-route **First Load JS budget** (240 kB) so a bundle regression breaks the PR, not the user.
 - **OpenAPI 3.1** at `/openapi.json` generated from the same Zod schemas the form uses.
 - **Error boundaries** at `app/[locale]/error.tsx`, `not-found.tsx`, `global-error.tsx` — localised copy + Retry / Back-to-dashboard.
 - **i18n** via `next-intl`; default `de` (unprefixed URL), opt-in `/en`. Domain terms stay German.
-- **Dark mode**, **532 tests** across three packages.
+- **Dark mode**, **545 tests** across three packages.
 
 ---
 
@@ -100,7 +100,7 @@ pnpm lint              # ESLint
 pnpm build             # Next + Nest production builds
 ```
 
-Workspace runs **532 tests** across three packages (72 shared schemas, 181 API services, 279 web utilities + components). RTL + jsdom power the panel render tests; the rest run in node for speed. Coverage is intentional rather than complete: discriminated unions, MEA invariant, TSV / CSV parser, AI pipeline (verify-spans, token budget, idempotency cache, response-schema shape per provider, SDK error wrapping for both Anthropic and OpenAI, controller error mapping), and the wizard's accept-translation logic each have dedicated suites.
+Workspace runs **545 tests** across three packages (72 shared schemas, 188 API services, 285 web utilities + components). RTL + jsdom power the panel render tests; the rest run in node for speed. Coverage is intentional rather than complete: discriminated unions, MEA invariant, TSV / CSV parser, AI pipeline (verify-spans, token budget, idempotency cache, response-schema shape per provider, SDK error wrapping for both Anthropic and OpenAI, controller error mapping), and the wizard's accept-translation logic each have dedicated suites.
 
 ## Performance
 
@@ -137,10 +137,10 @@ Scope cuts, not architectural debt. Each item lists what exists today, what woul
 - _Cost_: ~half-day. No schema change.
 - _Unblocks_: real per-user rate-limit keys, contact CRUD permission model, audit log gets real `actorId` instead of the seeded `demo-user`.
 
-**Edit flow for saved buildings + units (wizard-mode)**
-- _Today_: Create + Delete + property-level inline edit (name, unique number) are wired via `PATCH /properties/:id`. Each diff lands in the AuditLog automatically and surfaces in the "Last modified by …" pill.
-- _v1.1_: reopen the wizard against an existing property to edit buildings + units with the same RHF + Zod schemas the create flow uses, with per-field diffing.
-- _Cost_: ~half-day on top of the existing wizard.
+**Edit flow for saved buildings (wizard-mode)**
+- _Today_: Create + Delete + property-level inline edit (name, unique number) + a dedicated units editor (`/properties/:id/edit/units`) are wired. Property edits use `PATCH /properties/:id`; units use `PUT /properties/:id/units` (bulk-replace with id-preserving diff). Every change is audit-logged.
+- _v1.1_: reuse the same surface for editing buildings (street, label, year built etc) — `PUT /properties/:id/buildings` with the same diff strategy.
+- _Cost_: ~2 h on top of the existing units flow.
 
 **Archived-properties admin view**
 - _Today_: Delete is soft (sets `deletedAt`); restore is a one-click Undo on the post-delete toast for 30 seconds. The `POST /properties/:id/restore` endpoint exists; the dashboard filters archived rows out.

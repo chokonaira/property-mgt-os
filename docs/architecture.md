@@ -382,6 +382,7 @@ POST   /properties                      atomic create (property + buildings + un
 GET    /properties/:id                  full detail
 GET    /properties/:id/history          audit timeline (paginated, newest first; covers the property + every building + every unit underneath)
 PATCH  /properties/:id                  partial update (audit-logged per field)
+PUT    /properties/:id/units             bulk-replace units (id-preserving diff; audit per row)
 DELETE /properties/:id                  soft-delete (sets deletedAt; restorable)
 POST   /properties/:id/restore          clears deletedAt; 404 if not archived
 

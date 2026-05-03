@@ -44,6 +44,39 @@ export const CreateUnitWithBuildingIndexSchema = z.discriminatedUnion('type', [
 ]);
 export type CreateUnitWithBuildingIndex = z.infer<typeof CreateUnitWithBuildingIndexSchema>;
 
+// Replace-units payload for `PUT /properties/:id/units`. Each entry
+// is a CreateUnitWithBuildingIndex shape PLUS an optional `id`:
+//   - id present → match against the existing row, UPDATE if changed
+//   - id absent  → INSERT as a new unit
+// Existing rows whose ids don't appear in the payload get DELETEd.
+// One transaction. Audit middleware fires per touched row, so the
+// timeline shows insert / update / delete entries the user can read.
+const WithOptionalId = z.object({ id: z.string().min(1).optional() });
+export const ReplaceUnitWithIdSchema = z.discriminatedUnion('type', [
+  BaseCreateUnit.merge(WithOptionalId).extend({
+    type: z.literal('APARTMENT'),
+    rooms: z.number().int().min(0).max(50),
+    subCategory: z.string().trim().min(1).max(40).optional(),
+  }),
+  BaseCreateUnit.merge(WithOptionalId).extend({
+    type: z.literal('OFFICE'),
+    layoutNote: z.string().trim().min(1).max(120).optional(),
+  }),
+  BaseCreateUnit.merge(WithOptionalId).extend({
+    type: z.literal('PARKING'),
+    parkingCode: z.string().trim().min(1).max(20).optional(),
+  }),
+  BaseCreateUnit.merge(WithOptionalId).extend({
+    type: z.literal('GARDEN'),
+  }),
+]);
+export type ReplaceUnitWithId = z.infer<typeof ReplaceUnitWithIdSchema>;
+
+export const ReplaceUnitsRequestSchema = z.object({
+  units: z.array(ReplaceUnitWithIdSchema).min(1),
+});
+export type ReplaceUnitsRequest = z.infer<typeof ReplaceUnitsRequestSchema>;
+
 const CreatePropertyHeaderSchema = z.object({
   managementType: ManagementTypeSchema,
   name: z.string().trim().min(1).max(200),
