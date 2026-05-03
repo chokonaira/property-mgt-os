@@ -128,6 +128,13 @@ function EditUnitsForm({ id, property }: EditUnitsFormProps) {
     mode: 'onTouched',
   });
 
+  // RHF tracks `isDirty` against `defaultValues` — flips true the
+  // moment any field diverges, false again when the user reverts
+  // to the original. The Save button reads it so a no-op visit
+  // (open page, look around, click Save) doesn't fire a request
+  // + audit row for zero changes.
+  const isDirty = methods.formState.isDirty;
+
   async function handleSave() {
     // Two layers of pre-flight: Zod schema (covers per-row required
     // fields like rooms / size / mea) AND the cross-row uniqueness
@@ -215,9 +222,13 @@ function EditUnitsForm({ id, property }: EditUnitsFormProps) {
                 <Button
                   type="button"
                   onClick={handleSave}
-                  disabled={replaceUnits.isPending}
+                  disabled={replaceUnits.isPending || !isDirty}
                   size="sm"
                   className="sm:size-default"
+                  // Hint why the button is disabled — without this
+                  // a fresh-page user clicks Save, nothing happens,
+                  // they wonder if the click registered.
+                  title={!isDirty ? t('saveNoChanges') : undefined}
                 >
                   {replaceUnits.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

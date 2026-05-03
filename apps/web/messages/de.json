@@ -287,6 +287,7 @@
     "back": "Zurück zur Immobilie",
     "cancel": "Abbrechen",
     "save": "Einheiten speichern",
+    "saveNoChanges": "Noch keine Änderungen zum Speichern.",
     "toastSaved": "Einheiten gespeichert.",
     "toastInvalid": "Beheben Sie die markierten Zeilen vor dem Speichern.",
     "toastDuplicates": "{count, plural, one {# Einheitsnummer} other {# Einheitsnummern}} kommen mehrfach im selben Gebäude vor. Jede Nummer muss pro Gebäude eindeutig sein.",

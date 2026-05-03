@@ -287,6 +287,7 @@
     "back": "Back to property",
     "cancel": "Cancel",
     "save": "Save units",
+    "saveNoChanges": "No changes to save yet.",
     "toastSaved": "Units saved.",
     "toastInvalid": "Fix the highlighted rows before saving.",
     "toastDuplicates": "{count, plural, one {# unit number} other {# unit numbers}} duplicated within the same building. Each number must be unique per building.",

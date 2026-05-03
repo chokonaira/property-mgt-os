@@ -24,7 +24,10 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: env.CORS_ORIGINS,
     credentials: false,
-    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    // PUT is needed for the bulk-replace endpoints
+    // (PUT /properties/:id/units). Without it the browser
+    // preflight rejects the request before the handler ever runs.
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   });
 
   const logger = app.get(Logger);
